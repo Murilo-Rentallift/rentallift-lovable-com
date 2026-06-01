@@ -228,6 +228,61 @@ export const almoxUpdatePartStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Almoxarifado: weekly report of missing parts ----------
+export const almoxWeeklyMissing = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; startDate: string; endDate: string }) =>
+    z.object({ pin: pinSchema, startDate: dateSchema, endDate: dateSchema }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+
+    const { data: schedules } = await supabaseAdmin
+      .from("schedules")
+      .select("id, operator_id, work_date")
+      .gte("work_date", data.startDate)
+      .lte("work_date", data.endDate);
+
+    const scheduleIds = (schedules ?? []).map((s) => s.id);
+    if (!scheduleIds.length) {
+      return { startDate: data.startDate, endDate: data.endDate, rows: [] };
+    }
+
+    const [{ data: parts }, { data: operators }] = await Promise.all([
+      supabaseAdmin
+        .from("parts")
+        .select("id, schedule_id, name, quantity, status")
+        .in("schedule_id", scheduleIds)
+        .eq("status", "em_falta"),
+      supabaseAdmin.from("operators").select("id, name, position"),
+    ]);
+
+    const opMap = new Map((operators ?? []).map((o) => [o.id, o]));
+    const schedMap = new Map(
+      (schedules ?? []).map((s) => [s.id, { operator_id: s.operator_id, work_date: s.work_date }]),
+    );
+
+    const rows = (parts ?? []).map((p) => {
+      const sch = schedMap.get(p.schedule_id);
+      const op = sch ? opMap.get(sch.operator_id) : undefined;
+      return {
+        date: sch?.work_date ?? "",
+        operatorName: op?.name ?? "—",
+        operatorPosition: op?.position ?? 0,
+        name: p.name,
+        quantity: p.quantity,
+      };
+    });
+
+    rows.sort((a, b) =>
+      a.date.localeCompare(b.date) ||
+      a.operatorPosition - b.operatorPosition ||
+      a.name.localeCompare(b.name),
+    );
+
+    return { startDate: data.startDate, endDate: data.endDate, rows };
+  });
+
+
 // ---------- Admin: change almoxarifado PIN ----------
 export const adminChangeAlmoxPin = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; newPin: string }) =>
