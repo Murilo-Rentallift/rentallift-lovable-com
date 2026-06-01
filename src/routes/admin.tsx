@@ -461,57 +461,6 @@ function TaskItem({
   );
 }
 
-        {/* Parts */}
-        <div className="p-4 space-y-2">
-          <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Peças</label>
-          <ul className="space-y-1 max-h-44 overflow-y-auto">
-            {parts.length === 0 && (
-              <li className="text-sm text-muted-foreground italic py-2">Sem peças</li>
-            )}
-            {parts.map((p) => (
-              <PartItem
-                key={p.id}
-                part={p}
-                onDelete={() => delPart.mutate(p.id)}
-                onEdit={async (name, quantity) => {
-                  await editFn({ data: { pin, partId: p.id, name, quantity } });
-                  toast.success("Peça atualizada");
-                  onChange();
-                }}
-              />
-            ))}
-          </ul>
-          <form
-            onSubmit={(e) => { e.preventDefault(); if (newPart.trim()) addPart.mutate(); }}
-            className="flex gap-2 pt-1"
-          >
-            <input
-              value={newPart}
-              onChange={(e) => setNewPart(e.target.value)}
-              maxLength={200}
-              placeholder="Nome da peça"
-              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-            />
-            <input
-              type="number" min={1} max={9999}
-              value={newQty}
-              onChange={(e) => setNewQty(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-16 rounded-md border border-input bg-background px-2 py-2 text-sm font-mono text-center focus:border-primary focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!newPart.trim() || addPart.isPending}
-              className="rounded-md bg-accent px-3 py-2 text-accent-foreground disabled:opacity-40 hover:brightness-110 transition"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-          </form>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function PartItem({
   part, onDelete, onEdit,
 }: {
