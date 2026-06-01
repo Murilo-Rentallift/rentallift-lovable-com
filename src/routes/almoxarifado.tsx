@@ -369,6 +369,38 @@ function AlmoxarifadoPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8 space-y-5">
+        <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[200px]">
+            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
+              Relatório semanal — Peças em falta
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Gera um PDF com todas as peças marcadas como "Em falta" na semana selecionada (segunda a domingo).
+            </p>
+          </div>
+          <div className="flex items-end gap-2">
+            <div>
+              <Label htmlFor="weekStart" className="text-xs">Semana de</Label>
+              <Input
+                id="weekStart"
+                type="date"
+                value={weekStart}
+                onChange={(e) => setWeekStart(e.target.value)}
+                className="w-auto"
+              />
+            </div>
+            <Button
+              onClick={generateWeeklyPDF}
+              disabled={weeklyLoading || !weekStart}
+              variant="destructive"
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              {weeklyLoading ? "Gerando..." : "Gerar relatório"}
+            </Button>
+          </div>
+        </section>
+
+
         {loading ? (
           <p className="text-muted-foreground">Carregando...</p>
         ) : totalParts === 0 ? (
