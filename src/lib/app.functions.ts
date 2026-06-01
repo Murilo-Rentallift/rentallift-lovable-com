@@ -41,19 +41,30 @@ export const getOperatorDay = createServerFn({ method: "POST" })
       .maybeSingle();
 
     let parts: Array<{ id: string; name: string; quantity: number; checked: boolean }> = [];
+    let tasks: Array<{ id: string; position: number; title: string; description: string }> = [];
     if (schedule) {
-      const { data: p } = await supabaseAdmin
-        .from("parts")
-        .select("id, name, quantity, checked")
-        .eq("schedule_id", schedule.id)
-        .order("position", { ascending: true })
-        .order("created_at", { ascending: true });
+      const [{ data: p }, { data: t }] = await Promise.all([
+        supabaseAdmin
+          .from("parts")
+          .select("id, name, quantity, checked")
+          .eq("schedule_id", schedule.id)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
+        supabaseAdmin
+          .from("tasks")
+          .select("id, position, title, description")
+          .eq("schedule_id", schedule.id)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
       parts = p ?? [];
+      tasks = (t ?? []) as any;
     }
 
     return {
       operator: { id: op.id, name: op.name },
       schedule: schedule ?? null,
+      tasks,
       parts,
     };
   });
@@ -124,17 +135,27 @@ export const adminGetDay = createServerFn({ method: "POST" })
 
     const scheduleIds = (schedules ?? []).map((s) => s.id);
     let parts: Array<{ id: string; schedule_id: string; name: string; quantity: number; checked: boolean }> = [];
+    let tasks: Array<{ id: string; schedule_id: string; position: number; title: string; description: string }> = [];
     if (scheduleIds.length) {
-      const { data: p } = await supabaseAdmin
-        .from("parts")
-        .select("id, schedule_id, name, quantity, checked, position")
-        .in("schedule_id", scheduleIds)
-        .order("position", { ascending: true })
-        .order("created_at", { ascending: true });
+      const [{ data: p }, { data: t }] = await Promise.all([
+        supabaseAdmin
+          .from("parts")
+          .select("id, schedule_id, name, quantity, checked, position")
+          .in("schedule_id", scheduleIds)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
+        supabaseAdmin
+          .from("tasks")
+          .select("id, schedule_id, position, title, description")
+          .in("schedule_id", scheduleIds)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
       parts = (p ?? []) as any;
+      tasks = (t ?? []) as any;
     }
 
-    return { operators: operators ?? [], schedules: schedules ?? [], parts };
+    return { operators: operators ?? [], schedules: schedules ?? [], parts, tasks };
   });
 
 // ---------- Almoxarifado: all parts of all operators for a given date ----------
