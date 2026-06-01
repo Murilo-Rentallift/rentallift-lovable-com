@@ -281,20 +281,36 @@ function AlmoxarifadoPage() {
                   </span>
                 </div>
                 <ul className="divide-y divide-border">
-                  {g.parts.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <span className={`h-2 w-2 rounded-full ${p.checked ? "bg-green-500" : "bg-accent"}`} />
-                        <span className="font-medium">{p.name}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="font-mono text-muted-foreground">x{p.quantity}</span>
-                        <span className={`text-xs uppercase font-semibold ${p.checked ? "text-green-500" : "text-accent"}`}>
-                          {p.checked ? "Retirada" : "Pendente"}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
+                  {g.parts.map((p) => {
+                    const opt = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
+                    return (
+                      <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className={`h-2 w-2 rounded-full shrink-0 ${
+                            p.status === "entregue" ? "bg-green-500" :
+                            p.status === "separado" ? "bg-blue-500" :
+                            p.status === "em_falta" ? "bg-red-500" : "bg-accent"
+                          }`} />
+                          <span className="font-medium truncate">{p.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="font-mono text-muted-foreground">x{p.quantity}</span>
+                          <select
+                            value={p.status}
+                            onChange={(e) => changeStatus(p.id, e.target.value as PartStatus)}
+                            className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
+                          >
+                            {STATUS_OPTIONS.map((s) => (
+                              <option key={s.value} value={s.value} className="bg-background text-foreground">
+                                {s.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </li>
+                    );
+                  })}
+
                 </ul>
               </div>
             ))
