@@ -97,6 +97,36 @@ export type Database = {
           },
         ]
       }
+      pending_calls: {
+        Row: {
+          call_date: string
+          company: string
+          created_at: string
+          description: string
+          id: string
+          priority: string
+          updated_at: string
+        }
+        Insert: {
+          call_date: string
+          company?: string
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string
+          updated_at?: string
+        }
+        Update: {
+          call_date?: string
+          company?: string
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       schedules: {
         Row: {
           created_at: string
