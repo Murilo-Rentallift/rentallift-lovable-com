@@ -44,6 +44,25 @@ function formatDateBR(iso: string) {
   return `${d}/${m}/${y}`;
 }
 
+// Returns Monday of the week of the given ISO date
+function mondayOf(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  const day = dt.getDay(); // 0=Sun..6=Sat
+  const diff = day === 0 ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  const tz = dt.getTimezoneOffset() * 60000;
+  return new Date(dt.getTime() - tz).toISOString().slice(0, 10);
+}
+
+function addDays(iso: string, days: number) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  const tz = dt.getTimezoneOffset() * 60000;
+  return new Date(dt.getTime() - tz).toISOString().slice(0, 10);
+
+
 function AlmoxarifadoPage() {
   const fetchDay = useServerFn(almoxarifadoGetDay);
   const [pin, setPin] = useState("");
