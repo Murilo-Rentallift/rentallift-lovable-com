@@ -156,9 +156,7 @@ function AlmoxarifadoPage() {
       <div className="min-h-screen grid place-items-center px-4">
         <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4 rounded-lg border border-border bg-card p-6 shadow-xl">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-md bg-accent text-accent-foreground">
-              <Warehouse className="h-5 w-5" />
-            </div>
+            <Logo className="h-10 w-auto" />
             <div>
               <h1 className="font-display text-xl font-bold uppercase">Almoxarifado</h1>
               <p className="text-xs text-muted-foreground">Acesso restrito</p>
@@ -204,9 +202,7 @@ function AlmoxarifadoPage() {
             <Link to="/" className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Link>
-            <div className="grid h-10 w-10 place-items-center rounded-md bg-accent text-accent-foreground">
-              <Warehouse className="h-5 w-5" />
-            </div>
+            <Logo className="h-10 w-auto" />
             <div>
               <h1 className="font-display text-xl md:text-2xl font-bold uppercase">Almoxarifado</h1>
               <p className="text-xs text-muted-foreground">Lista consolidada de peças</p>
