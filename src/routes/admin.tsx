@@ -144,13 +144,15 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
         {data?.operators.map((op) => {
           const schedule = data.schedules.find((s) => s.operator_id === op.id);
           const parts = schedule ? data.parts.filter((p) => p.schedule_id === schedule.id) : [];
+          const tasks = schedule ? (data.tasks ?? []).filter((t) => t.schedule_id === schedule.id) : [];
           return (
             <OperatorCard
               key={op.id}
               pin={pin}
               date={date}
               operator={op}
-              task={schedule?.task ?? ""}
+              legacyTask={schedule?.task ?? ""}
+              tasks={tasks}
               parts={parts}
               onChange={() => qc.invalidateQueries({ queryKey: ["admin-day", date, pin] })}
             />
