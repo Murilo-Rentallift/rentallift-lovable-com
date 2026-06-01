@@ -1,29 +1,88 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
+import { listOperators } from "@/lib/app.functions";
+import { Forklift, Shield } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Programação Diária — Empilhadeiras" },
+      { name: "description", content: "Lousa digital de programação diária dos operadores de empilhadeira." },
     ],
   }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  const fetchOps = useServerFn(listOperators);
+  const { data: operators, isLoading } = useQuery({
+    queryKey: ["operators"],
+    queryFn: () => fetchOps(),
+  });
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="border-b border-border bg-card/50 backdrop-blur">
+        <div className="hazard-stripe h-2" />
+        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center gap-4">
+          <div className="grid h-12 w-12 place-items-center rounded-md bg-accent text-accent-foreground">
+            <Forklift className="h-7 w-7" strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl md:text-3xl font-bold uppercase tracking-wide">
+              Lousa Digital
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Programação diária — toque no seu nome
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-6 py-8">
+        {isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="h-32 rounded-lg bg-card/50 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {operators?.map((op) => (
+              <Link
+                key={op.id}
+                to="/operador/$id"
+                params={{ id: op.id }}
+                className="group relative overflow-hidden rounded-lg border border-border bg-card hover:border-primary transition-all p-5 h-32 flex flex-col justify-between shadow-lg"
+              >
+                <div className="absolute top-0 left-0 h-1 w-full bg-primary opacity-50 group-hover:opacity-100 transition-opacity" />
+                <div className="text-xs font-mono text-muted-foreground uppercase">
+                  #{String(op.position).padStart(2, "0")}
+                </div>
+                <div className="font-display text-xl md:text-2xl font-bold uppercase">
+                  {op.name}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-10 flex justify-center">
+          <Link
+            to="/admin"
+            className="inline-flex items-center gap-2 rounded-md border border-accent/40 bg-accent/10 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-accent hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <Shield className="h-4 w-4" />
+            Acesso do Administrador
+          </Link>
+        </div>
+
+        <p className="mt-8 text-center text-xs text-muted-foreground">
+          PIN padrão dos operadores: <span className="font-mono text-foreground">1234</span> · Admin: <span className="font-mono text-foreground">9999</span> · Altere depois no painel
+        </p>
+      </main>
     </div>
   );
 }
