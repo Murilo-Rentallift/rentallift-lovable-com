@@ -61,6 +61,9 @@ function addDays(iso: string, days: number) {
   dt.setDate(dt.getDate() + days);
   const tz = dt.getTimezoneOffset() * 60000;
   return new Date(dt.getTime() - tz).toISOString().slice(0, 10);
+}
+
+
 
 
 function AlmoxarifadoPage() {
