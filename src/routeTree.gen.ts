@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AlmoxarifadoRouteImport } from './routes/almoxarifado'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OperadorIdRouteImport } from './routes/operador.$id'
 
+const AlmoxarifadoRoute = AlmoxarifadoRouteImport.update({
+  id: '/almoxarifado',
+  path: '/almoxarifado',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -32,35 +38,46 @@ const OperadorIdRoute = OperadorIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/almoxarifado': typeof AlmoxarifadoRoute
   '/operador/$id': typeof OperadorIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/almoxarifado': typeof AlmoxarifadoRoute
   '/operador/$id': typeof OperadorIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/almoxarifado': typeof AlmoxarifadoRoute
   '/operador/$id': typeof OperadorIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/operador/$id'
+  fullPaths: '/' | '/admin' | '/almoxarifado' | '/operador/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/operador/$id'
-  id: '__root__' | '/' | '/admin' | '/operador/$id'
+  to: '/' | '/admin' | '/almoxarifado' | '/operador/$id'
+  id: '__root__' | '/' | '/admin' | '/almoxarifado' | '/operador/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AlmoxarifadoRoute: typeof AlmoxarifadoRoute
   OperadorIdRoute: typeof OperadorIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/almoxarifado': {
+      id: '/almoxarifado'
+      path: '/almoxarifado'
+      fullPath: '/almoxarifado'
+      preLoaderRoute: typeof AlmoxarifadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AlmoxarifadoRoute: AlmoxarifadoRoute,
   OperadorIdRoute: OperadorIdRoute,
 }
 export const routeTree = rootRouteImport

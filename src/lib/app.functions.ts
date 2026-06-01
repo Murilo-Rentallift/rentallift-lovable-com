@@ -137,6 +137,48 @@ export const adminGetDay = createServerFn({ method: "POST" })
     return { operators: operators ?? [], schedules: schedules ?? [], parts };
   });
 
+// ---------- Almoxarifado: all parts of all operators for a given date ----------
+export const almoxarifadoGetDay = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; date: string }) =>
+    z.object({ pin: pinSchema, date: dateSchema }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+
+    const { data: operators } = await supabaseAdmin
+      .from("operators")
+      .select("id, name, position")
+      .order("position", { ascending: true });
+
+    const { data: schedules } = await supabaseAdmin
+      .from("schedules")
+      .select("id, operator_id, task")
+      .eq("work_date", data.date);
+
+    const scheduleIds = (schedules ?? []).map((s) => s.id);
+    let parts: Array<{ id: string; schedule_id: string; name: string; quantity: number; checked: boolean }> = [];
+    if (scheduleIds.length) {
+      const { data: p } = await supabaseAdmin
+        .from("parts")
+        .select("id, schedule_id, name, quantity, checked, position")
+        .in("schedule_id", scheduleIds)
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: true });
+      parts = (p ?? []) as any;
+    }
+
+    // Group parts by operator
+    const scheduleToOperator = new Map((schedules ?? []).map((s) => [s.id, s.operator_id]));
+    const grouped = (operators ?? []).map((op) => ({
+      operator: op,
+      parts: parts
+        .filter((p) => scheduleToOperator.get(p.schedule_id) === op.id)
+        .map(({ id, name, quantity, checked }) => ({ id, name, quantity, checked })),
+    }));
+
+    return { date: data.date, groups: grouped };
+  });
+
 // ---------- Admin: save task (upsert schedule) ----------
 export const adminSaveTask = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; operatorId: string; date: string; task: string }) =>
