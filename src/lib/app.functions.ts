@@ -545,3 +545,54 @@ export const adminMoveTask = createServerFn({ method: "POST" })
     await supabaseAdmin.from("tasks").update({ position: other.position }).eq("id", current.id);
     return { ok: true };
   });
+
+// ---------- Admin: pending calls (no technician assigned) ----------
+export const adminListPendingCalls = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; startDate: string; endDate: string }) =>
+    z.object({ pin: pinSchema, startDate: dateSchema, endDate: dateSchema }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { data: calls, error } = await supabaseAdmin
+      .from("pending_calls")
+      .select("id, call_date, company, description, priority, created_at")
+      .gte("call_date", data.startDate)
+      .lte("call_date", data.endDate)
+      .order("call_date", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return { calls: calls ?? [] };
+  });
+
+export const adminAddPendingCall = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; callDate: string; company: string; description: string; priority: string }) =>
+    z.object({
+      pin: pinSchema,
+      callDate: dateSchema,
+      company: z.string().trim().min(1).max(200),
+      description: z.string().trim().max(1000).default(""),
+      priority: z.enum(["baixa", "normal", "alta", "urgente"]),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin.from("pending_calls").insert({
+      call_date: data.callDate,
+      company: data.company,
+      description: data.description,
+      priority: data.priority,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminDeletePendingCall = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; callId: string }) =>
+    z.object({ pin: pinSchema, callId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin.from("pending_calls").delete().eq("id", data.callId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

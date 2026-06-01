@@ -6,6 +6,7 @@ import {
   adminAddPart, adminAddTask, adminChangePin, adminChangeAlmoxPin, adminDeletePart, adminDeleteTask,
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
+  adminListPendingCalls, adminAddPendingCall, adminDeletePendingCall,
 } from "@/lib/app.functions";
 import { ArrowDown, ArrowLeft, ArrowUp, Check, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -133,6 +134,8 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
+        <PendingCallsCalendar pin={pin} />
+
         {isLoading && (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -672,5 +675,214 @@ function SettingsModal({
         </div>
       </div>
     </div>
+  );
+}
+
+// ---------- Pending calls weekly calendar (admin only) ----------
+function mondayOf(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const dow = dt.getUTCDay(); // 0=Sun
+  const diff = dow === 0 ? -6 : 1 - dow;
+  dt.setUTCDate(dt.getUTCDate() + diff);
+  return dt.toISOString().slice(0, 10);
+}
+function addDaysISO(iso: string, n: number) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return dt.toISOString().slice(0, 10);
+}
+const WEEKDAYS_PT = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+const PRIORITY_STYLES: Record<string, string> = {
+  baixa: "bg-muted text-muted-foreground border-border",
+  normal: "bg-accent/20 text-accent-foreground border-accent/40",
+  alta: "bg-orange-500/20 text-orange-200 border-orange-500/40",
+  urgente: "bg-destructive/30 text-destructive-foreground border-destructive/60",
+};
+
+function PendingCallsCalendar({ pin }: { pin: string }) {
+  const qc = useQueryClient();
+  const [weekStart, setWeekStart] = useState(() => mondayOf(todayISO()));
+  const [addDay, setAddDay] = useState<string | null>(null);
+  const [company, setCompany] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("normal");
+
+  const endDate = addDaysISO(weekStart, 6);
+  const listFn = useServerFn(adminListPendingCalls);
+  const addFn = useServerFn(adminAddPendingCall);
+  const delFn = useServerFn(adminDeletePendingCall);
+
+  const { data } = useQuery({
+    queryKey: ["pending-calls", weekStart, pin],
+    queryFn: () => listFn({ data: { pin, startDate: weekStart, endDate } }),
+    retry: false,
+  });
+
+  const addM = useMutation({
+    mutationFn: () => addFn({ data: { pin, callDate: addDay!, company: company.trim(), description: description.trim(), priority } }),
+    onSuccess: () => {
+      toast.success("Chamado adicionado");
+      setAddDay(null); setCompany(""); setDescription(""); setPriority("normal");
+      qc.invalidateQueries({ queryKey: ["pending-calls", weekStart, pin] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const delM = useMutation({
+    mutationFn: (callId: string) => delFn({ data: { pin, callId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pending-calls", weekStart, pin] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const days = Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i));
+  const callsByDay = new Map<string, NonNullable<typeof data>["calls"]>();
+  (data?.calls ?? []).forEach((c) => {
+    const arr = callsByDay.get(c.call_date) ?? [];
+    arr.push(c);
+    callsByDay.set(c.call_date, arr);
+  });
+
+  function fmtDay(iso: string) {
+    const [, m, d] = iso.split("-");
+    return `${d}/${m}`;
+  }
+
+  return (
+    <section className="rounded-lg border border-border bg-card overflow-hidden shadow-lg">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-border bg-accent/10">
+        <div>
+          <h3 className="font-display text-lg font-bold uppercase">Próximos Chamados (sem técnico)</h3>
+          <p className="text-xs text-muted-foreground">Semana de {fmtDay(weekStart)} a {fmtDay(endDate)}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setWeekStart(addDaysISO(weekStart, -7))}
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted transition"
+          >
+            ← Semana anterior
+          </button>
+          <button
+            onClick={() => setWeekStart(mondayOf(todayISO()))}
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted transition"
+          >
+            Hoje
+          </button>
+          <button
+            onClick={() => setWeekStart(addDaysISO(weekStart, 7))}
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted transition"
+          >
+            Próxima semana →
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-px bg-border">
+        {days.map((iso, i) => {
+          const items = callsByDay.get(iso) ?? [];
+          const isToday = iso === todayISO();
+          return (
+            <div key={iso} className={`bg-card p-3 min-h-[160px] flex flex-col ${isToday ? "ring-2 ring-inset ring-accent" : ""}`}>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{WEEKDAYS_PT[i]}</p>
+                  <p className="font-mono text-sm">{fmtDay(iso)}</p>
+                </div>
+                <button
+                  onClick={() => { setAddDay(iso); setCompany(""); setDescription(""); setPriority("normal"); }}
+                  className="rounded-md border border-border bg-background p-1 hover:bg-muted transition"
+                  title="Adicionar chamado"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              </div>
+              <div className="space-y-2 flex-1">
+                {items.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground italic">Sem chamados</p>
+                )}
+                {items.map((c) => (
+                  <div key={c.id} className={`rounded border px-2 py-1.5 text-xs ${PRIORITY_STYLES[c.priority] ?? PRIORITY_STYLES.normal}`}>
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="font-semibold leading-tight break-words">{c.company}</p>
+                      <button
+                        onClick={() => delM.mutate(c.id)}
+                        className="opacity-60 hover:opacity-100 shrink-0"
+                        title="Remover"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    {c.description && <p className="mt-1 opacity-90 whitespace-pre-wrap leading-tight">{c.description}</p>}
+                    <p className="mt-1 text-[9px] uppercase tracking-wider opacity-70">{c.priority}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {addDay && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm grid place-items-center p-4" onClick={() => setAddDay(null)}>
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => { e.preventDefault(); if (company.trim()) addM.mutate(); }}
+            className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-2xl space-y-4"
+          >
+            <div>
+              <h4 className="font-display text-lg font-bold uppercase">Novo chamado</h4>
+              <p className="text-xs text-muted-foreground">Data: {fmtDay(addDay)}</p>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Empresa / Cliente</label>
+              <input
+                autoFocus
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                maxLength={200}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                placeholder="Nome da empresa"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Descrição</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                maxLength={1000}
+                rows={3}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
+                placeholder="Detalhes do chamado (opcional)"
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Prioridade</label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >
+                <option value="baixa">Baixa</option>
+                <option value="normal">Normal</option>
+                <option value="alta">Alta</option>
+                <option value="urgente">Urgente</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setAddDay(null)} className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-muted transition">
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={!company.trim() || addM.isPending}
+                className="rounded-md bg-accent px-4 py-2 text-sm font-semibold uppercase tracking-wide text-accent-foreground disabled:opacity-40 hover:brightness-110 transition"
+              >
+                {addM.isPending ? "Salvando..." : "Adicionar"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </section>
   );
 }
