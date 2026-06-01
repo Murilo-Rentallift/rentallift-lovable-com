@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
-  adminAddPart, adminAddTask, adminChangePin, adminDeletePart, adminDeleteTask,
+  adminAddPart, adminAddTask, adminChangePin, adminChangeAlmoxPin, adminDeletePart, adminDeleteTask,
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
 } from "@/lib/app.functions";
