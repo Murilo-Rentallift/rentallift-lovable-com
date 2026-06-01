@@ -168,22 +168,45 @@ function DayView({
           </h1>
         </div>
 
-        {/* Task card */}
+        {/* Tasks list (ordered) */}
         <section className="rounded-lg border border-border bg-card overflow-hidden">
-          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3">
+          <div className="bg-primary/15 border-b border-primary/30 px-5 py-3 flex items-center justify-between">
             <h2 className="font-display text-sm font-bold uppercase tracking-wider text-primary">
-              Sua Tarefa
+              Ordem de Atendimento
             </h2>
+            <span className="text-xs text-muted-foreground">
+              {data?.tasks?.length ?? 0} atendimento(s)
+            </span>
           </div>
-          <div className="p-5">
-            {isLoading ? (
-              <div className="h-20 rounded bg-muted/50 animate-pulse" />
-            ) : data?.schedule?.task?.trim() ? (
-              <p className="whitespace-pre-wrap text-lg leading-relaxed">{data.schedule.task}</p>
-            ) : (
-              <p className="text-muted-foreground italic">Nenhuma tarefa cadastrada para esta data.</p>
-            )}
-          </div>
+          {isLoading ? (
+            <div className="p-5"><div className="h-20 rounded bg-muted/50 animate-pulse" /></div>
+          ) : (data?.tasks?.length ?? 0) === 0 && !data?.schedule?.task?.trim() ? (
+            <p className="p-5 text-muted-foreground italic">Nenhum atendimento cadastrado para esta data.</p>
+          ) : (
+            <ol className="divide-y divide-border">
+              {/* Legacy single task fallback */}
+              {(data?.tasks?.length ?? 0) === 0 && data?.schedule?.task?.trim() && (
+                <li className="p-5">
+                  <p className="whitespace-pre-wrap text-lg leading-relaxed">{data.schedule.task}</p>
+                </li>
+              )}
+              {data?.tasks?.map((t, i) => (
+                <li key={t.id} className="p-5 flex gap-4">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-accent text-accent-foreground font-display font-bold grid place-items-center text-lg">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display text-lg font-bold uppercase leading-tight">{t.title}</h3>
+                    {t.description?.trim() && (
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
+                        {t.description}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
 
         {/* Parts checklist */}

@@ -41,19 +41,30 @@ export const getOperatorDay = createServerFn({ method: "POST" })
       .maybeSingle();
 
     let parts: Array<{ id: string; name: string; quantity: number; checked: boolean }> = [];
+    let tasks: Array<{ id: string; position: number; title: string; description: string }> = [];
     if (schedule) {
-      const { data: p } = await supabaseAdmin
-        .from("parts")
-        .select("id, name, quantity, checked")
-        .eq("schedule_id", schedule.id)
-        .order("position", { ascending: true })
-        .order("created_at", { ascending: true });
+      const [{ data: p }, { data: t }] = await Promise.all([
+        supabaseAdmin
+          .from("parts")
+          .select("id, name, quantity, checked")
+          .eq("schedule_id", schedule.id)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
+        supabaseAdmin
+          .from("tasks")
+          .select("id, position, title, description")
+          .eq("schedule_id", schedule.id)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
       parts = p ?? [];
+      tasks = (t ?? []) as any;
     }
 
     return {
       operator: { id: op.id, name: op.name },
       schedule: schedule ?? null,
+      tasks,
       parts,
     };
   });
@@ -124,17 +135,27 @@ export const adminGetDay = createServerFn({ method: "POST" })
 
     const scheduleIds = (schedules ?? []).map((s) => s.id);
     let parts: Array<{ id: string; schedule_id: string; name: string; quantity: number; checked: boolean }> = [];
+    let tasks: Array<{ id: string; schedule_id: string; position: number; title: string; description: string }> = [];
     if (scheduleIds.length) {
-      const { data: p } = await supabaseAdmin
-        .from("parts")
-        .select("id, schedule_id, name, quantity, checked, position")
-        .in("schedule_id", scheduleIds)
-        .order("position", { ascending: true })
-        .order("created_at", { ascending: true });
+      const [{ data: p }, { data: t }] = await Promise.all([
+        supabaseAdmin
+          .from("parts")
+          .select("id, schedule_id, name, quantity, checked, position")
+          .in("schedule_id", scheduleIds)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
+        supabaseAdmin
+          .from("tasks")
+          .select("id, schedule_id, position, title, description")
+          .in("schedule_id", scheduleIds)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
       parts = (p ?? []) as any;
+      tasks = (t ?? []) as any;
     }
 
-    return { operators: operators ?? [], schedules: schedules ?? [], parts };
+    return { operators: operators ?? [], schedules: schedules ?? [], parts, tasks };
   });
 
 // ---------- Almoxarifado: all parts of all operators for a given date ----------
@@ -317,5 +338,113 @@ export const adminChangePin = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin
       .from("app_settings").update({ admin_pin: data.newPin }).eq("id", 1);
     if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Admin: ensure schedule exists, returns schedule id ----------
+async function ensureSchedule(operatorId: string, date: string): Promise<string> {
+  const { data: existing } = await supabaseAdmin
+    .from("schedules").select("id")
+    .eq("operator_id", operatorId).eq("work_date", date).maybeSingle();
+  if (existing) return existing.id;
+  const { data: ins, error } = await supabaseAdmin
+    .from("schedules")
+    .insert({ operator_id: operatorId, work_date: date, task: "" })
+    .select("id").single();
+  if (error) throw new Error(error.message);
+  return ins.id;
+}
+
+// ---------- Admin: add task (atendimento) ----------
+export const adminAddTask = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; operatorId: string; date: string; title: string; description: string }) =>
+    z.object({
+      pin: pinSchema,
+      operatorId: z.string().uuid(),
+      date: dateSchema,
+      title: z.string().trim().min(1).max(200),
+      description: z.string().max(2000).default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const scheduleId = await ensureSchedule(data.operatorId, data.date);
+    const { data: max } = await supabaseAdmin
+      .from("tasks").select("position").eq("schedule_id", scheduleId)
+      .order("position", { ascending: false }).limit(1).maybeSingle();
+    const nextPos = (max?.position ?? 0) + 1;
+    const { error } = await supabaseAdmin.from("tasks").insert({
+      schedule_id: scheduleId,
+      title: data.title,
+      description: data.description,
+      position: nextPos,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Admin: edit task ----------
+export const adminEditTask = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; taskId: string; title: string; description: string }) =>
+    z.object({
+      pin: pinSchema,
+      taskId: z.string().uuid(),
+      title: z.string().trim().min(1).max(200),
+      description: z.string().max(2000),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("tasks")
+      .update({ title: data.title, description: data.description })
+      .eq("id", data.taskId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Admin: delete task ----------
+export const adminDeleteTask = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; taskId: string }) =>
+    z.object({ pin: pinSchema, taskId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin.from("tasks").delete().eq("id", data.taskId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Admin: move task up/down ----------
+export const adminMoveTask = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; taskId: string; direction: "up" | "down" }) =>
+    z.object({
+      pin: pinSchema,
+      taskId: z.string().uuid(),
+      direction: z.enum(["up", "down"]),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { data: current } = await supabaseAdmin
+      .from("tasks").select("id, schedule_id, position").eq("id", data.taskId).maybeSingle();
+    if (!current) throw new Error("Atendimento não encontrado");
+
+    const { data: siblings } = await supabaseAdmin
+      .from("tasks")
+      .select("id, position")
+      .eq("schedule_id", current.schedule_id)
+      .order("position", { ascending: true });
+    if (!siblings) return { ok: true };
+
+    const idx = siblings.findIndex((s) => s.id === current.id);
+    const swapIdx = data.direction === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= siblings.length) return { ok: true };
+
+    const other = siblings[swapIdx];
+    // Swap via a temporary value to avoid unique-ish collisions if any.
+    await supabaseAdmin.from("tasks").update({ position: -1 }).eq("id", current.id);
+    await supabaseAdmin.from("tasks").update({ position: current.position }).eq("id", other.id);
+    await supabaseAdmin.from("tasks").update({ position: other.position }).eq("id", current.id);
     return { ok: true };
   });
