@@ -14,7 +14,118 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          admin_pin: string
+          id: number
+        }
+        Insert: {
+          admin_pin?: string
+          id?: number
+        }
+        Update: {
+          admin_pin?: string
+          id?: number
+        }
+        Relationships: []
+      }
+      operators: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          pin: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          pin?: string
+          position: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          pin?: string
+          position?: number
+        }
+        Relationships: []
+      }
+      parts: {
+        Row: {
+          checked: boolean
+          created_at: string
+          id: string
+          name: string
+          position: number
+          quantity: number
+          schedule_id: string
+        }
+        Insert: {
+          checked?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          quantity?: number
+          schedule_id: string
+        }
+        Update: {
+          checked?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          quantity?: number
+          schedule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parts_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedules: {
+        Row: {
+          created_at: string
+          id: string
+          operator_id: string
+          task: string
+          updated_at: string
+          work_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          operator_id: string
+          task?: string
+          updated_at?: string
+          work_date: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          operator_id?: string
+          task?: string
+          updated_at?: string
+          work_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_operator_id_fkey"
+            columns: ["operator_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
