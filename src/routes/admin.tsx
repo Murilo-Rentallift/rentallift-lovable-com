@@ -645,6 +645,30 @@ function SettingsModal({
               </button>
             </form>
           </div>
+
+          <div className="border-t border-border pt-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Alterar PIN do almoxarifado</h3>
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (/^\d{4,8}$/.test(newAlmoxPin)) saveAlmox.mutate(); }}
+              className="flex gap-2"
+            >
+              <input
+                type="password"
+                value={newAlmoxPin}
+                onChange={(e) => setNewAlmoxPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                placeholder="Novo PIN (4-8 dígitos)"
+                className="flex-1 rounded border border-input bg-background px-3 py-2 text-sm font-mono focus:border-primary focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={newAlmoxPin.length < 4 || saveAlmox.isPending}
+                className="rounded bg-accent px-4 py-2 text-sm font-semibold uppercase text-accent-foreground disabled:opacity-40 hover:brightness-110"
+              >
+                Atualizar
+              </button>
+            </form>
+          </div>
+
         </div>
       </div>
     </div>
