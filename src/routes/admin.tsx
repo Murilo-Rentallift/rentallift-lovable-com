@@ -736,7 +736,7 @@ function PendingCallsCalendar({ pin }: { pin: string }) {
   });
 
   const days = Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i));
-  const callsByDay = new Map<string, typeof data.calls>();
+  const callsByDay = new Map<string, NonNullable<typeof data>["calls"]>();
   (data?.calls ?? []).forEach((c) => {
     const arr = callsByDay.get(c.call_date) ?? [];
     arr.push(c);
