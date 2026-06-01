@@ -555,10 +555,13 @@ function SettingsModal({
 }) {
   const updOp = useServerFn(adminUpdateOperator);
   const chgAdmin = useServerFn(adminChangePin);
+  const chgAlmox = useServerFn(adminChangeAlmoxPin);
   const [drafts, setDrafts] = useState(() =>
     operators.map((o) => ({ id: o.id, name: o.name, pin: o.pin, position: o.position })),
   );
   const [newAdminPin, setNewAdminPin] = useState("");
+  const [newAlmoxPin, setNewAlmoxPin] = useState("");
+
 
   const saveOp = useMutation({
     mutationFn: (d: { id: string; name: string; pin: string }) =>
