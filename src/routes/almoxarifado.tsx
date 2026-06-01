@@ -26,10 +26,12 @@ const STATUS_OPTIONS: { value: PartStatus; label: string; className: string }[] 
 ];
 
 
+type Part = { id: string; name: string; quantity: number; checked: boolean; status: PartStatus };
 type Group = {
   operator: { id: string; name: string; position: number };
-  parts: Array<{ id: string; name: string; quantity: number; checked: boolean }>;
+  parts: Part[];
 };
+
 
 function todayISO() {
   const d = new Date();
