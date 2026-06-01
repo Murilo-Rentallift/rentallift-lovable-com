@@ -6,6 +6,7 @@ import {
   adminAddPart, adminAddTask, adminChangePin, adminChangeAlmoxPin, adminDeletePart, adminDeleteTask,
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
+  adminListPendingCalls, adminAddPendingCall, adminDeletePendingCall,
 } from "@/lib/app.functions";
 import { ArrowDown, ArrowLeft, ArrowUp, Check, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
