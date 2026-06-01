@@ -173,27 +173,49 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
 }
 
 function OperatorCard({
-  pin, date, operator, task, parts, onChange,
+  pin, date, operator, legacyTask, tasks, parts, onChange,
 }: {
   pin: string; date: string;
   operator: { id: string; name: string; position: number };
-  task: string;
+  legacyTask: string;
+  tasks: Array<{ id: string; position: number; title: string; description: string }>;
   parts: Array<{ id: string; name: string; quantity: number; checked: boolean }>;
   onChange: () => void;
 }) {
-  const [taskDraft, setTaskDraft] = useState(task);
-  useEffect(() => setTaskDraft(task), [task]);
-
   const saveFn = useServerFn(adminSaveTask);
+  const addTaskFn = useServerFn(adminAddTask);
+  const editTaskFn = useServerFn(adminEditTask);
+  const delTaskFn = useServerFn(adminDeleteTask);
+  const moveTaskFn = useServerFn(adminMoveTask);
   const addFn = useServerFn(adminAddPart);
   const delFn = useServerFn(adminDeletePart);
   const editFn = useServerFn(adminEditPart);
 
-  const saveTask = useMutation({
-    mutationFn: () => saveFn({ data: { pin, operatorId: operator.id, date, task: taskDraft } }),
-    onSuccess: () => { toast.success("Tarefa salva"); onChange(); },
+  // New task draft
+  const [newTitle, setNewTitle] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const addTask = useMutation({
+    mutationFn: () => addTaskFn({ data: { pin, operatorId: operator.id, date, title: newTitle.trim(), description: newDesc.trim() } }),
+    onSuccess: () => { setNewTitle(""); setNewDesc(""); toast.success("Atendimento adicionado"); onChange(); },
     onError: (e: Error) => toast.error(e.message),
   });
+  const delTask = useMutation({
+    mutationFn: (taskId: string) => delTaskFn({ data: { pin, taskId } }),
+    onSuccess: () => onChange(),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const moveTask = useMutation({
+    mutationFn: (v: { taskId: string; direction: "up" | "down" }) => moveTaskFn({ data: { pin, ...v } }),
+    onSuccess: () => onChange(),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Migrate legacy single-task field on first add
+  async function migrateLegacyIfNeeded() {
+    if (legacyTask.trim() && tasks.length === 0) {
+      await saveFn({ data: { pin, operatorId: operator.id, date, task: "" } });
+    }
+  }
 
   const [newPart, setNewPart] = useState("");
   const [newQty, setNewQty] = useState(1);
@@ -209,8 +231,6 @@ function OperatorCard({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const dirty = taskDraft !== task;
-
   return (
     <section className="rounded-lg border border-border bg-card overflow-hidden shadow-lg">
       <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border bg-primary/10">
@@ -218,30 +238,228 @@ function OperatorCard({
           <span className="font-mono text-xs text-muted-foreground">#{String(operator.position).padStart(2, "0")}</span>
           <h3 className="font-display text-lg font-bold uppercase">{operator.name}</h3>
         </div>
-        <span className="text-xs text-muted-foreground">{parts.length} peça(s)</span>
+        <span className="text-xs text-muted-foreground">
+          {tasks.length} atend. · {parts.length} peça(s)
+        </span>
       </div>
 
       <div className="grid md:grid-cols-2 gap-0 md:divide-x divide-border">
-        {/* Task */}
-        <div className="p-4 space-y-2">
-          <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Tarefa do dia</label>
-          <textarea
-            value={taskDraft}
-            onChange={(e) => setTaskDraft(e.target.value)}
-            rows={4}
-            maxLength={2000}
-            placeholder="Ex: Manutenção preventiva GLP 2.5T - cliente Acme"
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
-          />
-          <button
-            onClick={() => saveTask.mutate()}
-            disabled={!dirty || saveTask.isPending}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40 hover:brightness-110 transition"
+        {/* Tasks (ordered) */}
+        <div className="p-4 space-y-3">
+          <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+            Atendimentos do dia (na ordem)
+          </label>
+
+          {legacyTask.trim() && tasks.length === 0 && (
+            <div className="rounded border border-dashed border-border p-3 text-xs text-muted-foreground">
+              <p className="mb-1 font-semibold">Tarefa antiga (legado):</p>
+              <p className="whitespace-pre-wrap">{legacyTask}</p>
+              <p className="mt-2 italic">Adicione abaixo como atendimentos separados.</p>
+            </div>
+          )}
+
+          <ol className="space-y-2">
+            {tasks.map((t, i) => (
+              <TaskItem
+                key={t.id}
+                index={i}
+                total={tasks.length}
+                task={t}
+                onDelete={() => delTask.mutate(t.id)}
+                onMove={(dir) => moveTask.mutate({ taskId: t.id, direction: dir })}
+                onEdit={async (title, description) => {
+                  await editTaskFn({ data: { pin, taskId: t.id, title, description } });
+                  toast.success("Atendimento atualizado");
+                  onChange();
+                }}
+              />
+            ))}
+          </ol>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!newTitle.trim()) return;
+              await migrateLegacyIfNeeded();
+              addTask.mutate();
+            }}
+            className="space-y-2 pt-2 border-t border-border"
           >
-            <Save className="h-4 w-4" />
-            {saveTask.isPending ? "Salvando..." : "Salvar tarefa"}
-          </button>
+            <input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              maxLength={200}
+              placeholder="Empresa / local (ex: Acme Ltda)"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
+            <textarea
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+              rows={2}
+              maxLength={2000}
+              placeholder="Serviço a executar (opcional)"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={!newTitle.trim() || addTask.isPending}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40 hover:brightness-110 transition"
+            >
+              <Plus className="h-4 w-4" />
+              {addTask.isPending ? "Adicionando..." : "Adicionar atendimento"}
+            </button>
+          </form>
         </div>
+
+        {/* Parts */}
+        <div className="p-4 space-y-2">
+          <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Peças</label>
+          <ul className="space-y-1 max-h-44 overflow-y-auto">
+            {parts.length === 0 && (
+              <li className="text-sm text-muted-foreground italic py-2">Sem peças</li>
+            )}
+            {parts.map((p) => (
+              <PartItem
+                key={p.id}
+                part={p}
+                onDelete={() => delPart.mutate(p.id)}
+                onEdit={async (name, quantity) => {
+                  await editFn({ data: { pin, partId: p.id, name, quantity } });
+                  toast.success("Peça atualizada");
+                  onChange();
+                }}
+              />
+            ))}
+          </ul>
+          <form
+            onSubmit={(e) => { e.preventDefault(); if (newPart.trim()) addPart.mutate(); }}
+            className="flex gap-2 pt-1"
+          >
+            <input
+              value={newPart}
+              onChange={(e) => setNewPart(e.target.value)}
+              maxLength={200}
+              placeholder="Nome da peça"
+              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
+            <input
+              type="number" min={1} max={9999}
+              value={newQty}
+              onChange={(e) => setNewQty(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-16 rounded-md border border-input bg-background px-2 py-2 text-sm font-mono text-center focus:border-primary focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={!newPart.trim() || addPart.isPending}
+              className="rounded-md bg-accent px-3 py-2 text-accent-foreground disabled:opacity-40 hover:brightness-110 transition"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TaskItem({
+  index, total, task, onDelete, onMove, onEdit,
+}: {
+  index: number;
+  total: number;
+  task: { id: string; title: string; description: string };
+  onDelete: () => void;
+  onMove: (direction: "up" | "down") => void;
+  onEdit: (title: string, description: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(task.title);
+  const [desc, setDesc] = useState(task.description);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setTitle(task.title); setDesc(task.description); }, [task.title, task.description]);
+
+  async function save() {
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      await onEdit(title.trim(), desc);
+      setEditing(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <li className="rounded-md border border-border bg-muted/30 p-2">
+      <div className="flex items-start gap-2">
+        <div className="flex-shrink-0 h-7 w-7 rounded-full bg-accent text-accent-foreground font-display font-bold grid place-items-center text-sm">
+          {index + 1}
+        </div>
+        <div className="flex-1 min-w-0">
+          {editing ? (
+            <div className="space-y-2">
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={200}
+                className="w-full rounded border border-input bg-background px-2 py-1 text-sm font-semibold focus:border-primary focus:outline-none"
+                autoFocus
+              />
+              <textarea
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+                rows={2}
+                maxLength={2000}
+                className="w-full rounded border border-input bg-background px-2 py-1 text-sm resize-none focus:border-primary focus:outline-none"
+              />
+            </div>
+          ) : (
+            <>
+              <p className="font-semibold text-sm uppercase truncate">{task.title}</p>
+              {task.description?.trim() && (
+                <p className="mt-0.5 text-xs text-muted-foreground whitespace-pre-wrap">{task.description}</p>
+              )}
+            </>
+          )}
+        </div>
+        <div className="flex flex-col gap-0.5 flex-shrink-0">
+          {editing ? (
+            <>
+              <button onClick={save} disabled={saving || !title.trim()} className="text-primary hover:bg-primary/10 p-1 rounded disabled:opacity-40" title="Salvar">
+                <Check className="h-4 w-4" />
+              </button>
+              <button onClick={() => { setEditing(false); setTitle(task.title); setDesc(task.description); }} className="text-muted-foreground hover:bg-muted p-1 rounded" title="Cancelar">
+                <X className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex gap-0.5">
+                <button onClick={() => onMove("up")} disabled={index === 0} className="text-muted-foreground hover:text-primary disabled:opacity-30 p-1" title="Subir">
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => onMove("down")} disabled={index === total - 1} className="text-muted-foreground hover:text-primary disabled:opacity-30 p-1" title="Descer">
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="flex gap-0.5">
+                <button onClick={() => setEditing(true)} className="text-muted-foreground hover:text-primary p-1" title="Editar">
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={onDelete} className="text-muted-foreground hover:text-destructive p-1" title="Remover">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+}
 
         {/* Parts */}
         <div className="p-4 space-y-2">
