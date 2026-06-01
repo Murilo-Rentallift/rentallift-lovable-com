@@ -71,6 +71,22 @@ function AlmoxarifadoPage() {
     load(pin, date);
   }
 
+  const updateStatus = useServerFn(almoxUpdatePartStatus);
+  async function changeStatus(partId: string, status: PartStatus) {
+    // optimistic
+    setGroups((gs) => gs.map((g) => ({
+      ...g,
+      parts: g.parts.map((p) => p.id === partId ? { ...p, status } : p),
+    })));
+    try {
+      await updateStatus({ data: { pin, partId, status } });
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao atualizar status");
+      load(pin, date);
+    }
+  }
+
+
   function generatePDF() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
