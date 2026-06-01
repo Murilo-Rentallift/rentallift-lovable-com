@@ -197,7 +197,7 @@ function AlmoxarifadoPage() {
             <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="pin">PIN de Administrador</Label>
+            <Label htmlFor="pin">PIN do Almoxarifado</Label>
             <Input
               id="pin"
               type="password"
