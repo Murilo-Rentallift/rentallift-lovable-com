@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
-  adminAddPart, adminAddTask, adminChangePin, adminDeletePart, adminDeleteTask,
+  adminAddPart, adminAddTask, adminChangePin, adminChangeAlmoxPin, adminDeletePart, adminDeleteTask,
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
 } from "@/lib/app.functions";
@@ -555,10 +555,13 @@ function SettingsModal({
 }) {
   const updOp = useServerFn(adminUpdateOperator);
   const chgAdmin = useServerFn(adminChangePin);
+  const chgAlmox = useServerFn(adminChangeAlmoxPin);
   const [drafts, setDrafts] = useState(() =>
     operators.map((o) => ({ id: o.id, name: o.name, pin: o.pin, position: o.position })),
   );
   const [newAdminPin, setNewAdminPin] = useState("");
+  const [newAlmoxPin, setNewAlmoxPin] = useState("");
+
 
   const saveOp = useMutation({
     mutationFn: (d: { id: string; name: string; pin: string }) =>
@@ -572,6 +575,13 @@ function SettingsModal({
     onSuccess: () => { toast.success("PIN do admin alterado. Faça login novamente."); setNewAdminPin(""); sessionStorage.removeItem("admin_pin"); window.location.reload(); },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const saveAlmox = useMutation({
+    mutationFn: () => chgAlmox({ data: { pin, newPin: newAlmoxPin } }),
+    onSuccess: () => { toast.success("PIN do almoxarifado alterado"); setNewAlmoxPin(""); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur grid place-items-center p-4 overflow-y-auto">
@@ -635,6 +645,30 @@ function SettingsModal({
               </button>
             </form>
           </div>
+
+          <div className="border-t border-border pt-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Alterar PIN do almoxarifado</h3>
+            <form
+              onSubmit={(e) => { e.preventDefault(); if (/^\d{4,8}$/.test(newAlmoxPin)) saveAlmox.mutate(); }}
+              className="flex gap-2"
+            >
+              <input
+                type="password"
+                value={newAlmoxPin}
+                onChange={(e) => setNewAlmoxPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                placeholder="Novo PIN (4-8 dígitos)"
+                className="flex-1 rounded border border-input bg-background px-3 py-2 text-sm font-mono focus:border-primary focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={newAlmoxPin.length < 4 || saveAlmox.isPending}
+                className="rounded bg-accent px-4 py-2 text-sm font-semibold uppercase text-accent-foreground disabled:opacity-40 hover:brightness-110"
+              >
+                Atualizar
+              </button>
+            </form>
+          </div>
+
         </div>
       </div>
     </div>

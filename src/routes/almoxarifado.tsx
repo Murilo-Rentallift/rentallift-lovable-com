@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,22 @@ export const Route = createFileRoute("/almoxarifado")({
   component: AlmoxarifadoPage,
 });
 
+type PartStatus = "pendente" | "separado" | "em_falta" | "entregue";
+
+const STATUS_OPTIONS: { value: PartStatus; label: string; className: string }[] = [
+  { value: "pendente", label: "Pendente", className: "bg-accent/20 text-accent border-accent/40" },
+  { value: "separado", label: "Separado", className: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
+  { value: "em_falta", label: "Em falta", className: "bg-red-500/20 text-red-400 border-red-500/40" },
+  { value: "entregue", label: "Entregue", className: "bg-green-500/20 text-green-500 border-green-500/40" },
+];
+
+
+type Part = { id: string; name: string; quantity: number; checked: boolean; status: PartStatus };
 type Group = {
   operator: { id: string; name: string; position: number };
-  parts: Array<{ id: string; name: string; quantity: number; checked: boolean }>;
+  parts: Part[];
 };
+
 
 function todayISO() {
   const d = new Date();
@@ -58,6 +70,22 @@ function AlmoxarifadoPage() {
     e.preventDefault();
     load(pin, date);
   }
+
+  const updateStatus = useServerFn(almoxUpdatePartStatus);
+  async function changeStatus(partId: string, status: PartStatus) {
+    // optimistic
+    setGroups((gs) => gs.map((g) => ({
+      ...g,
+      parts: g.parts.map((p) => p.id === partId ? { ...p, status } : p),
+    })));
+    try {
+      await updateStatus({ data: { pin, partId, status } });
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao atualizar status");
+      load(pin, date);
+    }
+  }
+
 
   function generatePDF() {
     const doc = new jsPDF();
@@ -100,7 +128,9 @@ function AlmoxarifadoPage() {
           head: [["Peça", "Qtd", "Status"]],
           body: g.parts.map((p) => {
             totals[p.name] = (totals[p.name] || 0) + p.quantity;
-            return [p.name, String(p.quantity), p.checked ? "Retirada" : "Pendente"];
+            const label = STATUS_OPTIONS.find((s) => s.value === p.status)?.label ?? "Pendente";
+            return [p.name, String(p.quantity), label];
+
           }),
           theme: "striped",
           headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: "bold" },
@@ -167,7 +197,7 @@ function AlmoxarifadoPage() {
             <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="pin">PIN de Administrador</Label>
+            <Label htmlFor="pin">PIN do Almoxarifado</Label>
             <Input
               id="pin"
               type="password"
@@ -251,20 +281,36 @@ function AlmoxarifadoPage() {
                   </span>
                 </div>
                 <ul className="divide-y divide-border">
-                  {g.parts.map((p) => (
-                    <li key={p.id} className="flex items-center justify-between px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <span className={`h-2 w-2 rounded-full ${p.checked ? "bg-green-500" : "bg-accent"}`} />
-                        <span className="font-medium">{p.name}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="font-mono text-muted-foreground">x{p.quantity}</span>
-                        <span className={`text-xs uppercase font-semibold ${p.checked ? "text-green-500" : "text-accent"}`}>
-                          {p.checked ? "Retirada" : "Pendente"}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
+                  {g.parts.map((p) => {
+                    const opt = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
+                    return (
+                      <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className={`h-2 w-2 rounded-full shrink-0 ${
+                            p.status === "entregue" ? "bg-green-500" :
+                            p.status === "separado" ? "bg-blue-500" :
+                            p.status === "em_falta" ? "bg-red-500" : "bg-accent"
+                          }`} />
+                          <span className="font-medium truncate">{p.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="font-mono text-muted-foreground">x{p.quantity}</span>
+                          <select
+                            value={p.status}
+                            onChange={(e) => changeStatus(p.id, e.target.value as PartStatus)}
+                            className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
+                          >
+                            {STATUS_OPTIONS.map((s) => (
+                              <option key={s.value} value={s.value} className="bg-background text-foreground">
+                                {s.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </li>
+                    );
+                  })}
+
                 </ul>
               </div>
             ))

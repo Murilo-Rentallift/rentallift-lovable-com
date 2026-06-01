@@ -17,14 +17,17 @@ export type Database = {
       app_settings: {
         Row: {
           admin_pin: string
+          almox_pin: string
           id: number
         }
         Insert: {
           admin_pin?: string
+          almox_pin?: string
           id?: number
         }
         Update: {
           admin_pin?: string
+          almox_pin?: string
           id?: number
         }
         Relationships: []
@@ -62,6 +65,7 @@ export type Database = {
           position: number
           quantity: number
           schedule_id: string
+          status: string
         }
         Insert: {
           checked?: boolean
@@ -71,6 +75,7 @@ export type Database = {
           position?: number
           quantity?: number
           schedule_id: string
+          status?: string
         }
         Update: {
           checked?: boolean
@@ -80,6 +85,7 @@ export type Database = {
           position?: number
           quantity?: number
           schedule_id?: string
+          status?: string
         }
         Relationships: [
           {

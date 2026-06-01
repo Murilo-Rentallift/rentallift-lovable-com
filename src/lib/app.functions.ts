@@ -108,12 +108,24 @@ async function verifyAdmin(pin: string) {
   if (!data || data.admin_pin !== pin) throw new Error("PIN de administrador incorreto");
 }
 
+// ---------- Almoxarifado: verify PIN (accepts almox PIN or admin PIN) ----------
+async function verifyAlmox(pin: string) {
+  pinSchema.parse(pin);
+  const { data } = await supabaseAdmin
+    .from("app_settings").select("admin_pin, almox_pin").eq("id", 1).maybeSingle();
+  if (!data) throw new Error("Configuração ausente");
+  if (pin !== data.almox_pin && pin !== data.admin_pin) {
+    throw new Error("PIN do almoxarifado incorreto");
+  }
+}
+
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
   .handler(async ({ data }) => {
     await verifyAdmin(data.pin);
     return { ok: true };
   });
+
 
 // ---------- Admin: get all operators + selected date data ----------
 export const adminGetDay = createServerFn({ method: "POST" })
@@ -164,7 +176,7 @@ export const almoxarifadoGetDay = createServerFn({ method: "POST" })
     z.object({ pin: pinSchema, date: dateSchema }).parse(d),
   )
   .handler(async ({ data }) => {
-    await verifyAdmin(data.pin);
+    await verifyAlmox(data.pin);
 
     const { data: operators } = await supabaseAdmin
       .from("operators")
@@ -177,28 +189,58 @@ export const almoxarifadoGetDay = createServerFn({ method: "POST" })
       .eq("work_date", data.date);
 
     const scheduleIds = (schedules ?? []).map((s) => s.id);
-    let parts: Array<{ id: string; schedule_id: string; name: string; quantity: number; checked: boolean }> = [];
+    let parts: Array<{ id: string; schedule_id: string; name: string; quantity: number; checked: boolean; status: string }> = [];
     if (scheduleIds.length) {
       const { data: p } = await supabaseAdmin
         .from("parts")
-        .select("id, schedule_id, name, quantity, checked, position")
+        .select("id, schedule_id, name, quantity, checked, position, status")
         .in("schedule_id", scheduleIds)
         .order("position", { ascending: true })
         .order("created_at", { ascending: true });
       parts = (p ?? []) as any;
     }
 
-    // Group parts by operator
     const scheduleToOperator = new Map((schedules ?? []).map((s) => [s.id, s.operator_id]));
     const grouped = (operators ?? []).map((op) => ({
       operator: op,
       parts: parts
         .filter((p) => scheduleToOperator.get(p.schedule_id) === op.id)
-        .map(({ id, name, quantity, checked }) => ({ id, name, quantity, checked })),
+        .map(({ id, name, quantity, checked, status }) => ({ id, name, quantity, checked, status })),
     }));
 
     return { date: data.date, groups: grouped };
   });
+
+// ---------- Almoxarifado: update part status ----------
+export const almoxUpdatePartStatus = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; partId: string; status: string }) =>
+    z.object({
+      pin: pinSchema,
+      partId: z.string().uuid(),
+      status: z.enum(["pendente", "separado", "em_falta", "entregue"]),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { error } = await supabaseAdmin
+      .from("parts").update({ status: data.status }).eq("id", data.partId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Admin: change almoxarifado PIN ----------
+export const adminChangeAlmoxPin = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; newPin: string }) =>
+    z.object({ pin: pinSchema, newPin: pinSchema }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("app_settings").update({ almox_pin: data.newPin }).eq("id", 1);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 
 // ---------- Admin: save task (upsert schedule) ----------
 export const adminSaveTask = createServerFn({ method: "POST" })
