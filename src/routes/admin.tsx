@@ -3,11 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
-  adminAddPart, adminChangePin, adminDeletePart, adminGetDay,
+  adminAddPart, adminChangePin, adminDeletePart, adminEditPart, adminGetDay,
   adminLogin, adminSaveTask, adminUpdateOperator,
 } from "@/lib/app.functions";
-import { ArrowLeft, Plus, Save, Settings, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
+import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Programação Diária" }] }),
@@ -106,6 +107,7 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
         <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Link to="/" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-5 w-5" /></Link>
+            <Logo className="h-9 w-auto" />
             <h1 className="font-display text-xl font-bold uppercase">Painel do Admin</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -182,6 +184,7 @@ function OperatorCard({
   const saveFn = useServerFn(adminSaveTask);
   const addFn = useServerFn(adminAddPart);
   const delFn = useServerFn(adminDeletePart);
+  const editFn = useServerFn(adminEditPart);
 
   const saveTask = useMutation({
     mutationFn: () => saveFn({ data: { pin, operatorId: operator.id, date, task: taskDraft } }),
@@ -245,17 +248,16 @@ function OperatorCard({
               <li className="text-sm text-muted-foreground italic py-2">Sem peças</li>
             )}
             {parts.map((p) => (
-              <li key={p.id} className="flex items-center gap-2 text-sm rounded bg-muted/40 px-2 py-1.5">
-                <span className={`flex-1 ${p.checked ? "line-through text-muted-foreground" : ""}`}>{p.name}</span>
-                <span className="font-mono text-xs text-muted-foreground">×{p.quantity}</span>
-                <button
-                  onClick={() => delPart.mutate(p.id)}
-                  className="text-muted-foreground hover:text-destructive p-1"
-                  title="Remover"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
+              <PartItem
+                key={p.id}
+                part={p}
+                onDelete={() => delPart.mutate(p.id)}
+                onEdit={async (name, quantity) => {
+                  await editFn({ data: { pin, partId: p.id, name, quantity } });
+                  toast.success("Peça atualizada");
+                  onChange();
+                }}
+              />
             ))}
           </ul>
           <form
