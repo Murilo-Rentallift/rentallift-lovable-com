@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,16 @@ export const Route = createFileRoute("/almoxarifado")({
   head: () => ({ meta: [{ title: "Almoxarifado — Lista de Peças" }] }),
   component: AlmoxarifadoPage,
 });
+
+type PartStatus = "pendente" | "separado" | "em_falta" | "entregue";
+
+const STATUS_OPTIONS: { value: PartStatus; label: string; className: string }[] = [
+  { value: "pendente", label: "Pendente", className: "bg-accent/20 text-accent border-accent/40" },
+  { value: "separado", label: "Separado", className: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
+  { value: "em_falta", label: "Em falta", className: "bg-red-500/20 text-red-400 border-red-500/40" },
+  { value: "entregue", label: "Entregue", className: "bg-green-500/20 text-green-500 border-green-500/40" },
+];
+
 
 type Group = {
   operator: { id: string; name: string; position: number };
