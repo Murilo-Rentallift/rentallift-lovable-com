@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listOperators } from "@/lib/app.functions";
-import { Forklift, Shield, Warehouse } from "lucide-react";
+import { Shield, Warehouse } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,9 +28,7 @@ function Index() {
       <header className="border-b border-border bg-card/50 backdrop-blur">
         <div className="hazard-stripe h-2" />
         <div className="mx-auto max-w-6xl px-6 py-6 flex items-center gap-4">
-          <div className="grid h-12 w-12 place-items-center rounded-md bg-accent text-accent-foreground">
-            <Forklift className="h-7 w-7" strokeWidth={2.5} />
-          </div>
+          <Logo className="h-14 w-auto" />
           <div>
             <h1 className="font-display text-2xl md:text-3xl font-bold uppercase tracking-wide">
               Lousa Digital

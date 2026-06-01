@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { getOperatorDay, togglePart } from "@/lib/app.functions";
 import { ArrowLeft, Calendar, CheckCircle2, Circle, Package } from "lucide-react";
 import { toast } from "sonner";
+import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/operador/$id")({
   head: () => ({ meta: [{ title: "Meu Dia — Operador" }] }),
@@ -23,6 +24,7 @@ function OperadorPage() {
   const [pin, setPin] = useState<string | null>(null);
   const [pinInput, setPinInput] = useState("");
   const [error, setError] = useState("");
+  const [date, setDate] = useState(todayISO());
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem(PIN_KEY(id)) : null;
@@ -30,7 +32,6 @@ function OperadorPage() {
   }, [id]);
 
   const fetchDay = useServerFn(getOperatorDay);
-  const date = todayISO();
 
   const { data, isLoading, isError, error: qErr, refetch } = useQuery({
     queryKey: ["op-day", id, date, pin],
@@ -64,7 +65,7 @@ function OperadorPage() {
     );
   }
 
-  return <DayView id={id} pin={pin} date={date} data={data} isLoading={isLoading} refetch={refetch} onLogout={() => {
+  return <DayView id={id} pin={pin} date={date} setDate={setDate} data={data} isLoading={isLoading} refetch={refetch} onLogout={() => {
     localStorage.removeItem(PIN_KEY(id));
     setPin(null);
   }} />;
@@ -114,9 +115,9 @@ function PinScreen({
 }
 
 function DayView({
-  id, pin, date, data, isLoading, refetch, onLogout,
+  id, pin, date, setDate, data, isLoading, refetch, onLogout,
 }: {
-  id: string; pin: string; date: string;
+  id: string; pin: string; date: string; setDate: (d: string) => void;
   data: Awaited<ReturnType<typeof getOperatorDay>> | undefined;
   isLoading: boolean; refetch: () => void; onLogout: () => void;
 }) {
@@ -140,8 +141,8 @@ function DayView({
         <div className="mx-auto max-w-2xl px-6 py-4 flex items-center justify-between gap-3">
           <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
-            <span className="text-sm">Voltar</span>
           </Link>
+          <Logo className="h-8 w-auto" />
           <button onClick={onLogout} className="text-xs uppercase text-muted-foreground hover:text-foreground">
             Sair
           </button>
@@ -149,12 +150,20 @@ function DayView({
       </header>
 
       <main className="mx-auto max-w-2xl px-6 py-6 space-y-6">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span className="capitalize">{dateLabel}</span>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span className="capitalize">{dateLabel}</span>
+            </div>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono"
+            />
           </div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold uppercase mt-1">
+          <h1 className="font-display text-3xl md:text-4xl font-bold uppercase">
             Olá, {data?.operator.name || "..."}
           </h1>
         </div>
@@ -163,7 +172,7 @@ function DayView({
         <section className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="bg-primary/15 border-b border-primary/30 px-5 py-3">
             <h2 className="font-display text-sm font-bold uppercase tracking-wider text-primary">
-              Sua Tarefa de Hoje
+              Sua Tarefa
             </h2>
           </div>
           <div className="p-5">
@@ -172,7 +181,7 @@ function DayView({
             ) : data?.schedule?.task?.trim() ? (
               <p className="whitespace-pre-wrap text-lg leading-relaxed">{data.schedule.task}</p>
             ) : (
-              <p className="text-muted-foreground italic">Nenhuma tarefa cadastrada para hoje.</p>
+              <p className="text-muted-foreground italic">Nenhuma tarefa cadastrada para esta data.</p>
             )}
           </div>
         </section>

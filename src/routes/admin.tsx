@@ -3,11 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
-  adminAddPart, adminChangePin, adminDeletePart, adminGetDay,
+  adminAddPart, adminChangePin, adminDeletePart, adminEditPart, adminGetDay,
   adminLogin, adminSaveTask, adminUpdateOperator,
 } from "@/lib/app.functions";
-import { ArrowLeft, Plus, Save, Settings, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
+import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Programação Diária" }] }),
@@ -106,6 +107,7 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
         <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Link to="/" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-5 w-5" /></Link>
+            <Logo className="h-9 w-auto" />
             <h1 className="font-display text-xl font-bold uppercase">Painel do Admin</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -182,6 +184,7 @@ function OperatorCard({
   const saveFn = useServerFn(adminSaveTask);
   const addFn = useServerFn(adminAddPart);
   const delFn = useServerFn(adminDeletePart);
+  const editFn = useServerFn(adminEditPart);
 
   const saveTask = useMutation({
     mutationFn: () => saveFn({ data: { pin, operatorId: operator.id, date, task: taskDraft } }),
@@ -245,17 +248,16 @@ function OperatorCard({
               <li className="text-sm text-muted-foreground italic py-2">Sem peças</li>
             )}
             {parts.map((p) => (
-              <li key={p.id} className="flex items-center gap-2 text-sm rounded bg-muted/40 px-2 py-1.5">
-                <span className={`flex-1 ${p.checked ? "line-through text-muted-foreground" : ""}`}>{p.name}</span>
-                <span className="font-mono text-xs text-muted-foreground">×{p.quantity}</span>
-                <button
-                  onClick={() => delPart.mutate(p.id)}
-                  className="text-muted-foreground hover:text-destructive p-1"
-                  title="Remover"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </li>
+              <PartItem
+                key={p.id}
+                part={p}
+                onDelete={() => delPart.mutate(p.id)}
+                onEdit={async (name, quantity) => {
+                  await editFn({ data: { pin, partId: p.id, name, quantity } });
+                  toast.success("Peça atualizada");
+                  onChange();
+                }}
+              />
             ))}
           </ul>
           <form
@@ -286,6 +288,90 @@ function OperatorCard({
         </div>
       </div>
     </section>
+  );
+}
+
+function PartItem({
+  part, onDelete, onEdit,
+}: {
+  part: { id: string; name: string; quantity: number; checked: boolean };
+  onDelete: () => void;
+  onEdit: (name: string, quantity: number) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(part.name);
+  const [qty, setQty] = useState(part.quantity);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setName(part.name); setQty(part.quantity); }, [part.name, part.quantity]);
+
+  async function save() {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await onEdit(name.trim(), qty);
+      setEditing(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <li className="flex items-center gap-2 text-sm rounded bg-muted/40 px-2 py-1.5">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={200}
+          className="flex-1 rounded border border-input bg-background px-2 py-1 text-sm focus:border-primary focus:outline-none"
+          autoFocus
+        />
+        <input
+          type="number" min={1} max={9999}
+          value={qty}
+          onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+          className="w-14 rounded border border-input bg-background px-1 py-1 text-sm font-mono text-center focus:border-primary focus:outline-none"
+        />
+        <button
+          onClick={save}
+          disabled={saving || !name.trim()}
+          className="text-primary hover:bg-primary/10 p-1 rounded disabled:opacity-40"
+          title="Salvar"
+        >
+          <Check className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => { setEditing(false); setName(part.name); setQty(part.quantity); }}
+          className="text-muted-foreground hover:bg-muted p-1 rounded"
+          title="Cancelar"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex items-center gap-2 text-sm rounded bg-muted/40 px-2 py-1.5">
+      <span className={`flex-1 ${part.checked ? "line-through text-muted-foreground" : ""}`}>{part.name}</span>
+      <span className="font-mono text-xs text-muted-foreground">×{part.quantity}</span>
+      <button
+        onClick={() => setEditing(true)}
+        className="text-muted-foreground hover:text-primary p-1"
+        title="Editar"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+      <button
+        onClick={onDelete}
+        className="text-muted-foreground hover:text-destructive p-1"
+        title="Remover"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </li>
   );
 }
 

@@ -255,6 +255,26 @@ export const adminAddPart = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Admin: edit part (name + quantity) ----------
+export const adminEditPart = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; partId: string; name: string; quantity: number }) =>
+    z.object({
+      pin: pinSchema,
+      partId: z.string().uuid(),
+      name: z.string().trim().min(1).max(200),
+      quantity: z.number().int().min(1).max(9999),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("parts")
+      .update({ name: data.name, quantity: data.quantity })
+      .eq("id", data.partId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ---------- Admin: delete part ----------
 export const adminDeletePart = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; partId: string }) =>
