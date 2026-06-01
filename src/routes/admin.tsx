@@ -576,6 +576,13 @@ function SettingsModal({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const saveAlmox = useMutation({
+    mutationFn: () => chgAlmox({ data: { pin, newPin: newAlmoxPin } }),
+    onSuccess: () => { toast.success("PIN do almoxarifado alterado"); setNewAlmoxPin(""); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur grid place-items-center p-4 overflow-y-auto">
       <div className="w-full max-w-2xl rounded-lg border border-border bg-card shadow-2xl my-8">
