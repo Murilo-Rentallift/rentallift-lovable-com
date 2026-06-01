@@ -141,8 +141,8 @@ function DayView({
         <div className="mx-auto max-w-2xl px-6 py-4 flex items-center justify-between gap-3">
           <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
-            <span className="text-sm">Voltar</span>
           </Link>
+          <Logo className="h-8 w-auto" />
           <button onClick={onLogout} className="text-xs uppercase text-muted-foreground hover:text-foreground">
             Sair
           </button>
@@ -150,12 +150,20 @@ function DayView({
       </header>
 
       <main className="mx-auto max-w-2xl px-6 py-6 space-y-6">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span className="capitalize">{dateLabel}</span>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span className="capitalize">{dateLabel}</span>
+            </div>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm font-mono"
+            />
           </div>
-          <h1 className="font-display text-3xl md:text-4xl font-bold uppercase mt-1">
+          <h1 className="font-display text-3xl md:text-4xl font-bold uppercase">
             Olá, {data?.operator.name || "..."}
           </h1>
         </div>
