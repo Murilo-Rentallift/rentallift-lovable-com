@@ -172,7 +172,7 @@ function DayView({
         <section className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="bg-primary/15 border-b border-primary/30 px-5 py-3">
             <h2 className="font-display text-sm font-bold uppercase tracking-wider text-primary">
-              Sua Tarefa de Hoje
+              Sua Tarefa
             </h2>
           </div>
           <div className="p-5">
@@ -181,7 +181,7 @@ function DayView({
             ) : data?.schedule?.task?.trim() ? (
               <p className="whitespace-pre-wrap text-lg leading-relaxed">{data.schedule.task}</p>
             ) : (
-              <p className="text-muted-foreground italic">Nenhuma tarefa cadastrada para hoje.</p>
+              <p className="text-muted-foreground italic">Nenhuma tarefa cadastrada para esta data.</p>
             )}
           </div>
         </section>
