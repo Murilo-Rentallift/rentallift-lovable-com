@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { getOperatorDay, togglePart } from "@/lib/app.functions";
 import { ArrowLeft, Calendar, CheckCircle2, Circle, Package } from "lucide-react";
 import { toast } from "sonner";
+import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/operador/$id")({
   head: () => ({ meta: [{ title: "Meu Dia — Operador" }] }),
@@ -23,6 +24,7 @@ function OperadorPage() {
   const [pin, setPin] = useState<string | null>(null);
   const [pinInput, setPinInput] = useState("");
   const [error, setError] = useState("");
+  const [date, setDate] = useState(todayISO());
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem(PIN_KEY(id)) : null;
@@ -30,7 +32,6 @@ function OperadorPage() {
   }, [id]);
 
   const fetchDay = useServerFn(getOperatorDay);
-  const date = todayISO();
 
   const { data, isLoading, isError, error: qErr, refetch } = useQuery({
     queryKey: ["op-day", id, date, pin],
@@ -64,7 +65,7 @@ function OperadorPage() {
     );
   }
 
-  return <DayView id={id} pin={pin} date={date} data={data} isLoading={isLoading} refetch={refetch} onLogout={() => {
+  return <DayView id={id} pin={pin} date={date} setDate={setDate} data={data} isLoading={isLoading} refetch={refetch} onLogout={() => {
     localStorage.removeItem(PIN_KEY(id));
     setPin(null);
   }} />;
@@ -114,9 +115,9 @@ function PinScreen({
 }
 
 function DayView({
-  id, pin, date, data, isLoading, refetch, onLogout,
+  id, pin, date, setDate, data, isLoading, refetch, onLogout,
 }: {
-  id: string; pin: string; date: string;
+  id: string; pin: string; date: string; setDate: (d: string) => void;
   data: Awaited<ReturnType<typeof getOperatorDay>> | undefined;
   isLoading: boolean; refetch: () => void; onLogout: () => void;
 }) {
