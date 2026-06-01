@@ -291,6 +291,90 @@ function OperatorCard({
   );
 }
 
+function PartItem({
+  part, onDelete, onEdit,
+}: {
+  part: { id: string; name: string; quantity: number; checked: boolean };
+  onDelete: () => void;
+  onEdit: (name: string, quantity: number) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(part.name);
+  const [qty, setQty] = useState(part.quantity);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setName(part.name); setQty(part.quantity); }, [part.name, part.quantity]);
+
+  async function save() {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await onEdit(name.trim(), qty);
+      setEditing(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <li className="flex items-center gap-2 text-sm rounded bg-muted/40 px-2 py-1.5">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={200}
+          className="flex-1 rounded border border-input bg-background px-2 py-1 text-sm focus:border-primary focus:outline-none"
+          autoFocus
+        />
+        <input
+          type="number" min={1} max={9999}
+          value={qty}
+          onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+          className="w-14 rounded border border-input bg-background px-1 py-1 text-sm font-mono text-center focus:border-primary focus:outline-none"
+        />
+        <button
+          onClick={save}
+          disabled={saving || !name.trim()}
+          className="text-primary hover:bg-primary/10 p-1 rounded disabled:opacity-40"
+          title="Salvar"
+        >
+          <Check className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => { setEditing(false); setName(part.name); setQty(part.quantity); }}
+          className="text-muted-foreground hover:bg-muted p-1 rounded"
+          title="Cancelar"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex items-center gap-2 text-sm rounded bg-muted/40 px-2 py-1.5">
+      <span className={`flex-1 ${part.checked ? "line-through text-muted-foreground" : ""}`}>{part.name}</span>
+      <span className="font-mono text-xs text-muted-foreground">×{part.quantity}</span>
+      <button
+        onClick={() => setEditing(true)}
+        className="text-muted-foreground hover:text-primary p-1"
+        title="Editar"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+      <button
+        onClick={onDelete}
+        className="text-muted-foreground hover:text-destructive p-1"
+        title="Remover"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </li>
+  );
+}
+
 function SettingsModal({
   pin, operators, onClose, onChange,
 }: {
