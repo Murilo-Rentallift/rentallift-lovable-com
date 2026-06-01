@@ -134,6 +134,8 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
+        <PendingCallsCalendar pin={pin} />
+
         {isLoading && (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
