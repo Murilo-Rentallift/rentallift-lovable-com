@@ -128,7 +128,9 @@ function AlmoxarifadoPage() {
           head: [["Peça", "Qtd", "Status"]],
           body: g.parts.map((p) => {
             totals[p.name] = (totals[p.name] || 0) + p.quantity;
-            return [p.name, String(p.quantity), p.checked ? "Retirada" : "Pendente"];
+            const label = STATUS_OPTIONS.find((s) => s.value === p.status)?.label ?? "Pendente";
+            return [p.name, String(p.quantity), label];
+
           }),
           theme: "striped",
           headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: "bold" },
