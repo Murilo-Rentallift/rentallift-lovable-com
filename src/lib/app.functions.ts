@@ -108,12 +108,24 @@ async function verifyAdmin(pin: string) {
   if (!data || data.admin_pin !== pin) throw new Error("PIN de administrador incorreto");
 }
 
+// ---------- Almoxarifado: verify PIN (accepts almox PIN or admin PIN) ----------
+async function verifyAlmox(pin: string) {
+  pinSchema.parse(pin);
+  const { data } = await supabaseAdmin
+    .from("app_settings").select("admin_pin, almox_pin").eq("id", 1).maybeSingle();
+  if (!data) throw new Error("Configuração ausente");
+  if (pin !== data.almox_pin && pin !== data.admin_pin) {
+    throw new Error("PIN do almoxarifado incorreto");
+  }
+}
+
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
   .handler(async ({ data }) => {
     await verifyAdmin(data.pin);
     return { ok: true };
   });
+
 
 // ---------- Admin: get all operators + selected date data ----------
 export const adminGetDay = createServerFn({ method: "POST" })
