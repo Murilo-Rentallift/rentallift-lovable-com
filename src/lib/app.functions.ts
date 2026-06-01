@@ -340,3 +340,111 @@ export const adminChangePin = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- Admin: ensure schedule exists, returns schedule id ----------
+async function ensureSchedule(operatorId: string, date: string): Promise<string> {
+  const { data: existing } = await supabaseAdmin
+    .from("schedules").select("id")
+    .eq("operator_id", operatorId).eq("work_date", date).maybeSingle();
+  if (existing) return existing.id;
+  const { data: ins, error } = await supabaseAdmin
+    .from("schedules")
+    .insert({ operator_id: operatorId, work_date: date, task: "" })
+    .select("id").single();
+  if (error) throw new Error(error.message);
+  return ins.id;
+}
+
+// ---------- Admin: add task (atendimento) ----------
+export const adminAddTask = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; operatorId: string; date: string; title: string; description: string }) =>
+    z.object({
+      pin: pinSchema,
+      operatorId: z.string().uuid(),
+      date: dateSchema,
+      title: z.string().trim().min(1).max(200),
+      description: z.string().max(2000).default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const scheduleId = await ensureSchedule(data.operatorId, data.date);
+    const { data: max } = await supabaseAdmin
+      .from("tasks").select("position").eq("schedule_id", scheduleId)
+      .order("position", { ascending: false }).limit(1).maybeSingle();
+    const nextPos = (max?.position ?? 0) + 1;
+    const { error } = await supabaseAdmin.from("tasks").insert({
+      schedule_id: scheduleId,
+      title: data.title,
+      description: data.description,
+      position: nextPos,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Admin: edit task ----------
+export const adminEditTask = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; taskId: string; title: string; description: string }) =>
+    z.object({
+      pin: pinSchema,
+      taskId: z.string().uuid(),
+      title: z.string().trim().min(1).max(200),
+      description: z.string().max(2000),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("tasks")
+      .update({ title: data.title, description: data.description })
+      .eq("id", data.taskId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Admin: delete task ----------
+export const adminDeleteTask = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; taskId: string }) =>
+    z.object({ pin: pinSchema, taskId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin.from("tasks").delete().eq("id", data.taskId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Admin: move task up/down ----------
+export const adminMoveTask = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; taskId: string; direction: "up" | "down" }) =>
+    z.object({
+      pin: pinSchema,
+      taskId: z.string().uuid(),
+      direction: z.enum(["up", "down"]),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { data: current } = await supabaseAdmin
+      .from("tasks").select("id, schedule_id, position").eq("id", data.taskId).maybeSingle();
+    if (!current) throw new Error("Atendimento não encontrado");
+
+    const { data: siblings } = await supabaseAdmin
+      .from("tasks")
+      .select("id, position")
+      .eq("schedule_id", current.schedule_id)
+      .order("position", { ascending: true });
+    if (!siblings) return { ok: true };
+
+    const idx = siblings.findIndex((s) => s.id === current.id);
+    const swapIdx = data.direction === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= siblings.length) return { ok: true };
+
+    const other = siblings[swapIdx];
+    // Swap via a temporary value to avoid unique-ish collisions if any.
+    await supabaseAdmin.from("tasks").update({ position: -1 }).eq("id", current.id);
+    await supabaseAdmin.from("tasks").update({ position: current.position }).eq("id", other.id);
+    await supabaseAdmin.from("tasks").update({ position: other.position }).eq("id", current.id);
+    return { ok: true };
+  });
