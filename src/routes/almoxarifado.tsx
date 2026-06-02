@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestStatus, almoxDeleteRequest } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateGroupStatus, almoxDeleteGroup } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
