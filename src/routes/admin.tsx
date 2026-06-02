@@ -116,7 +116,7 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             <h1 className="font-display text-xl font-bold uppercase">Painel do Admin</h1>
           </div>
           <div className="flex items-center gap-2">
-            {tab === "operadores" && (
+            {(tab === "operadores" || tab === "agenda") && (
               <input
                 type="date"
                 value={date}
