@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestStatus, almoxDeleteRequest } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, FileDown, Package, Lock, Trash2 } from "lucide-react";
+import { ArrowLeft, FileDown, Package, Lock, Trash2, ListChecks, Wrench } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
