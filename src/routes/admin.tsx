@@ -7,8 +7,9 @@ import {
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
   adminListPendingCalls, adminAddPendingCall, adminDeletePendingCall, adminUpdatePendingCallStatus,
+  adminListAttendedCalls, adminAddAttendedCall, adminUpdateAttendedCall, adminDeleteAttendedCall,
 } from "@/lib/app.functions";
-import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, BookCheck, Clock, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Logo";
 
@@ -86,7 +87,7 @@ function AdminLogin({ onLogged }: { onLogged: (pin: string) => void }) {
 function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }) {
   const [date, setDate] = useState(todayISO());
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [tab, setTab] = useState<"operadores" | "chamados">("operadores");
+  const [tab, setTab] = useState<"operadores" | "chamados" | "agenda">("operadores");
   const qc = useQueryClient();
 
   const getDay = useServerFn(adminGetDay);
@@ -115,7 +116,7 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             <h1 className="font-display text-xl font-bold uppercase">Painel do Admin</h1>
           </div>
           <div className="flex items-center gap-2">
-            {tab === "operadores" && (
+            {(tab === "operadores" || tab === "agenda") && (
               <input
                 type="date"
                 value={date}
@@ -158,12 +159,25 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             <CalendarDays className="h-4 w-4" />
             Próximos Chamados
           </button>
+          <button
+            onClick={() => setTab("agenda")}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
+              tab === "agenda"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BookCheck className="h-4 w-4" />
+            Agenda do dia
+          </button>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
         {tab === "chamados" ? (
           <PendingCallsCalendar pin={pin} />
+        ) : tab === "agenda" ? (
+          <AttendedCallsAgenda pin={pin} date={date} />
         ) : (
           <>
             {isLoading && (
@@ -940,5 +954,233 @@ function PendingCallsCalendar({ pin }: { pin: string }) {
         </div>
       )}
     </section>
+  );
+}
+
+// ---------- Attended calls agenda (admin only) ----------
+function fmtDateLong(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+function AttendedCallsAgenda({ pin, date }: { pin: string; date: string }) {
+  const qc = useQueryClient();
+  const listFn = useServerFn(adminListAttendedCalls);
+  const addFn = useServerFn(adminAddAttendedCall);
+  const updFn = useServerFn(adminUpdateAttendedCall);
+  const delFn = useServerFn(adminDeleteAttendedCall);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["attended-calls", date, pin],
+    queryFn: () => listFn({ data: { pin, date } }),
+    retry: false,
+  });
+
+  const [company, setCompany] = useState("");
+  const [callTime, setCallTime] = useState("");
+  const [technician, setTechnician] = useState("");
+  const [description, setDescription] = useState("");
+
+  const addM = useMutation({
+    mutationFn: () => addFn({ data: { pin, callDate: date, callTime, company: company.trim(), description: description.trim(), technician: technician.trim() } }),
+    onSuccess: () => {
+      toast.success("Chamado registrado");
+      setCompany(""); setCallTime(""); setTechnician(""); setDescription("");
+      qc.invalidateQueries({ queryKey: ["attended-calls", date, pin] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const delM = useMutation({
+    mutationFn: (callId: string) => delFn({ data: { pin, callId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["attended-calls", date, pin] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const calls = data?.calls ?? [];
+
+  return (
+    <section className="space-y-4">
+      <div className="rounded-lg border border-border bg-card p-5 shadow-lg">
+        <div className="flex items-center gap-2 mb-1">
+          <BookCheck className="h-5 w-5 text-accent" />
+          <h3 className="font-display text-lg font-bold uppercase">Agenda — Chamados atendidos</h3>
+        </div>
+        <p className="text-xs text-muted-foreground capitalize mb-4">{fmtDateLong(date)}</p>
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (company.trim()) addM.mutate(); }}
+          className="grid grid-cols-1 sm:grid-cols-12 gap-2"
+        >
+          <input
+            type="time"
+            value={callTime}
+            onChange={(e) => setCallTime(e.target.value)}
+            className="sm:col-span-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono focus:border-primary focus:outline-none"
+          />
+          <input
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            maxLength={200}
+            placeholder="Empresa / cliente"
+            className="sm:col-span-4 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+          <input
+            value={technician}
+            onChange={(e) => setTechnician(e.target.value)}
+            maxLength={100}
+            placeholder="Técnico"
+            className="sm:col-span-3 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={!company.trim() || addM.isPending}
+            className="sm:col-span-3 inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold uppercase tracking-wide text-accent-foreground disabled:opacity-40 hover:brightness-110 transition"
+          >
+            <Plus className="h-4 w-4" />
+            {addM.isPending ? "Salvando..." : "Registrar"}
+          </button>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            maxLength={2000}
+            placeholder="Serviço executado / observações (opcional)"
+            className="sm:col-span-12 rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
+          />
+        </form>
+      </div>
+
+      <div className="rounded-lg border border-border bg-card overflow-hidden shadow-lg">
+        <div className="px-5 py-3 border-b border-border bg-primary/10 flex items-center justify-between">
+          <h4 className="font-display text-sm font-bold uppercase tracking-wide">Registros do dia</h4>
+          <span className="text-xs text-muted-foreground">{calls.length} chamado(s)</span>
+        </div>
+        {isLoading ? (
+          <div className="p-6 text-sm text-muted-foreground">Carregando...</div>
+        ) : calls.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground italic text-center">Nenhum chamado registrado nesta data.</div>
+        ) : (
+          <ol className="divide-y divide-border">
+            {calls.map((c: any) => (
+              <AttendedCallRow
+                key={c.id}
+                call={c}
+                onDelete={() => { if (confirm("Remover este registro?")) delM.mutate(c.id); }}
+                onSave={async (v) => {
+                  await updFn({ data: { pin, callId: c.id, ...v } });
+                  toast.success("Atualizado");
+                  qc.invalidateQueries({ queryKey: ["attended-calls", date, pin] });
+                }}
+              />
+            ))}
+          </ol>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AttendedCallRow({
+  call, onDelete, onSave,
+}: {
+  call: { id: string; call_time: string | null; company: string; description: string; technician: string };
+  onDelete: () => void;
+  onSave: (v: { callTime: string; company: string; description: string; technician: string }) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [callTime, setCallTime] = useState((call.call_time ?? "").slice(0, 5));
+  const [company, setCompany] = useState(call.company);
+  const [technician, setTechnician] = useState(call.technician);
+  const [description, setDescription] = useState(call.description);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setCallTime((call.call_time ?? "").slice(0, 5));
+    setCompany(call.company);
+    setTechnician(call.technician);
+    setDescription(call.description);
+  }, [call.call_time, call.company, call.technician, call.description]);
+
+  async function save() {
+    if (!company.trim()) return;
+    setSaving(true);
+    try {
+      await onSave({ callTime, company: company.trim(), description: description.trim(), technician: technician.trim() });
+      setEditing(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <li className="p-4 space-y-2 bg-muted/20">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+          <input
+            type="time"
+            value={callTime}
+            onChange={(e) => setCallTime(e.target.value)}
+            className="sm:col-span-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono focus:border-primary focus:outline-none"
+          />
+          <input
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            maxLength={200}
+            className="sm:col-span-6 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+          <input
+            value={technician}
+            onChange={(e) => setTechnician(e.target.value)}
+            maxLength={100}
+            placeholder="Técnico"
+            className="sm:col-span-4 rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          maxLength={2000}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:border-primary focus:outline-none"
+        />
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setEditing(false)} className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">Cancelar</button>
+          <button onClick={save} disabled={saving || !company.trim()} className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold uppercase text-primary-foreground disabled:opacity-40 hover:brightness-110">
+            {saving ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li className="p-4 flex items-start gap-3 hover:bg-muted/20 transition">
+      <div className="flex-shrink-0 w-16 text-center">
+        <div className="inline-flex items-center gap-1 rounded-md bg-accent/20 border border-accent/40 px-2 py-1 text-xs font-mono">
+          <Clock className="h-3 w-3" />
+          {call.call_time ? call.call_time.slice(0, 5) : "--:--"}
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm uppercase">{call.company}</p>
+        {call.technician && (
+          <p className="text-xs text-muted-foreground mt-0.5">Técnico: <span className="text-foreground">{call.technician}</span></p>
+        )}
+        {call.description && (
+          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{call.description}</p>
+        )}
+      </div>
+      <div className="flex flex-col gap-1 flex-shrink-0">
+        <button onClick={() => setEditing(true)} className="text-muted-foreground hover:text-primary p-1" title="Editar">
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button onClick={onDelete} className="text-muted-foreground hover:text-destructive p-1" title="Remover">
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </li>
   );
 }

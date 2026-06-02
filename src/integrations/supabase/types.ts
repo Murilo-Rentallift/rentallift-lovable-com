@@ -35,6 +35,39 @@ export type Database = {
         }
         Relationships: []
       }
+      attended_calls: {
+        Row: {
+          call_date: string
+          call_time: string | null
+          company: string
+          created_at: string
+          description: string
+          id: string
+          technician: string
+          updated_at: string
+        }
+        Insert: {
+          call_date: string
+          call_time?: string | null
+          company?: string
+          created_at?: string
+          description?: string
+          id?: string
+          technician?: string
+          updated_at?: string
+        }
+        Update: {
+          call_date?: string
+          call_time?: string | null
+          company?: string
+          created_at?: string
+          description?: string
+          id?: string
+          technician?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       operators: {
         Row: {
           created_at: string
