@@ -228,6 +228,18 @@ export const almoxUpdatePartStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Almoxarifado: delete part ----------
+export const almoxDeletePart = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; partId: string }) =>
+    z.object({ pin: pinSchema, partId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { error } = await supabaseAdmin.from("parts").delete().eq("id", data.partId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ---------- Almoxarifado: weekly report of missing parts ----------
 export const almoxWeeklyMissing = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; startDate: string; endDate: string }) =>
