@@ -74,18 +74,21 @@ function AlmoxarifadoPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"pecas" | "requisicoes">("pecas");
-  const [requests, setRequests] = useState<Array<{ id: string; requester_name: string; part_name: string; quantity: number; code: string; status: PartStatus; created_at: string }>>([]);
+  type ReqItem = { id: string; part_name: string; quantity: number; code: string; status: PartStatus };
+  type ReqGroup = { group_id: string; requester_name: string; created_at: string; items: ReqItem[] };
+
+  const [requests, setRequests] = useState<ReqGroup[]>([]);
   const [reqsLoading, setReqsLoading] = useState(false);
 
   const fetchReqs = useServerFn(almoxListRequests);
-  const updateReqStatus = useServerFn(almoxUpdateRequestStatus);
-  const deleteReq = useServerFn(almoxDeleteRequest);
+  const updateGroupStatus = useServerFn(almoxUpdateGroupStatus);
+  const deleteGroup = useServerFn(almoxDeleteGroup);
 
   async function loadRequests(currentPin: string) {
     setReqsLoading(true);
     try {
       const res = await fetchReqs({ data: { pin: currentPin } });
-      setRequests(res.requests as any);
+      setRequests(res.requests as ReqGroup[]);
     } catch (e: any) {
       toast.error(e.message || "Falha ao carregar requisições");
     } finally {
@@ -93,22 +96,28 @@ function AlmoxarifadoPage() {
     }
   }
 
-  async function changeReqStatus(requestId: string, status: PartStatus) {
-    setRequests((rs) => rs.map((r) => r.id === requestId ? { ...r, status } : r));
+  async function changeGroupStatus(groupId: string, status: PartStatus) {
+    setRequests((rs) =>
+      rs.map((r) =>
+        r.group_id === groupId
+          ? { ...r, items: r.items.map((i) => ({ ...i, status })) }
+          : r,
+      ),
+    );
     try {
-      await updateReqStatus({ data: { pin, requestId, status } });
+      await updateGroupStatus({ data: { pin, groupId, status } });
     } catch (e: any) {
       toast.error(e.message || "Falha ao atualizar");
       loadRequests(pin);
     }
   }
 
-  async function removeReq(requestId: string) {
-    if (!confirm("Remover esta requisição?")) return;
+  async function removeGroup(groupId: string) {
+    if (!confirm("Remover esta requisição e todas as suas peças?")) return;
     const snap = requests;
-    setRequests((rs) => rs.filter((r) => r.id !== requestId));
+    setRequests((rs) => rs.filter((r) => r.group_id !== groupId));
     try {
-      await deleteReq({ data: { pin, requestId } });
+      await deleteGroup({ data: { pin, groupId } });
       toast.success("Requisição removida");
     } catch (e: any) {
       toast.error(e.message || "Falha ao remover");
