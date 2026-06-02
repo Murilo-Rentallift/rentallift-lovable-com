@@ -825,3 +825,78 @@ export const adminDeletePendingCall = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- Admin: attended calls (agenda) ----------
+export const adminListAttendedCalls = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; date: string }) =>
+    z.object({ pin: pinSchema, date: dateSchema }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { data: rows, error } = await supabaseAdmin
+      .from("attended_calls" as any)
+      .select("id, call_date, call_time, company, description, technician, created_at")
+      .eq("call_date", data.date)
+      .order("call_time", { ascending: true, nullsFirst: true })
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return { calls: (rows ?? []) as any[] };
+  });
+
+export const adminAddAttendedCall = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; callDate: string; callTime: string; company: string; description: string; technician: string }) =>
+    z.object({
+      pin: pinSchema,
+      callDate: dateSchema,
+      callTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).or(z.literal("")),
+      company: z.string().trim().min(1).max(200),
+      description: z.string().trim().max(2000).default(""),
+      technician: z.string().trim().max(100).default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin.from("attended_calls" as any).insert({
+      call_date: data.callDate,
+      call_time: data.callTime ? data.callTime : null,
+      company: data.company,
+      description: data.description,
+      technician: data.technician,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminUpdateAttendedCall = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; callId: string; callTime: string; company: string; description: string; technician: string }) =>
+    z.object({
+      pin: pinSchema,
+      callId: z.string().uuid(),
+      callTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).or(z.literal("")),
+      company: z.string().trim().min(1).max(200),
+      description: z.string().trim().max(2000).default(""),
+      technician: z.string().trim().max(100).default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin.from("attended_calls" as any).update({
+      call_time: data.callTime ? data.callTime : null,
+      company: data.company,
+      description: data.description,
+      technician: data.technician,
+    }).eq("id", data.callId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminDeleteAttendedCall = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; callId: string }) =>
+    z.object({ pin: pinSchema, callId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin.from("attended_calls" as any).delete().eq("id", data.callId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
