@@ -1,0 +1,1 @@
+ALTER TABLE public.pending_calls ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pendente';
