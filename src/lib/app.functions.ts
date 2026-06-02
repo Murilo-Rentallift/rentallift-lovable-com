@@ -119,6 +119,99 @@ async function verifyAlmox(pin: string) {
   }
 }
 
+// ---------- Oficina: verify PIN (accepts oficina PIN or admin PIN) ----------
+async function verifyOficina(pin: string) {
+  pinSchema.parse(pin);
+  const { data } = await supabaseAdmin
+    .from("app_settings").select("admin_pin, oficina_pin").eq("id", 1).maybeSingle();
+  if (!data) throw new Error("Configuração ausente");
+  if (pin !== (data as any).oficina_pin && pin !== data.admin_pin) {
+    throw new Error("PIN da oficina incorreto");
+  }
+}
+
+export const oficinaLogin = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    return { ok: true };
+  });
+
+export const oficinaCreateRequest = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; requesterName: string; partName: string; quantity: number; code: string }) =>
+    z.object({
+      pin: pinSchema,
+      requesterName: z.string().trim().min(1).max(100),
+      partName: z.string().trim().min(1).max(200),
+      quantity: z.number().int().min(1).max(9999),
+      code: z.string().trim().max(100).default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const { error } = await supabaseAdmin.from("part_requests" as any).insert({
+      requester_name: data.requesterName,
+      part_name: data.partName,
+      quantity: data.quantity,
+      code: data.code,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const oficinaListRequests = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const { data: rows, error } = await supabaseAdmin
+      .from("part_requests" as any)
+      .select("id, requester_name, part_name, quantity, code, status, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { requests: (rows ?? []) as any[] };
+  });
+
+// ---------- Almoxarifado: list/update/delete part requests from oficina ----------
+export const almoxListRequests = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: rows, error } = await supabaseAdmin
+      .from("part_requests" as any)
+      .select("id, requester_name, part_name, quantity, code, status, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { requests: (rows ?? []) as any[] };
+  });
+
+export const almoxUpdateRequestStatus = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; requestId: string; status: string }) =>
+    z.object({
+      pin: pinSchema,
+      requestId: z.string().uuid(),
+      status: z.enum(["pendente", "separado", "em_falta", "entregue"]),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { error } = await supabaseAdmin
+      .from("part_requests" as any).update({ status: data.status }).eq("id", data.requestId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const almoxDeleteRequest = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; requestId: string }) =>
+    z.object({ pin: pinSchema, requestId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { error } = await supabaseAdmin
+      .from("part_requests" as any).delete().eq("id", data.requestId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
   .handler(async ({ data }) => {
