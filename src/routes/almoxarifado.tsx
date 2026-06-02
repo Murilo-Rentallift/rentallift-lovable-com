@@ -578,220 +578,220 @@ function AlmoxarifadoPage() {
           </button>
         </div>
 
-        {tab === "requisicoes" ? (<>
-          <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
-            <div className="flex-1 min-w-[200px]">
-              <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
-                Relatório semanal — Requisições em falta
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Gera um PDF com todas as requisições marcadas como "Em falta" na semana selecionada.
-              </p>
-            </div>
-            <div className="flex items-end gap-2">
-              <div>
-                <Label htmlFor="reqWeekStart" className="text-xs">Semana de</Label>
-                <Input
-                  id="reqWeekStart"
-                  type="date"
-                  value={reqWeekStart}
-                  onChange={(e) => setReqWeekStart(e.target.value)}
-                  className="w-auto"
-                />
+        {tab === "requisicoes" ? (
+          <>
+            <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
+                  Relatório semanal — Requisições em falta
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Gera um PDF com todas as requisições marcadas como "Em falta" na semana selecionada.
+                </p>
               </div>
-              <Button
-                onClick={generateWeeklyRequestsPDF}
-                disabled={reqWeeklyLoading || !reqWeekStart}
-                variant="destructive"
-              >
-                <FileDown className="h-4 w-4 mr-2" />
-                {reqWeeklyLoading ? "Gerando..." : "Gerar relatório"}
-              </Button>
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-border bg-card">
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <h2 className="font-display text-sm uppercase tracking-wider flex items-center gap-2">
-                <ListChecks className="h-4 w-4" /> Requisições recebidas
-              </h2>
-              <span className="text-xs text-muted-foreground">
-                {requests.length} {requests.length === 1 ? "item" : "itens"}
-              </span>
-            </div>
-            {reqsLoading ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">Carregando...</p>
-            ) : requests.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">Nenhuma requisição da oficina.</p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {requests.map((r) => {
-                  const dominantStatus = r.items[0]?.status ?? "pendente";
-                  const opt = STATUS_OPTIONS.find((s) => s.value === dominantStatus) ?? STATUS_OPTIONS[0];
-                  return (
-                    <li key={r.group_id} className="px-4 py-4 space-y-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="font-medium text-sm">
-                            Solicitante: <span className="text-foreground">{r.requester_name}</span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(r.created_at).toLocaleString("pt-BR")} · {r.items.length} {r.items.length === 1 ? "peça" : "peças"}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={dominantStatus}
-                            onChange={(e) => changeGroupStatus(r.group_id, e.target.value as PartStatus)}
-                            className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
-                          >
-                            {STATUS_OPTIONS.map((s) => (
-                              <option key={s.value} value={s.value} className="bg-background text-foreground">
-                                {s.label}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => removeGroup(r.group_id)}
-                            className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                            title="Remover requisição"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
-                        {r.items.map((item) => (
-                          <li key={item.id} className="text-sm flex items-center gap-2">
-                            <span className={`h-2 w-2 rounded-full shrink-0 ${
-                              item.status === "entregue" ? "bg-green-500" :
-                              item.status === "separado" ? "bg-blue-500" :
-                              item.status === "em_falta" ? "bg-red-500" : "bg-accent"
-                            }`} />
-                            {item.part_name} <span className="text-muted-foreground">× {item.quantity}</span>
-                            {item.code ? <span className="text-muted-foreground ml-1">· cód. <span className="font-mono">{item.code}</span></span> : null}
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        ) : (
-        <>
-        <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[200px]">
-            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
-              Relatório semanal — Peças em falta
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Gera um PDF com todas as peças marcadas como "Em falta" na semana selecionada (segunda a domingo).
-            </p>
-          </div>
-          <div className="flex items-end gap-2">
-            <div>
-              <Label htmlFor="weekStart" className="text-xs">Semana de</Label>
-              <Input
-                id="weekStart"
-                type="date"
-                value={weekStart}
-                onChange={(e) => setWeekStart(e.target.value)}
-                className="w-auto"
-              />
-            </div>
-            <Button
-              onClick={generateWeeklyPDF}
-              disabled={weeklyLoading || !weekStart}
-              variant="destructive"
-            >
-              <FileDown className="h-4 w-4 mr-2" />
-              {weeklyLoading ? "Gerando..." : "Gerar relatório"}
-            </Button>
-          </div>
-        </section>
-
-
-        {loading ? (
-          <p className="text-muted-foreground">Carregando...</p>
-        ) : totalParts === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-12 text-center">
-            <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">Nenhuma peça programada para {formatDateBR(date)}.</p>
-          </div>
-        ) : (
-          groups
-            .filter((g) => g.parts.length > 0)
-            .map((g) => (
-              <div key={g.operator.id} className="rounded-lg border border-border bg-card overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs text-muted-foreground">
-                      #{String(g.operator.position).padStart(2, "0")}
-                    </span>
-                    <h2 className="font-display text-lg font-bold uppercase">{g.operator.name}</h2>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {g.parts.length} {g.parts.length === 1 ? "item" : "itens"}
-                  </span>
+              <div className="flex items-end gap-2">
+                <div>
+                  <Label htmlFor="reqWeekStart" className="text-xs">Semana de</Label>
+                  <Input
+                    id="reqWeekStart"
+                    type="date"
+                    value={reqWeekStart}
+                    onChange={(e) => setReqWeekStart(e.target.value)}
+                    className="w-auto"
+                  />
                 </div>
+                <Button
+                  onClick={generateWeeklyRequestsPDF}
+                  disabled={reqWeeklyLoading || !reqWeekStart}
+                  variant="destructive"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {reqWeeklyLoading ? "Gerando..." : "Gerar relatório"}
+                </Button>
+              </div>
+            </section>
+
+            <section className="rounded-lg border border-border bg-card">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <h2 className="font-display text-sm uppercase tracking-wider flex items-center gap-2">
+                  <ListChecks className="h-4 w-4" /> Requisições recebidas
+                </h2>
+                <span className="text-xs text-muted-foreground">
+                  {requests.length} {requests.length === 1 ? "item" : "itens"}
+                </span>
+              </div>
+              {reqsLoading ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">Carregando...</p>
+              ) : requests.length === 0 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">Nenhuma requisição da oficina.</p>
+              ) : (
                 <ul className="divide-y divide-border">
-                  {g.parts.map((p) => {
-                    const opt = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
+                  {requests.map((r) => {
+                    const dominantStatus = r.items[0]?.status ?? "pendente";
+                    const opt = STATUS_OPTIONS.find((s) => s.value === dominantStatus) ?? STATUS_OPTIONS[0];
                     return (
-                      <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className={`h-2 w-2 rounded-full shrink-0 ${
-                            p.status === "entregue" ? "bg-green-500" :
-                            p.status === "separado" ? "bg-blue-500" :
-                            p.status === "em_falta" ? "bg-red-500" : "bg-accent"
-                          }`} />
-                          <span className="font-medium truncate">{p.name}</span>
+                      <li key={r.group_id} className="px-4 py-4 space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm">
+                              Solicitante: <span className="text-foreground">{r.requester_name}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(r.created_at).toLocaleString("pt-BR")} · {r.items.length} {r.items.length === 1 ? "peça" : "peças"}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={dominantStatus}
+                              onChange={(e) => changeGroupStatus(r.group_id, e.target.value as PartStatus)}
+                              className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
+                            >
+                              {STATUS_OPTIONS.map((s) => (
+                                <option key={s.value} value={s.value} className="bg-background text-foreground">
+                                  {s.label}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => removeGroup(r.group_id)}
+                              className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                              title="Remover requisição"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 text-sm">
-                          <input
-                            type="number"
-                            min={1}
-                            max={9999}
-                            value={p.quantity}
-                            onChange={(e) => {
-                              const v = parseInt(e.target.value, 10);
-                              if (Number.isFinite(v)) changeQty(p.id, Math.max(1, Math.min(9999, v)));
-                            }}
-                            className="w-16 rounded border border-input bg-background px-2 py-1 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-ring"
-                            title="Quantidade"
-                          />
-                          <select
-                            value={p.status}
-                            onChange={(e) => changeStatus(p.id, e.target.value as PartStatus)}
-                            className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
-                          >
-                            {STATUS_OPTIONS.map((s) => (
-                              <option key={s.value} value={s.value} className="bg-background text-foreground">
-                                {s.label}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => removePart(p.id, p.name)}
-                            className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                            title="Remover peça"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
+                          {r.items.map((item) => (
+                            <li key={item.id} className="text-sm flex items-center gap-2">
+                              <span className={`h-2 w-2 rounded-full shrink-0 ${
+                                item.status === "entregue" ? "bg-green-500" :
+                                item.status === "separado" ? "bg-blue-500" :
+                                item.status === "em_falta" ? "bg-red-500" : "bg-accent"
+                              }`} />
+                              {item.part_name} <span className="text-muted-foreground">× {item.quantity}</span>
+                              {item.code ? <span className="text-muted-foreground ml-1">· cód. <span className="font-mono">{item.code}</span></span> : null}
+                            </li>
+                          ))}
+                        </ul>
                       </li>
                     );
                   })}
-
                 </ul>
+              )}
+            </section>
+          </>
+        ) : (
+          <>
+            <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
+                  Relatório semanal — Peças em falta
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Gera um PDF com todas as peças marcadas como "Em falta" na semana selecionada (segunda a domingo).
+                </p>
               </div>
-            ))
-        )}
-        </>
+              <div className="flex items-end gap-2">
+                <div>
+                  <Label htmlFor="weekStart" className="text-xs">Semana de</Label>
+                  <Input
+                    id="weekStart"
+                    type="date"
+                    value={weekStart}
+                    onChange={(e) => setWeekStart(e.target.value)}
+                    className="w-auto"
+                  />
+                </div>
+                <Button
+                  onClick={generateWeeklyPDF}
+                  disabled={weeklyLoading || !weekStart}
+                  variant="destructive"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {weeklyLoading ? "Gerando..." : "Gerar relatório"}
+                </Button>
+              </div>
+            </section>
+
+            {loading ? (
+              <p className="text-muted-foreground">Carregando...</p>
+            ) : totalParts === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-12 text-center">
+                <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">Nenhuma peça programada para {formatDateBR(date)}.</p>
+              </div>
+            ) : (
+              groups
+                .filter((g) => g.parts.length > 0)
+                .map((g) => (
+                  <div key={g.operator.id} className="rounded-lg border border-border bg-card overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          #{String(g.operator.position).padStart(2, "0")}
+                        </span>
+                        <h2 className="font-display text-lg font-bold uppercase">{g.operator.name}</h2>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {g.parts.length} {g.parts.length === 1 ? "item" : "itens"}
+                      </span>
+                    </div>
+                    <ul className="divide-y divide-border">
+                      {g.parts.map((p) => {
+                        const opt = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
+                        return (
+                          <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className={`h-2 w-2 rounded-full shrink-0 ${
+                                p.status === "entregue" ? "bg-green-500" :
+                                p.status === "separado" ? "bg-blue-500" :
+                                p.status === "em_falta" ? "bg-red-500" : "bg-accent"
+                              }`} />
+                              <span className="font-medium truncate">{p.name}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <input
+                                type="number"
+                                min={1}
+                                max={9999}
+                                value={p.quantity}
+                                onChange={(e) => {
+                                  const v = parseInt(e.target.value, 10);
+                                  if (Number.isFinite(v)) changeQty(p.id, Math.max(1, Math.min(9999, v)));
+                                }}
+                                className="w-16 rounded border border-input bg-background px-2 py-1 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-ring"
+                                title="Quantidade"
+                              />
+                              <select
+                                value={p.status}
+                                onChange={(e) => changeStatus(p.id, e.target.value as PartStatus)}
+                                className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
+                              >
+                                {STATUS_OPTIONS.map((s) => (
+                                  <option key={s.value} value={s.value} className="bg-background text-foreground">
+                                    {s.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => removePart(p.id, p.name)}
+                                className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                                title="Remover peça"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))
+            )}
+          </>
         )}
       </main>
     </div>
