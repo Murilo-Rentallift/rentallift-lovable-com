@@ -578,7 +578,7 @@ function AlmoxarifadoPage() {
           </button>
         </div>
 
-        {tab === "requisicoes" ? (
+        {tab === "requisicoes" ? (<>
           <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[200px]">
               <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
