@@ -489,40 +489,54 @@ function AlmoxarifadoPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {requests.map((r) => {
-                  const opt = STATUS_OPTIONS.find((s) => s.value === r.status) ?? STATUS_OPTIONS[0];
+                  const dominantStatus = r.items[0]?.status ?? "pendente";
+                  const opt = STATUS_OPTIONS.find((s) => s.value === dominantStatus) ?? STATUS_OPTIONS[0];
                   return (
-                    <li key={r.id} className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="font-medium">
-                          {r.part_name} <span className="text-muted-foreground">× {r.quantity}</span>
+                    <li key={r.group_id} className="px-4 py-4 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-medium text-sm">
+                            Solicitante: <span className="text-foreground">{r.requester_name}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(r.created_at).toLocaleString("pt-BR")} · {r.items.length} {r.items.length === 1 ? "peça" : "peças"}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Solicitante: <span className="text-foreground">{r.requester_name}</span>
-                          {r.code ? <> · cód. <span className="font-mono text-foreground">{r.code}</span></> : null}
-                          {" · "}{new Date(r.created_at).toLocaleString("pt-BR")}
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={dominantStatus}
+                            onChange={(e) => changeGroupStatus(r.group_id, e.target.value as PartStatus)}
+                            className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
+                          >
+                            {STATUS_OPTIONS.map((s) => (
+                              <option key={s.value} value={s.value} className="bg-background text-foreground">
+                                {s.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => removeGroup(r.group_id)}
+                            className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                            title="Remover requisição"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={r.status}
-                          onChange={(e) => changeReqStatus(r.id, e.target.value as PartStatus)}
-                          className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
-                        >
-                          {STATUS_OPTIONS.map((s) => (
-                            <option key={s.value} value={s.value} className="bg-background text-foreground">
-                              {s.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => removeReq(r.id)}
-                          className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                          title="Remover requisição"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                      <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
+                        {r.items.map((item) => (
+                          <li key={item.id} className="text-sm flex items-center gap-2">
+                            <span className={`h-2 w-2 rounded-full shrink-0 ${
+                              item.status === "entregue" ? "bg-green-500" :
+                              item.status === "separado" ? "bg-blue-500" :
+                              item.status === "em_falta" ? "bg-red-500" : "bg-accent"
+                            }`} />
+                            {item.part_name} <span className="text-muted-foreground">× {item.quantity}</span>
+                            {item.code ? <span className="text-muted-foreground ml-1">· cód. <span className="font-mono">{item.code}</span></span> : null}
+                          </li>
+                        ))}
+                      </ul>
                     </li>
                   );
                 })}
