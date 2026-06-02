@@ -122,6 +122,7 @@ function AlmoxarifadoPage() {
       const res = await fetchDay({ data: { pin: currentPin, date: currentDate } });
       setGroups(res.groups as Group[]);
       setAuthed(true);
+      loadRequests(currentPin);
     } catch (e: any) {
       toast.error(e.message || "Falha ao carregar");
       setAuthed(false);
