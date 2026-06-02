@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OficinaRouteImport } from './routes/oficina'
 import { Route as AlmoxarifadoRouteImport } from './routes/almoxarifado'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OperadorIdRouteImport } from './routes/operador.$id'
 
+const OficinaRoute = OficinaRouteImport.update({
+  id: '/oficina',
+  path: '/oficina',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AlmoxarifadoRoute = AlmoxarifadoRouteImport.update({
   id: '/almoxarifado',
   path: '/almoxarifado',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/almoxarifado': typeof AlmoxarifadoRoute
+  '/oficina': typeof OficinaRoute
   '/operador/$id': typeof OperadorIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/almoxarifado': typeof AlmoxarifadoRoute
+  '/oficina': typeof OficinaRoute
   '/operador/$id': typeof OperadorIdRoute
 }
 export interface FileRoutesById {
@@ -52,25 +60,40 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/almoxarifado': typeof AlmoxarifadoRoute
+  '/oficina': typeof OficinaRoute
   '/operador/$id': typeof OperadorIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/almoxarifado' | '/operador/$id'
+  fullPaths: '/' | '/admin' | '/almoxarifado' | '/oficina' | '/operador/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/almoxarifado' | '/operador/$id'
-  id: '__root__' | '/' | '/admin' | '/almoxarifado' | '/operador/$id'
+  to: '/' | '/admin' | '/almoxarifado' | '/oficina' | '/operador/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/almoxarifado'
+    | '/oficina'
+    | '/operador/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AlmoxarifadoRoute: typeof AlmoxarifadoRoute
+  OficinaRoute: typeof OficinaRoute
   OperadorIdRoute: typeof OperadorIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/oficina': {
+      id: '/oficina'
+      path: '/oficina'
+      fullPath: '/oficina'
+      preLoaderRoute: typeof OficinaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/almoxarifado': {
       id: '/almoxarifado'
       path: '/almoxarifado'
@@ -106,8 +129,19 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AlmoxarifadoRoute: AlmoxarifadoRoute,
+  OficinaRoute: OficinaRoute,
   OperadorIdRoute: OperadorIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
