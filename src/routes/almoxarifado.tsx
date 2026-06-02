@@ -631,6 +631,8 @@ function AlmoxarifadoPage() {
               </div>
             ))
         )}
+        </>
+        )}
       </main>
     </div>
   );
