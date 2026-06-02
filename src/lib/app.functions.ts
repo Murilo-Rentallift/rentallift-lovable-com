@@ -137,26 +137,33 @@ export const oficinaLogin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const partItemSchema = z.object({
+  partName: z.string().trim().min(1).max(200),
+  quantity: z.number().int().min(1).max(9999),
+  code: z.string().trim().max(100).default(""),
+});
+
 export const oficinaCreateRequest = createServerFn({ method: "POST" })
-  .inputValidator((d: { pin: string; requesterName: string; partName: string; quantity: number; code: string }) =>
+  .inputValidator((d: { pin: string; requesterName: string; items: Array<{ partName: string; quantity: number; code: string }> }) =>
     z.object({
       pin: pinSchema,
       requesterName: z.string().trim().min(1).max(100),
-      partName: z.string().trim().min(1).max(200),
-      quantity: z.number().int().min(1).max(9999),
-      code: z.string().trim().max(100).default(""),
+      items: z.array(partItemSchema).min(1).max(50),
     }).parse(d),
   )
   .handler(async ({ data }) => {
     await verifyOficina(data.pin);
-    const { error } = await supabaseAdmin.from("part_requests" as any).insert({
+    const groupId = crypto.randomUUID();
+    const inserts = data.items.map((item) => ({
+      group_id: groupId,
       requester_name: data.requesterName,
-      part_name: data.partName,
-      quantity: data.quantity,
-      code: data.code,
-    });
+      part_name: item.partName,
+      quantity: item.quantity,
+      code: item.code,
+    }));
+    const { error } = await supabaseAdmin.from("part_requests" as any).insert(inserts);
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, groupId };
   });
 
 export const oficinaListRequests = createServerFn({ method: "POST" })
@@ -165,10 +172,32 @@ export const oficinaListRequests = createServerFn({ method: "POST" })
     await verifyOficina(data.pin);
     const { data: rows, error } = await supabaseAdmin
       .from("part_requests" as any)
-      .select("id, requester_name, part_name, quantity, code, status, created_at")
+      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return { requests: (rows ?? []) as any[] };
+
+    // Group by group_id
+    const groups = new Map<string, any[]>();
+    for (const row of (rows ?? []) as any[]) {
+      const list = groups.get(row.group_id) ?? [];
+      list.push(row);
+      groups.set(row.group_id, list);
+    }
+
+    const requests = Array.from(groups.entries()).map(([groupId, items]) => ({
+      group_id: groupId,
+      requester_name: items[0].requester_name,
+      created_at: items[0].created_at,
+      items: items.map((i: any) => ({
+        id: i.id,
+        part_name: i.part_name,
+        quantity: i.quantity,
+        code: i.code,
+        status: i.status,
+      })),
+    }));
+
+    return { requests };
   });
 
 // ---------- Almoxarifado: list/update/delete part requests from oficina ----------
@@ -178,36 +207,57 @@ export const almoxListRequests = createServerFn({ method: "POST" })
     await verifyAlmox(data.pin);
     const { data: rows, error } = await supabaseAdmin
       .from("part_requests" as any)
-      .select("id, requester_name, part_name, quantity, code, status, created_at")
+      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return { requests: (rows ?? []) as any[] };
+
+    const groups = new Map<string, any[]>();
+    for (const row of (rows ?? []) as any[]) {
+      const list = groups.get(row.group_id) ?? [];
+      list.push(row);
+      groups.set(row.group_id, list);
+    }
+
+    const requests = Array.from(groups.entries()).map(([groupId, items]) => ({
+      group_id: groupId,
+      requester_name: items[0].requester_name,
+      created_at: items[0].created_at,
+      items: items.map((i: any) => ({
+        id: i.id,
+        part_name: i.part_name,
+        quantity: i.quantity,
+        code: i.code,
+        status: i.status,
+      })),
+    }));
+
+    return { requests };
   });
 
-export const almoxUpdateRequestStatus = createServerFn({ method: "POST" })
-  .inputValidator((d: { pin: string; requestId: string; status: string }) =>
+export const almoxUpdateGroupStatus = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; groupId: string; status: string }) =>
     z.object({
       pin: pinSchema,
-      requestId: z.string().uuid(),
+      groupId: z.string().uuid(),
       status: z.enum(["pendente", "separado", "em_falta", "entregue"]),
     }).parse(d),
   )
   .handler(async ({ data }) => {
     await verifyAlmox(data.pin);
     const { error } = await supabaseAdmin
-      .from("part_requests" as any).update({ status: data.status }).eq("id", data.requestId);
+      .from("part_requests" as any).update({ status: data.status }).eq("group_id", data.groupId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
-export const almoxDeleteRequest = createServerFn({ method: "POST" })
-  .inputValidator((d: { pin: string; requestId: string }) =>
-    z.object({ pin: pinSchema, requestId: z.string().uuid() }).parse(d),
+export const almoxDeleteGroup = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; groupId: string }) =>
+    z.object({ pin: pinSchema, groupId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data }) => {
     await verifyAlmox(data.pin);
     const { error } = await supabaseAdmin
-      .from("part_requests" as any).delete().eq("id", data.requestId);
+      .from("part_requests" as any).delete().eq("group_id", data.groupId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

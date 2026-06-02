@@ -63,6 +63,7 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          group_id: string
           id: string
           part_name: string
           quantity: number
@@ -73,6 +74,7 @@ export type Database = {
         Insert: {
           code?: string
           created_at?: string
+          group_id?: string
           id?: string
           part_name: string
           quantity?: number
@@ -83,6 +85,7 @@ export type Database = {
         Update: {
           code?: string
           created_at?: string
+          group_id?: string
           id?: string
           part_name?: string
           quantity?: number

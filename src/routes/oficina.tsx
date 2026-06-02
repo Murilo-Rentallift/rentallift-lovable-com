@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, Lock, Wrench, Send } from "lucide-react";
+import { ArrowLeft, Lock, Wrench, Send, Plus, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/oficina")({
@@ -14,14 +14,19 @@ export const Route = createFileRoute("/oficina")({
   component: OficinaPage,
 });
 
-type Req = {
+type ReqItem = {
   id: string;
-  requester_name: string;
   part_name: string;
   quantity: number;
   code: string;
   status: string;
+};
+
+type ReqGroup = {
+  group_id: string;
+  requester_name: string;
   created_at: string;
+  items: ReqItem[];
 };
 
 const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
@@ -30,6 +35,8 @@ const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
   em_falta: { label: "Em falta", cls: "bg-red-500/20 text-red-400 border-red-500/40" },
   entregue: { label: "Entregue", cls: "bg-green-500/20 text-green-500 border-green-500/40" },
 };
+
+type Line = { partName: string; quantity: number; code: string };
 
 function OficinaPage() {
   const doLogin = useServerFn(oficinaLogin);
@@ -41,18 +48,16 @@ function OficinaPage() {
   const [loading, setLoading] = useState(false);
 
   const [requesterName, setRequesterName] = useState("");
-  const [partName, setPartName] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [code, setCode] = useState("");
+  const [lines, setLines] = useState<Line[]>([{ partName: "", quantity: 1, code: "" }]);
   const [submitting, setSubmitting] = useState(false);
 
-  const [requests, setRequests] = useState<Req[]>([]);
+  const [requests, setRequests] = useState<ReqGroup[]>([]);
 
   async function refresh(currentPin: string) {
     try {
       const res = await listMine({ data: { pin: currentPin } });
-      setRequests(res.requests as Req[]);
-    } catch (e: any) {
+      setRequests(res.requests as ReqGroup[]);
+    } catch {
       // ignore
     }
   }
@@ -71,21 +76,44 @@ function OficinaPage() {
     }
   }
 
+  function addLine() {
+    setLines((prev) => [...prev, { partName: "", quantity: 1, code: "" }]);
+  }
+
+  function removeLine(idx: number) {
+    setLines((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function updateLine(idx: number, patch: Partial<Line>) {
+    setLines((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!requesterName.trim() || !partName.trim()) {
-      toast.error("Preencha solicitante e peça");
+    if (!requesterName.trim()) {
+      toast.error("Preencha o nome do solicitante");
+      return;
+    }
+    const validItems = lines.filter((l) => l.partName.trim());
+    if (validItems.length === 0) {
+      toast.error("Adicione pelo menos uma peça");
       return;
     }
     setSubmitting(true);
     try {
       await create({
-        data: { pin, requesterName: requesterName.trim(), partName: partName.trim(), quantity, code: code.trim() },
+        data: {
+          pin,
+          requesterName: requesterName.trim(),
+          items: validItems.map((l) => ({
+            partName: l.partName.trim(),
+            quantity: l.quantity,
+            code: l.code.trim(),
+          })),
+        },
       });
-      toast.success("Requisição enviada ao almoxarifado");
-      setPartName("");
-      setQuantity(1);
-      setCode("");
+      toast.success(`Requisição com ${validItems.length} peça(s) enviada ao almoxarifado`);
+      setLines([{ partName: "", quantity: 1, code: "" }]);
       await refresh(pin);
     } catch (e: any) {
       toast.error(e.message || "Falha ao enviar");
@@ -130,6 +158,8 @@ function OficinaPage() {
     );
   }
 
+  const totalItems = requests.reduce((acc, r) => acc + r.items.length, 0);
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-border bg-card/50 backdrop-blur">
@@ -151,57 +181,96 @@ function OficinaPage() {
       <main className="mx-auto max-w-4xl px-6 py-8 space-y-6">
         <form onSubmit={handleCreate} className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground">Nova requisição</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-1">
-              <Label htmlFor="who">Solicitante</Label>
-              <Input id="who" value={requesterName} onChange={(e) => setRequesterName(e.target.value)} placeholder="Nome de quem solicitou" maxLength={100} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="part">Peça</Label>
-              <Input id="part" value={partName} onChange={(e) => setPartName(e.target.value)} placeholder="Nome da peça" maxLength={200} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="qty">Quantidade</Label>
-              <Input
-                id="qty"
-                type="number"
-                min={1}
-                max={9999}
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Math.min(9999, parseInt(e.target.value, 10) || 1)))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="code">Código</Label>
-              <Input id="code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Código da peça" maxLength={100} />
-            </div>
+          <div className="space-y-1">
+            <Label htmlFor="who">Solicitante</Label>
+            <Input id="who" value={requesterName} onChange={(e) => setRequesterName(e.target.value)} placeholder="Nome de quem solicitou" maxLength={100} />
           </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Peças</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1">
+                <Plus className="h-3.5 w-3.5" /> Adicionar peça
+              </Button>
+            </div>
+            {lines.map((line, idx) => (
+              <div key={idx} className="grid gap-2 md:grid-cols-[1fr_100px_1fr_auto] items-end border border-border rounded-md p-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Peça</Label>
+                  <Input
+                    value={line.partName}
+                    onChange={(e) => updateLine(idx, { partName: e.target.value })}
+                    placeholder="Nome da peça"
+                    maxLength={200}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Qtd</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={9999}
+                    value={line.quantity}
+                    onChange={(e) => updateLine(idx, { quantity: Math.max(1, Math.min(9999, parseInt(e.target.value, 10) || 1)) })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Código</Label>
+                  <Input
+                    value={line.code}
+                    onChange={(e) => updateLine(idx, { code: e.target.value })}
+                    placeholder="Código da peça"
+                    maxLength={100}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive"
+                  onClick={() => removeLine(idx)}
+                  disabled={lines.length === 1}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
           <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Send className="h-4 w-4 mr-2" />
-            {submitting ? "Enviando..." : "Enviar para o almoxarifado"}
+            {submitting ? "Enviando..." : `Enviar ${lines.filter((l) => l.partName.trim()).length || ""} peça(s) para o almoxarifado`}
           </Button>
         </form>
 
         <section className="rounded-lg border border-border bg-card">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
             <h2 className="font-display text-sm uppercase tracking-wider">Minhas requisições</h2>
-            <span className="text-xs text-muted-foreground">{requests.length} {requests.length === 1 ? "item" : "itens"}</span>
+            <span className="text-xs text-muted-foreground">{requests.length} {requests.length === 1 ? "requisição" : "requisições"} · {totalItems} {totalItems === 1 ? "item" : "itens"}</span>
           </div>
           {requests.length === 0 ? (
             <p className="p-6 text-center text-sm text-muted-foreground">Nenhuma requisição registrada ainda.</p>
           ) : (
             <ul className="divide-y divide-border">
               {requests.map((r) => {
-                const st = STATUS_LABELS[r.status] ?? STATUS_LABELS.pendente;
+                const allStatus = r.items.map((i) => i.status);
+                const dominantStatus = allStatus[0] ?? "pendente";
+                const st = STATUS_LABELS[dominantStatus] ?? STATUS_LABELS.pendente;
                 return (
-                  <li key={r.id} className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-medium">{r.part_name} <span className="text-muted-foreground">× {r.quantity}</span></div>
-                      <div className="text-xs text-muted-foreground">
-                        {r.requester_name}{r.code ? ` · cód. ${r.code}` : ""} · {new Date(r.created_at).toLocaleString("pt-BR")}
-                      </div>
+                  <li key={r.group_id} className="px-4 py-4 space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="font-medium">{r.requester_name}</div>
+                      <span className={`rounded border px-2 py-1 text-xs uppercase font-semibold ${st.cls}`}>{st.label}</span>
                     </div>
-                    <span className={`rounded border px-2 py-1 text-xs uppercase font-semibold ${st.cls}`}>{st.label}</span>
+                    <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("pt-BR")}</div>
+                    <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
+                      {r.items.map((item) => (
+                        <li key={item.id} className="text-sm">
+                          {item.part_name} <span className="text-muted-foreground">× {item.quantity}</span>
+                          {item.code ? <span className="text-muted-foreground ml-1">· cód. {item.code}</span> : null}
+                        </li>
+                      ))}
+                    </ul>
                   </li>
                 );
               })}
