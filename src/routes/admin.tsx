@@ -7,8 +7,9 @@ import {
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
   adminListPendingCalls, adminAddPendingCall, adminDeletePendingCall, adminUpdatePendingCallStatus,
+  adminListAttendedCalls, adminAddAttendedCall, adminUpdateAttendedCall, adminDeleteAttendedCall,
 } from "@/lib/app.functions";
-import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, BookCheck, Clock, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Logo";
 
