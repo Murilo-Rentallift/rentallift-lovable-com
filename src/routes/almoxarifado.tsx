@@ -277,7 +277,113 @@ function AlmoxarifadoPage() {
     }
   }
 
+  const fetchWeeklyReq = useServerFn(almoxWeeklyMissingRequests);
+  const [reqWeekStart, setReqWeekStart] = useState(() => mondayOf(todayISO()));
+  const [reqWeeklyLoading, setReqWeeklyLoading] = useState(false);
 
+  async function generateWeeklyRequestsPDF() {
+    const startDate = mondayOf(reqWeekStart);
+    const endDate = addDays(startDate, 6);
+    setReqWeeklyLoading(true);
+    try {
+      const res = await fetchWeeklyReq({ data: { pin, startDate, endDate } });
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFillColor(127, 29, 29);
+      doc.rect(0, 0, pageWidth, 25, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("RELATÓRIO SEMANAL — REQUISIÇÕES EM FALTA", 14, 12);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Período: ${formatDateBR(startDate)} a ${formatDateBR(endDate)}`, 14, 20);
+
+      let y = 35;
+
+      if (!res.requests.length) {
+        doc.setTextColor(0, 0, 0);
+        doc.text("Nenhuma requisição em falta registrada nesta semana.", 14, y);
+      } else {
+        const rows: any[] = [];
+        res.requests.forEach((req: any) => {
+          req.items.forEach((item: any) => {
+            rows.push([
+              formatDateBR(req.created_at.slice(0, 10)),
+              req.requester_name,
+              item.part_name,
+              String(item.quantity),
+              item.code || "—",
+            ]);
+          });
+        });
+
+        autoTable(doc, {
+          startY: y,
+          head: [["Data", "Solicitante", "Peça", "Qtd", "Código"]],
+          body: rows,
+          theme: "striped",
+          headStyles: { fillColor: [127, 29, 29], textColor: 255, fontStyle: "bold" },
+          styles: { fontSize: 10, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 26 },
+            3: { halign: "center", cellWidth: 18 },
+          },
+          margin: { left: 14, right: 14 },
+        });
+        // @ts-ignore
+        y = (doc as any).lastAutoTable.finalY + 8;
+
+        // Totals per part name
+        const totals: Record<string, number> = {};
+        res.requests.forEach((req: any) => {
+          req.items.forEach((item: any) => {
+            totals[item.part_name] = (totals[item.part_name] || 0) + item.quantity;
+          });
+        });
+
+        if (y > 240) { doc.addPage(); y = 20; }
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(127, 29, 29);
+        doc.text("RESUMO POR PEÇA", 14, y);
+        autoTable(doc, {
+          startY: y + 2,
+          head: [["Peça", "Quantidade Total"]],
+          body: Object.entries(totals)
+            .sort((a, b) => b[1] - a[1])
+            .map(([n, q]) => [n, String(q)]),
+          theme: "grid",
+          headStyles: { fillColor: [250, 204, 21], textColor: 15, fontStyle: "bold" },
+          styles: { fontSize: 10, cellPadding: 3 },
+          columnStyles: { 1: { halign: "center", cellWidth: 40 } },
+          margin: { left: 14, right: 14 },
+        });
+      }
+
+      const pages = doc.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(120);
+        doc.text(
+          `Gerado em ${new Date().toLocaleString("pt-BR")} — Página ${i}/${pages}`,
+          pageWidth / 2,
+          doc.internal.pageSize.getHeight() - 8,
+          { align: "center" },
+        );
+      }
+
+      doc.save(`requisicoes_em_falta_${startDate}_a_${endDate}.pdf`);
+      toast.success(`${res.requests.length} ${res.requests.length === 1 ? "grupo" : "grupos"} no relatório`);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao gerar relatório");
+    } finally {
+      setReqWeeklyLoading(false);
+    }
+  }
 
 
   function generatePDF() {
