@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateGroupStatus, almoxDeleteGroup } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateGroupStatus, almoxDeleteGroup, almoxWeeklyMissingRequests } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -277,7 +277,113 @@ function AlmoxarifadoPage() {
     }
   }
 
+  const fetchWeeklyReq = useServerFn(almoxWeeklyMissingRequests);
+  const [reqWeekStart, setReqWeekStart] = useState(() => mondayOf(todayISO()));
+  const [reqWeeklyLoading, setReqWeeklyLoading] = useState(false);
 
+  async function generateWeeklyRequestsPDF() {
+    const startDate = mondayOf(reqWeekStart);
+    const endDate = addDays(startDate, 6);
+    setReqWeeklyLoading(true);
+    try {
+      const res = await fetchWeeklyReq({ data: { pin, startDate, endDate } });
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFillColor(127, 29, 29);
+      doc.rect(0, 0, pageWidth, 25, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("RELATÓRIO SEMANAL — REQUISIÇÕES EM FALTA", 14, 12);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Período: ${formatDateBR(startDate)} a ${formatDateBR(endDate)}`, 14, 20);
+
+      let y = 35;
+
+      if (!res.requests.length) {
+        doc.setTextColor(0, 0, 0);
+        doc.text("Nenhuma requisição em falta registrada nesta semana.", 14, y);
+      } else {
+        const rows: any[] = [];
+        res.requests.forEach((req: any) => {
+          req.items.forEach((item: any) => {
+            rows.push([
+              formatDateBR(req.created_at.slice(0, 10)),
+              req.requester_name,
+              item.part_name,
+              String(item.quantity),
+              item.code || "—",
+            ]);
+          });
+        });
+
+        autoTable(doc, {
+          startY: y,
+          head: [["Data", "Solicitante", "Peça", "Qtd", "Código"]],
+          body: rows,
+          theme: "striped",
+          headStyles: { fillColor: [127, 29, 29], textColor: 255, fontStyle: "bold" },
+          styles: { fontSize: 10, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 26 },
+            3: { halign: "center", cellWidth: 18 },
+          },
+          margin: { left: 14, right: 14 },
+        });
+        // @ts-ignore
+        y = (doc as any).lastAutoTable.finalY + 8;
+
+        // Totals per part name
+        const totals: Record<string, number> = {};
+        res.requests.forEach((req: any) => {
+          req.items.forEach((item: any) => {
+            totals[item.part_name] = (totals[item.part_name] || 0) + item.quantity;
+          });
+        });
+
+        if (y > 240) { doc.addPage(); y = 20; }
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(127, 29, 29);
+        doc.text("RESUMO POR PEÇA", 14, y);
+        autoTable(doc, {
+          startY: y + 2,
+          head: [["Peça", "Quantidade Total"]],
+          body: Object.entries(totals)
+            .sort((a, b) => b[1] - a[1])
+            .map(([n, q]) => [n, String(q)]),
+          theme: "grid",
+          headStyles: { fillColor: [250, 204, 21], textColor: 15, fontStyle: "bold" },
+          styles: { fontSize: 10, cellPadding: 3 },
+          columnStyles: { 1: { halign: "center", cellWidth: 40 } },
+          margin: { left: 14, right: 14 },
+        });
+      }
+
+      const pages = doc.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(120);
+        doc.text(
+          `Gerado em ${new Date().toLocaleString("pt-BR")} — Página ${i}/${pages}`,
+          pageWidth / 2,
+          doc.internal.pageSize.getHeight() - 8,
+          { align: "center" },
+        );
+      }
+
+      doc.save(`requisicoes_em_falta_${startDate}_a_${endDate}.pdf`);
+      toast.success(`${res.requests.length} ${res.requests.length === 1 ? "grupo" : "grupos"} no relatório`);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao gerar relatório");
+    } finally {
+      setReqWeeklyLoading(false);
+    }
+  }
 
 
   function generatePDF() {
@@ -473,188 +579,219 @@ function AlmoxarifadoPage() {
         </div>
 
         {tab === "requisicoes" ? (
-          <section className="rounded-lg border border-border bg-card">
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <h2 className="font-display text-sm uppercase tracking-wider flex items-center gap-2">
-                <ListChecks className="h-4 w-4" /> Requisições recebidas
-              </h2>
-              <span className="text-xs text-muted-foreground">
-                {requests.length} {requests.length === 1 ? "item" : "itens"}
-              </span>
-            </div>
-            {reqsLoading ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">Carregando...</p>
-            ) : requests.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">Nenhuma requisição da oficina.</p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {requests.map((r) => {
-                  const dominantStatus = r.items[0]?.status ?? "pendente";
-                  const opt = STATUS_OPTIONS.find((s) => s.value === dominantStatus) ?? STATUS_OPTIONS[0];
-                  return (
-                    <li key={r.group_id} className="px-4 py-4 space-y-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="font-medium text-sm">
-                            Solicitante: <span className="text-foreground">{r.requester_name}</span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(r.created_at).toLocaleString("pt-BR")} · {r.items.length} {r.items.length === 1 ? "peça" : "peças"}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={dominantStatus}
-                            onChange={(e) => changeGroupStatus(r.group_id, e.target.value as PartStatus)}
-                            className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
-                          >
-                            {STATUS_OPTIONS.map((s) => (
-                              <option key={s.value} value={s.value} className="bg-background text-foreground">
-                                {s.label}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => removeGroup(r.group_id)}
-                            className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                            title="Remover requisição"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
-                        {r.items.map((item) => (
-                          <li key={item.id} className="text-sm flex items-center gap-2">
-                            <span className={`h-2 w-2 rounded-full shrink-0 ${
-                              item.status === "entregue" ? "bg-green-500" :
-                              item.status === "separado" ? "bg-blue-500" :
-                              item.status === "em_falta" ? "bg-red-500" : "bg-accent"
-                            }`} />
-                            {item.part_name} <span className="text-muted-foreground">× {item.quantity}</span>
-                            {item.code ? <span className="text-muted-foreground ml-1">· cód. <span className="font-mono">{item.code}</span></span> : null}
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-        ) : (
-        <>
-        <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[200px]">
-            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
-              Relatório semanal — Peças em falta
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Gera um PDF com todas as peças marcadas como "Em falta" na semana selecionada (segunda a domingo).
-            </p>
-          </div>
-          <div className="flex items-end gap-2">
-            <div>
-              <Label htmlFor="weekStart" className="text-xs">Semana de</Label>
-              <Input
-                id="weekStart"
-                type="date"
-                value={weekStart}
-                onChange={(e) => setWeekStart(e.target.value)}
-                className="w-auto"
-              />
-            </div>
-            <Button
-              onClick={generateWeeklyPDF}
-              disabled={weeklyLoading || !weekStart}
-              variant="destructive"
-            >
-              <FileDown className="h-4 w-4 mr-2" />
-              {weeklyLoading ? "Gerando..." : "Gerar relatório"}
-            </Button>
-          </div>
-        </section>
-
-
-        {loading ? (
-          <p className="text-muted-foreground">Carregando...</p>
-        ) : totalParts === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-12 text-center">
-            <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">Nenhuma peça programada para {formatDateBR(date)}.</p>
-          </div>
-        ) : (
-          groups
-            .filter((g) => g.parts.length > 0)
-            .map((g) => (
-              <div key={g.operator.id} className="rounded-lg border border-border bg-card overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs text-muted-foreground">
-                      #{String(g.operator.position).padStart(2, "0")}
-                    </span>
-                    <h2 className="font-display text-lg font-bold uppercase">{g.operator.name}</h2>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {g.parts.length} {g.parts.length === 1 ? "item" : "itens"}
-                  </span>
+          <>
+            <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
+                  Relatório semanal — Requisições em falta
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Gera um PDF com todas as requisições marcadas como "Em falta" na semana selecionada.
+                </p>
+              </div>
+              <div className="flex items-end gap-2">
+                <div>
+                  <Label htmlFor="reqWeekStart" className="text-xs">Semana de</Label>
+                  <Input
+                    id="reqWeekStart"
+                    type="date"
+                    value={reqWeekStart}
+                    onChange={(e) => setReqWeekStart(e.target.value)}
+                    className="w-auto"
+                  />
                 </div>
+                <Button
+                  onClick={generateWeeklyRequestsPDF}
+                  disabled={reqWeeklyLoading || !reqWeekStart}
+                  variant="destructive"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {reqWeeklyLoading ? "Gerando..." : "Gerar relatório"}
+                </Button>
+              </div>
+            </section>
+
+            <section className="rounded-lg border border-border bg-card">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <h2 className="font-display text-sm uppercase tracking-wider flex items-center gap-2">
+                  <ListChecks className="h-4 w-4" /> Requisições recebidas
+                </h2>
+                <span className="text-xs text-muted-foreground">
+                  {requests.length} {requests.length === 1 ? "item" : "itens"}
+                </span>
+              </div>
+              {reqsLoading ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">Carregando...</p>
+              ) : requests.length === 0 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">Nenhuma requisição da oficina.</p>
+              ) : (
                 <ul className="divide-y divide-border">
-                  {g.parts.map((p) => {
-                    const opt = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
+                  {requests.map((r) => {
+                    const dominantStatus = r.items[0]?.status ?? "pendente";
+                    const opt = STATUS_OPTIONS.find((s) => s.value === dominantStatus) ?? STATUS_OPTIONS[0];
                     return (
-                      <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className={`h-2 w-2 rounded-full shrink-0 ${
-                            p.status === "entregue" ? "bg-green-500" :
-                            p.status === "separado" ? "bg-blue-500" :
-                            p.status === "em_falta" ? "bg-red-500" : "bg-accent"
-                          }`} />
-                          <span className="font-medium truncate">{p.name}</span>
+                      <li key={r.group_id} className="px-4 py-4 space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm">
+                              Solicitante: <span className="text-foreground">{r.requester_name}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(r.created_at).toLocaleString("pt-BR")} · {r.items.length} {r.items.length === 1 ? "peça" : "peças"}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={dominantStatus}
+                              onChange={(e) => changeGroupStatus(r.group_id, e.target.value as PartStatus)}
+                              className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
+                            >
+                              {STATUS_OPTIONS.map((s) => (
+                                <option key={s.value} value={s.value} className="bg-background text-foreground">
+                                  {s.label}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => removeGroup(r.group_id)}
+                              className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                              title="Remover requisição"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 text-sm">
-                          <input
-                            type="number"
-                            min={1}
-                            max={9999}
-                            value={p.quantity}
-                            onChange={(e) => {
-                              const v = parseInt(e.target.value, 10);
-                              if (Number.isFinite(v)) changeQty(p.id, Math.max(1, Math.min(9999, v)));
-                            }}
-                            className="w-16 rounded border border-input bg-background px-2 py-1 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-ring"
-                            title="Quantidade"
-                          />
-                          <select
-                            value={p.status}
-                            onChange={(e) => changeStatus(p.id, e.target.value as PartStatus)}
-                            className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
-                          >
-                            {STATUS_OPTIONS.map((s) => (
-                              <option key={s.value} value={s.value} className="bg-background text-foreground">
-                                {s.label}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => removePart(p.id, p.name)}
-                            className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                            title="Remover peça"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
+                          {r.items.map((item) => (
+                            <li key={item.id} className="text-sm flex items-center gap-2">
+                              <span className={`h-2 w-2 rounded-full shrink-0 ${
+                                item.status === "entregue" ? "bg-green-500" :
+                                item.status === "separado" ? "bg-blue-500" :
+                                item.status === "em_falta" ? "bg-red-500" : "bg-accent"
+                              }`} />
+                              {item.part_name} <span className="text-muted-foreground">× {item.quantity}</span>
+                              {item.code ? <span className="text-muted-foreground ml-1">· cód. <span className="font-mono">{item.code}</span></span> : null}
+                            </li>
+                          ))}
+                        </ul>
                       </li>
                     );
                   })}
-
                 </ul>
+              )}
+            </section>
+          </>
+        ) : (
+          <>
+            <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
+                  Relatório semanal — Peças em falta
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Gera um PDF com todas as peças marcadas como "Em falta" na semana selecionada (segunda a domingo).
+                </p>
               </div>
-            ))
-        )}
-        </>
+              <div className="flex items-end gap-2">
+                <div>
+                  <Label htmlFor="weekStart" className="text-xs">Semana de</Label>
+                  <Input
+                    id="weekStart"
+                    type="date"
+                    value={weekStart}
+                    onChange={(e) => setWeekStart(e.target.value)}
+                    className="w-auto"
+                  />
+                </div>
+                <Button
+                  onClick={generateWeeklyPDF}
+                  disabled={weeklyLoading || !weekStart}
+                  variant="destructive"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {weeklyLoading ? "Gerando..." : "Gerar relatório"}
+                </Button>
+              </div>
+            </section>
+
+            {loading ? (
+              <p className="text-muted-foreground">Carregando...</p>
+            ) : totalParts === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-12 text-center">
+                <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">Nenhuma peça programada para {formatDateBR(date)}.</p>
+              </div>
+            ) : (
+              groups
+                .filter((g) => g.parts.length > 0)
+                .map((g) => (
+                  <div key={g.operator.id} className="rounded-lg border border-border bg-card overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          #{String(g.operator.position).padStart(2, "0")}
+                        </span>
+                        <h2 className="font-display text-lg font-bold uppercase">{g.operator.name}</h2>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {g.parts.length} {g.parts.length === 1 ? "item" : "itens"}
+                      </span>
+                    </div>
+                    <ul className="divide-y divide-border">
+                      {g.parts.map((p) => {
+                        const opt = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
+                        return (
+                          <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className={`h-2 w-2 rounded-full shrink-0 ${
+                                p.status === "entregue" ? "bg-green-500" :
+                                p.status === "separado" ? "bg-blue-500" :
+                                p.status === "em_falta" ? "bg-red-500" : "bg-accent"
+                              }`} />
+                              <span className="font-medium truncate">{p.name}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <input
+                                type="number"
+                                min={1}
+                                max={9999}
+                                value={p.quantity}
+                                onChange={(e) => {
+                                  const v = parseInt(e.target.value, 10);
+                                  if (Number.isFinite(v)) changeQty(p.id, Math.max(1, Math.min(9999, v)));
+                                }}
+                                className="w-16 rounded border border-input bg-background px-2 py-1 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-ring"
+                                title="Quantidade"
+                              />
+                              <select
+                                value={p.status}
+                                onChange={(e) => changeStatus(p.id, e.target.value as PartStatus)}
+                                className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
+                              >
+                                {STATUS_OPTIONS.map((s) => (
+                                  <option key={s.value} value={s.value} className="bg-background text-foreground">
+                                    {s.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => removePart(p.id, p.name)}
+                                className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                                title="Remover peça"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))
+            )}
+          </>
         )}
       </main>
     </div>

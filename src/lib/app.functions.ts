@@ -250,6 +250,47 @@ export const almoxUpdateGroupStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Almoxarifado: weekly report of missing part requests from oficina ----------
+export const almoxWeeklyMissingRequests = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; startDate: string; endDate: string }) =>
+    z.object({ pin: pinSchema, startDate: dateSchema, endDate: dateSchema }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("part_requests" as any)
+      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at")
+      .eq("status", "em_falta")
+      .gte("created_at", `${data.startDate}T00:00:00Z`)
+      .lte("created_at", `${data.endDate}T23:59:59Z`)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    // Group by group_id
+    const groups = new Map<string, any[]>();
+    for (const row of (rows ?? []) as any[]) {
+      const list = groups.get(row.group_id) ?? [];
+      list.push(row);
+      groups.set(row.group_id, list);
+    }
+
+    const requests = Array.from(groups.entries()).map(([groupId, items]) => ({
+      group_id: groupId,
+      requester_name: items[0].requester_name,
+      created_at: items[0].created_at,
+      items: items.map((i: any) => ({
+        id: i.id,
+        part_name: i.part_name,
+        quantity: i.quantity,
+        code: i.code,
+        status: i.status,
+      })),
+    }));
+
+    return { startDate: data.startDate, endDate: data.endDate, requests };
+  });
+
 export const almoxDeleteGroup = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; groupId: string }) =>
     z.object({ pin: pinSchema, groupId: z.string().uuid() }).parse(d),
