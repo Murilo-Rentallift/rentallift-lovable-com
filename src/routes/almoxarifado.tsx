@@ -441,6 +441,87 @@ function AlmoxarifadoPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8 space-y-5">
+        <div className="flex gap-2 border-b border-border">
+          <button
+            type="button"
+            onClick={() => setTab("pecas")}
+            className={`px-4 py-2 text-sm font-semibold uppercase tracking-wide border-b-2 -mb-px flex items-center gap-2 ${tab === "pecas" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          >
+            <Package className="h-4 w-4" /> Peças do dia
+          </button>
+          <button
+            type="button"
+            onClick={() => { setTab("requisicoes"); loadRequests(pin); }}
+            className={`px-4 py-2 text-sm font-semibold uppercase tracking-wide border-b-2 -mb-px flex items-center gap-2 ${tab === "requisicoes" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          >
+            <Wrench className="h-4 w-4" /> Requisições da Oficina
+            {requests.filter((r) => r.status === "pendente").length > 0 && (
+              <span className="ml-1 rounded-full bg-accent text-accent-foreground text-xs px-2 py-0.5">
+                {requests.filter((r) => r.status === "pendente").length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {tab === "requisicoes" ? (
+          <section className="rounded-lg border border-border bg-card">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <h2 className="font-display text-sm uppercase tracking-wider flex items-center gap-2">
+                <ListChecks className="h-4 w-4" /> Requisições recebidas
+              </h2>
+              <span className="text-xs text-muted-foreground">
+                {requests.length} {requests.length === 1 ? "item" : "itens"}
+              </span>
+            </div>
+            {reqsLoading ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">Carregando...</p>
+            ) : requests.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">Nenhuma requisição da oficina.</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {requests.map((r) => {
+                  const opt = STATUS_OPTIONS.find((s) => s.value === r.status) ?? STATUS_OPTIONS[0];
+                  return (
+                    <li key={r.id} className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-medium">
+                          {r.part_name} <span className="text-muted-foreground">× {r.quantity}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Solicitante: <span className="text-foreground">{r.requester_name}</span>
+                          {r.code ? <> · cód. <span className="font-mono text-foreground">{r.code}</span></> : null}
+                          {" · "}{new Date(r.created_at).toLocaleString("pt-BR")}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={r.status}
+                          onChange={(e) => changeReqStatus(r.id, e.target.value as PartStatus)}
+                          className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
+                        >
+                          {STATUS_OPTIONS.map((s) => (
+                            <option key={s.value} value={s.value} className="bg-background text-foreground">
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => removeReq(r.id)}
+                          className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                          title="Remover requisição"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        ) : (
+        <>
         <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
             <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
