@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -119,6 +119,21 @@ function AlmoxarifadoPage() {
     } catch (e: any) {
       toast.error(e.message || "Falha ao remover peça");
       setGroups(snapshot);
+    }
+  }
+
+  const updateQty = useServerFn(almoxUpdatePartQuantity);
+  async function changeQty(partId: string, quantity: number) {
+    if (!Number.isFinite(quantity) || quantity < 1) return;
+    setGroups((gs) => gs.map((g) => ({
+      ...g,
+      parts: g.parts.map((p) => p.id === partId ? { ...p, quantity } : p),
+    })));
+    try {
+      await updateQty({ data: { pin, partId, quantity } });
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao atualizar quantidade");
+      load(pin, date);
     }
   }
 
@@ -452,7 +467,18 @@ function AlmoxarifadoPage() {
                           <span className="font-medium truncate">{p.name}</span>
                         </div>
                         <div className="flex items-center gap-3 text-sm">
-                          <span className="font-mono text-muted-foreground">x{p.quantity}</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={9999}
+                            value={p.quantity}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (Number.isFinite(v)) changeQty(p.id, Math.max(1, Math.min(9999, v)));
+                            }}
+                            className="w-16 rounded border border-input bg-background px-2 py-1 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-ring"
+                            title="Quantidade"
+                          />
                           <select
                             value={p.status}
                             onChange={(e) => changeStatus(p.id, e.target.value as PartStatus)}

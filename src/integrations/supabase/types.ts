@@ -105,6 +105,7 @@ export type Database = {
           description: string
           id: string
           priority: string
+          status: string
           updated_at: string
         }
         Insert: {
@@ -114,6 +115,7 @@ export type Database = {
           description?: string
           id?: string
           priority?: string
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -123,6 +125,7 @@ export type Database = {
           description?: string
           id?: string
           priority?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []

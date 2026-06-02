@@ -228,6 +228,23 @@ export const almoxUpdatePartStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Almoxarifado: update part quantity ----------
+export const almoxUpdatePartQuantity = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; partId: string; quantity: number }) =>
+    z.object({
+      pin: pinSchema,
+      partId: z.string().uuid(),
+      quantity: z.number().int().min(1).max(9999),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { error } = await supabaseAdmin
+      .from("parts").update({ quantity: data.quantity }).eq("id", data.partId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ---------- Almoxarifado: delete part ----------
 export const almoxDeletePart = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; partId: string }) =>
@@ -567,13 +584,29 @@ export const adminListPendingCalls = createServerFn({ method: "POST" })
     await verifyAdmin(data.pin);
     const { data: calls, error } = await supabaseAdmin
       .from("pending_calls")
-      .select("id, call_date, company, description, priority, created_at")
+      .select("id, call_date, company, description, priority, status, created_at")
       .gte("call_date", data.startDate)
       .lte("call_date", data.endDate)
       .order("call_date", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
     return { calls: calls ?? [] };
+  });
+
+export const adminUpdatePendingCallStatus = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; callId: string; status: string }) =>
+    z.object({
+      pin: pinSchema,
+      callId: z.string().uuid(),
+      status: z.enum(["pendente", "atendido", "nao_atendido"]),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("pending_calls").update({ status: data.status }).eq("id", data.callId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const adminAddPendingCall = createServerFn({ method: "POST" })
