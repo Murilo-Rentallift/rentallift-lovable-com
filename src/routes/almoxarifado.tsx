@@ -579,6 +579,37 @@ function AlmoxarifadoPage() {
         </div>
 
         {tab === "requisicoes" ? (
+          <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[200px]">
+              <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
+                Relatório semanal — Requisições em falta
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Gera um PDF com todas as requisições marcadas como "Em falta" na semana selecionada.
+              </p>
+            </div>
+            <div className="flex items-end gap-2">
+              <div>
+                <Label htmlFor="reqWeekStart" className="text-xs">Semana de</Label>
+                <Input
+                  id="reqWeekStart"
+                  type="date"
+                  value={reqWeekStart}
+                  onChange={(e) => setReqWeekStart(e.target.value)}
+                  className="w-auto"
+                />
+              </div>
+              <Button
+                onClick={generateWeeklyRequestsPDF}
+                disabled={reqWeeklyLoading || !reqWeekStart}
+                variant="destructive"
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                {reqWeeklyLoading ? "Gerando..." : "Gerar relatório"}
+              </Button>
+            </div>
+          </section>
+
           <section className="rounded-lg border border-border bg-card">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
               <h2 className="font-display text-sm uppercase tracking-wider flex items-center gap-2">
