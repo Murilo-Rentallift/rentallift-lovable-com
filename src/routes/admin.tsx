@@ -159,6 +159,17 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             <CalendarDays className="h-4 w-4" />
             Próximos Chamados
           </button>
+          <button
+            onClick={() => setTab("agenda")}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
+              tab === "agenda"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BookCheck className="h-4 w-4" />
+            Agenda do dia
+          </button>
         </div>
       </header>
 
