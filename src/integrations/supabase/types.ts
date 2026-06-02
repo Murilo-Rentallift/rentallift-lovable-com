@@ -19,16 +19,19 @@ export type Database = {
           admin_pin: string
           almox_pin: string
           id: number
+          oficina_pin: string
         }
         Insert: {
           admin_pin?: string
           almox_pin?: string
           id?: number
+          oficina_pin?: string
         }
         Update: {
           admin_pin?: string
           almox_pin?: string
           id?: number
+          oficina_pin?: string
         }
         Relationships: []
       }
@@ -53,6 +56,39 @@ export type Database = {
           name?: string
           pin?: string
           position?: number
+        }
+        Relationships: []
+      }
+      part_requests: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          part_name: string
+          quantity: number
+          requester_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          id?: string
+          part_name: string
+          quantity?: number
+          requester_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          part_name?: string
+          quantity?: number
+          requester_name?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
