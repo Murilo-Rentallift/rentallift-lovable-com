@@ -73,6 +73,48 @@ function AlmoxarifadoPage() {
   const [date, setDate] = useState(todayISO());
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<"pecas" | "requisicoes">("pecas");
+  const [requests, setRequests] = useState<Array<{ id: string; requester_name: string; part_name: string; quantity: number; code: string; status: PartStatus; created_at: string }>>([]);
+  const [reqsLoading, setReqsLoading] = useState(false);
+
+  const fetchReqs = useServerFn(almoxListRequests);
+  const updateReqStatus = useServerFn(almoxUpdateRequestStatus);
+  const deleteReq = useServerFn(almoxDeleteRequest);
+
+  async function loadRequests(currentPin: string) {
+    setReqsLoading(true);
+    try {
+      const res = await fetchReqs({ data: { pin: currentPin } });
+      setRequests(res.requests as any);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao carregar requisições");
+    } finally {
+      setReqsLoading(false);
+    }
+  }
+
+  async function changeReqStatus(requestId: string, status: PartStatus) {
+    setRequests((rs) => rs.map((r) => r.id === requestId ? { ...r, status } : r));
+    try {
+      await updateReqStatus({ data: { pin, requestId, status } });
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao atualizar");
+      loadRequests(pin);
+    }
+  }
+
+  async function removeReq(requestId: string) {
+    if (!confirm("Remover esta requisição?")) return;
+    const snap = requests;
+    setRequests((rs) => rs.filter((r) => r.id !== requestId));
+    try {
+      await deleteReq({ data: { pin, requestId } });
+      toast.success("Requisição removida");
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao remover");
+      setRequests(snap);
+    }
+  }
 
   async function load(currentPin: string, currentDate: string) {
     setLoading(true);
