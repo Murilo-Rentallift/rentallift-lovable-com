@@ -464,9 +464,9 @@ function AlmoxarifadoPage() {
             className={`px-4 py-2 text-sm font-semibold uppercase tracking-wide border-b-2 -mb-px flex items-center gap-2 ${tab === "requisicoes" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
             <Wrench className="h-4 w-4" /> Requisições da Oficina
-            {requests.filter((r) => r.status === "pendente").length > 0 && (
+            {requests.filter((r) => r.items.some((i) => i.status === "pendente")).length > 0 && (
               <span className="ml-1 rounded-full bg-accent text-accent-foreground text-xs px-2 py-0.5">
-                {requests.filter((r) => r.status === "pendente").length}
+                {requests.filter((r) => r.items.some((i) => i.status === "pendente")).length}
               </span>
             )}
           </button>
