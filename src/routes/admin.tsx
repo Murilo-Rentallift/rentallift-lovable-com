@@ -6,7 +6,7 @@ import {
   adminAddPart, adminAddTask, adminChangePin, adminChangeAlmoxPin, adminDeletePart, adminDeleteTask,
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
-  adminListPendingCalls, adminAddPendingCall, adminDeletePendingCall,
+  adminListPendingCalls, adminAddPendingCall, adminDeletePendingCall, adminUpdatePendingCallStatus,
 } from "@/lib/app.functions";
 import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -745,6 +745,7 @@ function PendingCallsCalendar({ pin }: { pin: string }) {
   const listFn = useServerFn(adminListPendingCalls);
   const addFn = useServerFn(adminAddPendingCall);
   const delFn = useServerFn(adminDeletePendingCall);
+  const statusFn = useServerFn(adminUpdatePendingCallStatus);
 
   const { data } = useQuery({
     queryKey: ["pending-calls", weekStart, pin],
@@ -763,6 +764,11 @@ function PendingCallsCalendar({ pin }: { pin: string }) {
   });
   const delM = useMutation({
     mutationFn: (callId: string) => delFn({ data: { pin, callId } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pending-calls", weekStart, pin] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const statusM = useMutation({
+    mutationFn: (v: { callId: string; status: string }) => statusFn({ data: { pin, callId: v.callId, status: v.status } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pending-calls", weekStart, pin] }),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -832,22 +838,40 @@ function PendingCallsCalendar({ pin }: { pin: string }) {
                 {items.length === 0 && (
                   <p className="text-[11px] text-muted-foreground italic">Sem chamados</p>
                 )}
-                {items.map((c) => (
-                  <div key={c.id} className={`rounded border px-2 py-1.5 text-xs ${PRIORITY_STYLES[c.priority] ?? PRIORITY_STYLES.normal}`}>
-                    <div className="flex items-start justify-between gap-1">
-                      <p className="font-semibold leading-tight break-words">{c.company}</p>
-                      <button
-                        onClick={() => delM.mutate(c.id)}
-                        className="opacity-60 hover:opacity-100 shrink-0"
-                        title="Remover"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                {items.map((c) => {
+                  const cs = (c as any).status ?? "pendente";
+                  const statusStyle =
+                    cs === "atendido" ? "bg-green-500/20 text-green-300 border-green-500/40" :
+                    cs === "nao_atendido" ? "bg-red-500/20 text-red-300 border-red-500/40" :
+                    "bg-muted text-muted-foreground border-border";
+                  return (
+                    <div key={c.id} className={`rounded border px-2 py-1.5 text-xs ${PRIORITY_STYLES[c.priority] ?? PRIORITY_STYLES.normal}`}>
+                      <div className="flex items-start justify-between gap-1">
+                        <p className="font-semibold leading-tight break-words">{c.company}</p>
+                        <button
+                          onClick={() => delM.mutate(c.id)}
+                          className="opacity-60 hover:opacity-100 shrink-0"
+                          title="Remover"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      {c.description && <p className="mt-1 opacity-90 whitespace-pre-wrap leading-tight">{c.description}</p>}
+                      <div className="mt-1 flex items-center justify-between gap-1">
+                        <p className="text-[9px] uppercase tracking-wider opacity-70">{c.priority}</p>
+                        <select
+                          value={cs}
+                          onChange={(e) => statusM.mutate({ callId: c.id, status: e.target.value })}
+                          className={`rounded border px-1 py-0.5 text-[9px] uppercase tracking-wider font-semibold focus:outline-none ${statusStyle}`}
+                        >
+                          <option value="pendente" className="bg-background text-foreground">Pendente</option>
+                          <option value="atendido" className="bg-background text-foreground">Atendido</option>
+                          <option value="nao_atendido" className="bg-background text-foreground">Não atendido</option>
+                        </select>
+                      </div>
                     </div>
-                    {c.description && <p className="mt-1 opacity-90 whitespace-pre-wrap leading-tight">{c.description}</p>}
-                    <p className="mt-1 text-[9px] uppercase tracking-wider opacity-70">{c.priority}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
