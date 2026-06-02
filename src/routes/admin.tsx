@@ -8,7 +8,7 @@ import {
   adminSaveTask, adminUpdateOperator,
   adminListPendingCalls, adminAddPendingCall, adminDeletePendingCall,
 } from "@/lib/app.functions";
-import { ArrowDown, ArrowLeft, ArrowUp, Check, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Logo";
 
@@ -86,6 +86,7 @@ function AdminLogin({ onLogged }: { onLogged: (pin: string) => void }) {
 function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }) {
   const [date, setDate] = useState(todayISO());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tab, setTab] = useState<"operadores" | "chamados">("operadores");
   const qc = useQueryClient();
 
   const getDay = useServerFn(adminGetDay);
@@ -93,6 +94,7 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
     queryKey: ["admin-day", date, pin],
     queryFn: () => getDay({ data: { pin, date } }),
     retry: false,
+    enabled: tab === "operadores",
   });
 
   useEffect(() => {
@@ -113,12 +115,14 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             <h1 className="font-display text-xl font-bold uppercase">Painel do Admin</h1>
           </div>
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-            />
+            {tab === "operadores" && (
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+              />
+            )}
             <button
               onClick={() => setSettingsOpen(true)}
               className="rounded-md border border-border bg-card p-2 hover:bg-muted transition"
@@ -131,36 +135,64 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             </button>
           </div>
         </div>
+        <div className="mx-auto max-w-5xl px-6 pb-3 flex gap-2">
+          <button
+            onClick={() => setTab("operadores")}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
+              tab === "operadores"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ClipboardList className="h-4 w-4" />
+            Operadores
+          </button>
+          <button
+            onClick={() => setTab("chamados")}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
+              tab === "chamados"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <CalendarDays className="h-4 w-4" />
+            Próximos Chamados
+          </button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
-        <PendingCallsCalendar pin={pin} />
+        {tab === "chamados" ? (
+          <PendingCallsCalendar pin={pin} />
+        ) : (
+          <>
+            {isLoading && (
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-44 rounded-lg bg-card/50 animate-pulse" />
+                ))}
+              </div>
+            )}
 
-        {isLoading && (
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-44 rounded-lg bg-card/50 animate-pulse" />
-            ))}
-          </div>
+            {data?.operators.map((op) => {
+              const schedule = data.schedules.find((s) => s.operator_id === op.id);
+              const parts = schedule ? data.parts.filter((p) => p.schedule_id === schedule.id) : [];
+              const tasks = schedule ? (data.tasks ?? []).filter((t) => t.schedule_id === schedule.id) : [];
+              return (
+                <OperatorCard
+                  key={op.id}
+                  pin={pin}
+                  date={date}
+                  operator={op}
+                  legacyTask={schedule?.task ?? ""}
+                  tasks={tasks}
+                  parts={parts}
+                  onChange={() => qc.invalidateQueries({ queryKey: ["admin-day", date, pin] })}
+                />
+              );
+            })}
+          </>
         )}
-
-        {data?.operators.map((op) => {
-          const schedule = data.schedules.find((s) => s.operator_id === op.id);
-          const parts = schedule ? data.parts.filter((p) => p.schedule_id === schedule.id) : [];
-          const tasks = schedule ? (data.tasks ?? []).filter((t) => t.schedule_id === schedule.id) : [];
-          return (
-            <OperatorCard
-              key={op.id}
-              pin={pin}
-              date={date}
-              operator={op}
-              legacyTask={schedule?.task ?? ""}
-              tasks={tasks}
-              parts={parts}
-              onChange={() => qc.invalidateQueries({ queryKey: ["admin-day", date, pin] })}
-            />
-          );
-        })}
       </main>
 
       {settingsOpen && data && (

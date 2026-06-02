@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, FileDown, Package, Lock } from "lucide-react";
+import { ArrowLeft, FileDown, Package, Lock, Trash2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -105,6 +105,20 @@ function AlmoxarifadoPage() {
     } catch (e: any) {
       toast.error(e.message || "Falha ao atualizar status");
       load(pin, date);
+    }
+  }
+
+  const deletePart = useServerFn(almoxDeletePart);
+  async function removePart(partId: string, partName: string) {
+    if (!confirm(`Remover "${partName}" da lista?`)) return;
+    const snapshot = groups;
+    setGroups((gs) => gs.map((g) => ({ ...g, parts: g.parts.filter((p) => p.id !== partId) })));
+    try {
+      await deletePart({ data: { pin, partId } });
+      toast.success("Peça removida");
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao remover peça");
+      setGroups(snapshot);
     }
   }
 
@@ -450,6 +464,14 @@ function AlmoxarifadoPage() {
                               </option>
                             ))}
                           </select>
+                          <button
+                            type="button"
+                            onClick={() => removePart(p.id, p.name)}
+                            className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                            title="Remover peça"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </li>
                     );
