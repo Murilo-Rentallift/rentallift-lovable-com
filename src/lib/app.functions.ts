@@ -900,3 +900,186 @@ export const adminDeleteAttendedCall = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ============================================================
+// Oficina: Peças e Ferramentas (workshop_items)
+// ============================================================
+const workshopStatusSchema = z.enum([
+  "aguardando_orcamento",
+  "orcamento_aguardando_aprovacao",
+  "aprovado",
+]);
+
+export const oficinaListWorkshopItems = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const { data: rows, error } = await supabaseAdmin
+      .from("workshop_items" as any)
+      .select("id, name, supplier, status, deadline_days, approved_at, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { items: rows ?? [] };
+  });
+
+export const oficinaCreateWorkshopItem = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const { data: row, error } = await supabaseAdmin
+      .from("workshop_items" as any)
+      .insert({})
+      .select("id, name, supplier, status, deadline_days, approved_at, created_at")
+      .single();
+    if (error) throw new Error(error.message);
+    return { item: row };
+  });
+
+export const oficinaUpdateWorkshopItem = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    pin: string;
+    itemId: string;
+    name?: string;
+    supplier?: string;
+    status?: string;
+    deadlineDays?: number;
+  }) =>
+    z.object({
+      pin: pinSchema,
+      itemId: z.string().uuid(),
+      name: z.string().trim().max(200).optional(),
+      supplier: z.string().trim().max(200).optional(),
+      status: workshopStatusSchema.optional(),
+      deadlineDays: z.number().int().min(0).max(3650).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const patch: Record<string, any> = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.supplier !== undefined) patch.supplier = data.supplier;
+    if (data.deadlineDays !== undefined) patch.deadline_days = data.deadlineDays;
+    if (data.status !== undefined) {
+      patch.status = data.status;
+      // Set approved_at when transitioning to aprovado; clear otherwise
+      const { data: current } = await supabaseAdmin
+        .from("workshop_items" as any)
+        .select("status, approved_at")
+        .eq("id", data.itemId)
+        .maybeSingle();
+      const currentStatus = (current as any)?.status;
+      const currentApprovedAt = (current as any)?.approved_at;
+      if (data.status === "aprovado" && currentStatus !== "aprovado") {
+        patch.approved_at = new Date().toISOString();
+      } else if (data.status !== "aprovado" && currentApprovedAt) {
+        patch.approved_at = null;
+      }
+    }
+    const { error } = await supabaseAdmin
+      .from("workshop_items" as any)
+      .update(patch)
+      .eq("id", data.itemId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const oficinaDeleteWorkshopItem = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; itemId: string }) =>
+    z.object({ pin: pinSchema, itemId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const { error } = await supabaseAdmin
+      .from("workshop_items" as any)
+      .delete()
+      .eq("id", data.itemId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ============================================================
+// Oficina: Saída para Técnicos (tool_loans)
+// ============================================================
+export const oficinaListToolLoans = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const { data: rows, error } = await supabaseAdmin
+      .from("tool_loans" as any)
+      .select("id, tool_name, technician_name, checkout_date, returned_at, created_at")
+      .is("returned_at", null)
+      .order("checkout_date", { ascending: true });
+    if (error) throw new Error(error.message);
+    return { loans: rows ?? [] };
+  });
+
+export const oficinaCreateToolLoan = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const { data: row, error } = await supabaseAdmin
+      .from("tool_loans" as any)
+      .insert({})
+      .select("id, tool_name, technician_name, checkout_date, returned_at, created_at")
+      .single();
+    if (error) throw new Error(error.message);
+    return { loan: row };
+  });
+
+export const oficinaUpdateToolLoan = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    pin: string;
+    loanId: string;
+    toolName?: string;
+    technicianName?: string;
+    checkoutDate?: string;
+  }) =>
+    z.object({
+      pin: pinSchema,
+      loanId: z.string().uuid(),
+      toolName: z.string().trim().max(200).optional(),
+      technicianName: z.string().trim().max(200).optional(),
+      checkoutDate: dateSchema.optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const patch: Record<string, any> = {};
+    if (data.toolName !== undefined) patch.tool_name = data.toolName;
+    if (data.technicianName !== undefined) patch.technician_name = data.technicianName;
+    if (data.checkoutDate !== undefined) patch.checkout_date = data.checkoutDate;
+    const { error } = await supabaseAdmin
+      .from("tool_loans" as any)
+      .update(patch)
+      .eq("id", data.loanId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const oficinaReturnToolLoan = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; loanId: string }) =>
+    z.object({ pin: pinSchema, loanId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const { error } = await supabaseAdmin
+      .from("tool_loans" as any)
+      .update({ returned_at: new Date().toISOString() })
+      .eq("id", data.loanId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const oficinaDeleteToolLoan = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; loanId: string }) =>
+    z.object({ pin: pinSchema, loanId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    const { error } = await supabaseAdmin
+      .from("tool_loans" as any)
+      .delete()
+      .eq("id", data.loanId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
