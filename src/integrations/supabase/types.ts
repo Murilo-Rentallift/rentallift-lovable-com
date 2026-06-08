@@ -267,6 +267,69 @@ export type Database = {
         }
         Relationships: []
       }
+      tool_loans: {
+        Row: {
+          checkout_date: string
+          created_at: string
+          id: string
+          returned_at: string | null
+          technician_name: string
+          tool_name: string
+          updated_at: string
+        }
+        Insert: {
+          checkout_date?: string
+          created_at?: string
+          id?: string
+          returned_at?: string | null
+          technician_name?: string
+          tool_name?: string
+          updated_at?: string
+        }
+        Update: {
+          checkout_date?: string
+          created_at?: string
+          id?: string
+          returned_at?: string | null
+          technician_name?: string
+          tool_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      workshop_items: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          deadline_days: number
+          id: string
+          name: string
+          status: string
+          supplier: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          deadline_days?: number
+          id?: string
+          name?: string
+          status?: string
+          supplier?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          deadline_days?: number
+          id?: string
+          name?: string
+          status?: string
+          supplier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
