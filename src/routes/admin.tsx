@@ -175,7 +175,8 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
 
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
         {tab === "chamados" ? (
-          <PendingCallsCalendar pin={pin} />
+          <MaintenanceReturns pin={pin} />
+
         ) : tab === "agenda" ? (
           <AttendedCallsAgenda pin={pin} date={date} />
         ) : (
