@@ -604,7 +604,7 @@ function SaidaTab({ pin }: { pin: string }) {
     setLoading(true);
     try {
       const r = await list({ data: { pin } });
-      setLoans(r.loans as ToolLoan[]);
+      setLoans(r.loans as unknown as ToolLoan[]);
     } catch (e: any) {
       toast.error(e.message || "Falha ao carregar");
     } finally {
