@@ -369,7 +369,7 @@ function RequisicaoTab({ pin }: { pin: string }) {
 }
 
 // ============================================================
-// Tab 2: Peças e Ferramentas (workshop_items)
+// Tab 2: Saída de Peças (workshop_items)
 // ============================================================
 type WorkshopItem = {
   id: string;
@@ -580,7 +580,7 @@ function WorkshopItemRow({
 }
 
 // ============================================================
-// Tab 3: Saída para Técnicos (tool_loans)
+// Tab 3: Ferramentas (tool_loans)
 // ============================================================
 type ToolLoan = {
   id: string;
