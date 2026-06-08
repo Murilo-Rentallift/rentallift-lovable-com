@@ -68,6 +68,30 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_returns: {
+        Row: {
+          client_name: string
+          created_at: string
+          description: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          client_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       operators: {
         Row: {
           created_at: string

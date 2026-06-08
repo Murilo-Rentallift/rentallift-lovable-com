@@ -6,10 +6,10 @@ import {
   adminAddPart, adminAddTask, adminChangePin, adminChangeAlmoxPin, adminDeletePart, adminDeleteTask,
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
-  adminListPendingCalls, adminAddPendingCall, adminDeletePendingCall, adminUpdatePendingCallStatus,
+  adminListMaintenanceReturns, adminAddMaintenanceReturn, adminUpdateMaintenanceReturn, adminDeleteMaintenanceReturn,
   adminListAttendedCalls, adminAddAttendedCall, adminUpdateAttendedCall, adminDeleteAttendedCall,
 } from "@/lib/app.functions";
-import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, BookCheck, Clock, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, BookCheck, Clock, Pencil, Plus, Save, Settings, Trash2, Wrench, X } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Logo";
 
@@ -156,8 +156,8 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
                 : "bg-card border-border text-muted-foreground hover:text-foreground"
             }`}
           >
-            <CalendarDays className="h-4 w-4" />
-            Próximos Chamados
+            <Wrench className="h-4 w-4" />
+            Retorno de Manutenções
           </button>
           <button
             onClick={() => setTab("agenda")}
@@ -175,7 +175,8 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
 
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
         {tab === "chamados" ? (
-          <PendingCallsCalendar pin={pin} />
+          <MaintenanceReturns pin={pin} />
+
         ) : tab === "agenda" ? (
           <AttendedCallsAgenda pin={pin} date={date} />
         ) : (
@@ -747,215 +748,178 @@ const PRIORITY_STYLES: Record<string, string> = {
   urgente: "bg-destructive/30 text-destructive-foreground border-destructive/60",
 };
 
-function PendingCallsCalendar({ pin }: { pin: string }) {
+function MaintenanceReturns({ pin }: { pin: string }) {
   const qc = useQueryClient();
-  const [weekStart, setWeekStart] = useState(() => mondayOf(todayISO()));
-  const [addDay, setAddDay] = useState<string | null>(null);
-  const [company, setCompany] = useState("");
+  const [clientName, setClientName] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("normal");
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editClient, setEditClient] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
-  const endDate = addDaysISO(weekStart, 6);
-  const listFn = useServerFn(adminListPendingCalls);
-  const addFn = useServerFn(adminAddPendingCall);
-  const delFn = useServerFn(adminDeletePendingCall);
-  const statusFn = useServerFn(adminUpdatePendingCallStatus);
+  const listFn = useServerFn(adminListMaintenanceReturns);
+  const addFn = useServerFn(adminAddMaintenanceReturn);
+  const updFn = useServerFn(adminUpdateMaintenanceReturn);
+  const delFn = useServerFn(adminDeleteMaintenanceReturn);
 
-  const { data } = useQuery({
-    queryKey: ["pending-calls", weekStart, pin],
-    queryFn: () => listFn({ data: { pin, startDate: weekStart, endDate } }),
+  const { data, isLoading } = useQuery({
+    queryKey: ["maintenance-returns", pin],
+    queryFn: () => listFn({ data: { pin } }),
     retry: false,
   });
 
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["maintenance-returns", pin] });
+
   const addM = useMutation({
-    mutationFn: () => addFn({ data: { pin, callDate: addDay!, company: company.trim(), description: description.trim(), priority } }),
+    mutationFn: () => addFn({ data: { pin, clientName: clientName.trim(), description: description.trim() } }),
     onSuccess: () => {
-      toast.success("Chamado adicionado");
-      setAddDay(null); setCompany(""); setDescription(""); setPriority("normal");
-      qc.invalidateQueries({ queryKey: ["pending-calls", weekStart, pin] });
+      toast.success("Retorno registrado");
+      setClientName(""); setDescription("");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const updM = useMutation({
+    mutationFn: () => updFn({ data: { pin, id: editId!, clientName: editClient.trim(), description: editDescription.trim() } }),
+    onSuccess: () => {
+      toast.success("Retorno atualizado");
+      setEditId(null);
+      invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
   });
   const delM = useMutation({
-    mutationFn: (callId: string) => delFn({ data: { pin, callId } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pending-calls", weekStart, pin] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const statusM = useMutation({
-    mutationFn: (v: { callId: string; status: string }) => statusFn({ data: { pin, callId: v.callId, status: v.status } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pending-calls", weekStart, pin] }),
+    mutationFn: (id: string) => delFn({ data: { pin, id } }),
+    onSuccess: invalidate,
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const days = Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i));
-  const callsByDay = new Map<string, NonNullable<typeof data>["calls"]>();
-  (data?.calls ?? []).forEach((c) => {
-    const arr = callsByDay.get(c.call_date) ?? [];
-    arr.push(c);
-    callsByDay.set(c.call_date, arr);
-  });
-
-  function fmtDay(iso: string) {
-    const [, m, d] = iso.split("-");
-    return `${d}/${m}`;
+  function fmtDate(iso: string) {
+    const d = new Date(iso);
+    return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   }
 
   return (
     <section className="rounded-lg border border-border bg-card overflow-hidden shadow-lg">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-border bg-accent/10">
-        <div>
-          <h3 className="font-display text-lg font-bold uppercase">Próximos Chamados (sem técnico)</h3>
-          <p className="text-xs text-muted-foreground">Semana de {fmtDay(weekStart)} a {fmtDay(endDate)}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setWeekStart(addDaysISO(weekStart, -7))}
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted transition"
-          >
-            ← Semana anterior
-          </button>
-          <button
-            onClick={() => setWeekStart(mondayOf(todayISO()))}
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted transition"
-          >
-            Hoje
-          </button>
-          <button
-            onClick={() => setWeekStart(addDaysISO(weekStart, 7))}
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted transition"
-          >
-            Próxima semana →
-          </button>
-        </div>
+      <div className="px-5 py-3 border-b border-border bg-accent/10">
+        <h3 className="font-display text-lg font-bold uppercase">Retorno de Manutenções</h3>
+        <p className="text-xs text-muted-foreground">Registre o que aconteceu em cada retorno de manutenção.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-px bg-border">
-        {days.map((iso, i) => {
-          const items = callsByDay.get(iso) ?? [];
-          const isToday = iso === todayISO();
-          return (
-            <div key={iso} className={`bg-card p-3 min-h-[160px] flex flex-col ${isToday ? "ring-2 ring-inset ring-accent" : ""}`}>
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{WEEKDAYS_PT[i]}</p>
-                  <p className="font-mono text-sm">{fmtDay(iso)}</p>
+      <form
+        onSubmit={(e) => { e.preventDefault(); if (clientName.trim()) addM.mutate(); }}
+        className="p-5 border-b border-border space-y-3 bg-background/40"
+      >
+        <div className="grid gap-3 md:grid-cols-[1fr_2fr_auto]">
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Cliente</label>
+            <input
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              maxLength={200}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              placeholder="Nome do cliente"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">O que aconteceu</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={2000}
+              rows={2}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
+              placeholder="Descreva o retorno da manutenção"
+            />
+          </div>
+          <div className="flex md:items-end">
+            <button
+              type="submit"
+              disabled={!clientName.trim() || addM.isPending}
+              className="w-full md:w-auto rounded-md bg-accent px-4 py-2 text-sm font-semibold uppercase tracking-wide text-accent-foreground disabled:opacity-40 hover:brightness-110 transition inline-flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              {addM.isPending ? "Salvando..." : "Adicionar"}
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div className="divide-y divide-border">
+        {isLoading && (
+          <div className="p-6 text-sm text-muted-foreground italic text-center">Carregando...</div>
+        )}
+        {!isLoading && (data?.returns ?? []).length === 0 && (
+          <div className="p-6 text-sm text-muted-foreground italic text-center">Nenhum retorno registrado.</div>
+        )}
+        {(data?.returns ?? []).map((r) => (
+          <div key={r.id} className="p-4 flex items-start gap-3">
+            {editId === r.id ? (
+              <div className="flex-1 space-y-2">
+                <input
+                  value={editClient}
+                  onChange={(e) => setEditClient(e.target.value)}
+                  maxLength={200}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                />
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  maxLength={2000}
+                  rows={3}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => setEditId(null)}
+                    className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-muted transition inline-flex items-center gap-1"
+                  >
+                    <X className="h-3 w-3" /> Cancelar
+                  </button>
+                  <button
+                    onClick={() => updM.mutate()}
+                    disabled={!editClient.trim() || updM.isPending}
+                    className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold uppercase text-accent-foreground disabled:opacity-40 hover:brightness-110 transition inline-flex items-center gap-1"
+                  >
+                    <Save className="h-3 w-3" /> Salvar
+                  </button>
                 </div>
-                <button
-                  onClick={() => { setAddDay(iso); setCompany(""); setDescription(""); setPriority("normal"); }}
-                  className="rounded-md border border-border bg-background p-1 hover:bg-muted transition"
-                  title="Adicionar chamado"
-                >
-                  <Plus className="h-3 w-3" />
-                </button>
               </div>
-              <div className="space-y-2 flex-1">
-                {items.length === 0 && (
-                  <p className="text-[11px] text-muted-foreground italic">Sem chamados</p>
-                )}
-                {items.map((c) => {
-                  const cs = (c as any).status ?? "pendente";
-                  const statusStyle =
-                    cs === "atendido" ? "bg-green-500/20 text-green-300 border-green-500/40" :
-                    cs === "nao_atendido" ? "bg-red-500/20 text-red-300 border-red-500/40" :
-                    "bg-muted text-muted-foreground border-border";
-                  return (
-                    <div key={c.id} className={`rounded border px-2 py-1.5 text-xs ${PRIORITY_STYLES[c.priority] ?? PRIORITY_STYLES.normal}`}>
-                      <div className="flex items-start justify-between gap-1">
-                        <p className="font-semibold leading-tight break-words">{c.company}</p>
-                        <button
-                          onClick={() => delM.mutate(c.id)}
-                          className="opacity-60 hover:opacity-100 shrink-0"
-                          title="Remover"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                      {c.description && <p className="mt-1 opacity-90 whitespace-pre-wrap leading-tight">{c.description}</p>}
-                      <div className="mt-1 flex items-center justify-between gap-1">
-                        <p className="text-[9px] uppercase tracking-wider opacity-70">{c.priority}</p>
-                        <select
-                          value={cs}
-                          onChange={(e) => statusM.mutate({ callId: c.id, status: e.target.value })}
-                          className={`rounded border px-1 py-0.5 text-[9px] uppercase tracking-wider font-semibold focus:outline-none ${statusStyle}`}
-                        >
-                          <option value="pendente" className="bg-background text-foreground">Pendente</option>
-                          <option value="atendido" className="bg-background text-foreground">Atendido</option>
-                          <option value="nao_atendido" className="bg-background text-foreground">Não atendido</option>
-                        </select>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+            ) : (
+              <>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-semibold truncate">{r.client_name}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">{fmtDate(r.created_at)}</p>
+                  </div>
+                  {r.description && (
+                    <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">{r.description}</p>
+                  )}
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button
+                    onClick={() => { setEditId(r.id); setEditClient(r.client_name); setEditDescription(r.description); }}
+                    className="rounded-md border border-border bg-background p-2 hover:bg-muted transition"
+                    title="Editar"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => { if (confirm("Remover este retorno?")) delM.mutate(r.id); }}
+                    className="rounded-md border border-border bg-background p-2 hover:bg-destructive/20 hover:text-destructive transition"
+                    title="Remover"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
       </div>
-
-      {addDay && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm grid place-items-center p-4" onClick={() => setAddDay(null)}>
-          <form
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={(e) => { e.preventDefault(); if (company.trim()) addM.mutate(); }}
-            className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-2xl space-y-4"
-          >
-            <div>
-              <h4 className="font-display text-lg font-bold uppercase">Novo chamado</h4>
-              <p className="text-xs text-muted-foreground">Data: {fmtDay(addDay)}</p>
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Empresa / Cliente</label>
-              <input
-                autoFocus
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                maxLength={200}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                placeholder="Nome da empresa"
-              />
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Descrição</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                maxLength={1000}
-                rows={3}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
-                placeholder="Detalhes do chamado (opcional)"
-              />
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Prioridade</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              >
-                <option value="baixa">Baixa</option>
-                <option value="normal">Normal</option>
-                <option value="alta">Alta</option>
-                <option value="urgente">Urgente</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setAddDay(null)} className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-muted transition">
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={!company.trim() || addM.isPending}
-                className="rounded-md bg-accent px-4 py-2 text-sm font-semibold uppercase tracking-wide text-accent-foreground disabled:opacity-40 hover:brightness-110 transition"
-              >
-                {addM.isPending ? "Salvando..." : "Adicionar"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </section>
   );
 }
+
 
 // ---------- Attended calls agenda (admin only) ----------
 function fmtDateLong(iso: string) {

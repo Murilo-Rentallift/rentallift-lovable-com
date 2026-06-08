@@ -1083,3 +1083,67 @@ export const oficinaDeleteToolLoan = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- Admin: maintenance returns ----------
+export const adminListMaintenanceReturns = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { data: rows, error } = await supabaseAdmin
+      .from("maintenance_returns" as any)
+      .select("id, client_name, description, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { returns: ((rows ?? []) as unknown) as Array<{ id: string; client_name: string; description: string; created_at: string }> };
+  });
+
+export const adminAddMaintenanceReturn = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; clientName: string; description: string }) =>
+    z.object({
+      pin: pinSchema,
+      clientName: z.string().trim().min(1).max(200),
+      description: z.string().trim().max(2000).default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin.from("maintenance_returns" as any).insert({
+      client_name: data.clientName,
+      description: data.description,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminUpdateMaintenanceReturn = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; id: string; clientName: string; description: string }) =>
+    z.object({
+      pin: pinSchema,
+      id: z.string().uuid(),
+      clientName: z.string().trim().min(1).max(200),
+      description: z.string().trim().max(2000).default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("maintenance_returns" as any)
+      .update({ client_name: data.clientName, description: data.description })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminDeleteMaintenanceReturn = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; id: string }) =>
+    z.object({ pin: pinSchema, id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("maintenance_returns" as any)
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
