@@ -393,7 +393,7 @@ function ItensTab({ pin }: { pin: string }) {
     setLoading(true);
     try {
       const r = await list({ data: { pin } });
-      setItems(r.items as WorkshopItem[]);
+      setItems(r.items as unknown as WorkshopItem[]);
     } catch (e: any) {
       toast.error(e.message || "Falha ao carregar");
     } finally {
