@@ -157,10 +157,10 @@ function OficinaPage() {
             Requisição de Peças
           </TabBtn>
           <TabBtn active={tab === "itens"} onClick={() => setTab("itens")} icon={<Package className="h-4 w-4" />}>
-            Peças e Ferramentas
+            Saída de Peças
           </TabBtn>
           <TabBtn active={tab === "saida"} onClick={() => setTab("saida")} icon={<HardHat className="h-4 w-4" />}>
-            Saída para Técnicos
+            Ferramentas
           </TabBtn>
         </nav>
       </header>
@@ -429,7 +429,7 @@ function ItensTab({ pin }: { pin: string }) {
     <section className="rounded-lg border border-border bg-card">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div>
-          <h2 className="font-display text-sm uppercase tracking-wider">Peças e Ferramentas</h2>
+          <h2 className="font-display text-sm uppercase tracking-wider">Saída de Peças</h2>
           <p className="text-xs text-muted-foreground">Controle de compras e orçamentos</p>
         </div>
         <Button onClick={handleAdd} size="sm" className="gap-1">
@@ -650,7 +650,7 @@ function SaidaTab({ pin }: { pin: string }) {
     <section className="rounded-lg border border-border bg-card">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <div>
-          <h2 className="font-display text-sm uppercase tracking-wider">Saída para Técnicos</h2>
+          <h2 className="font-display text-sm uppercase tracking-wider">Ferramentas</h2>
           <p className="text-xs text-muted-foreground">Empréstimos de ferramentas</p>
         </div>
         <Button onClick={handleAdd} size="sm" className="gap-1">
