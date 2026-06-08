@@ -1094,7 +1094,7 @@ export const adminListMaintenanceReturns = createServerFn({ method: "POST" })
       .select("id, client_name, description, created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return { returns: (rows ?? []) as Array<{ id: string; client_name: string; description: string; created_at: string }> };
+    return { returns: ((rows ?? []) as unknown) as Array<{ id: string; client_name: string; description: string; created_at: string }> };
   });
 
 export const adminAddMaintenanceReturn = createServerFn({ method: "POST" })
