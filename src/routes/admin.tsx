@@ -156,8 +156,8 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
                 : "bg-card border-border text-muted-foreground hover:text-foreground"
             }`}
           >
-            <CalendarDays className="h-4 w-4" />
-            Próximos Chamados
+            <Wrench className="h-4 w-4" />
+            Retorno de Manutenções
           </button>
           <button
             onClick={() => setTab("agenda")}
