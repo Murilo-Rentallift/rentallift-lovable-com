@@ -164,6 +164,9 @@ function OficinaPage() {
           <TabBtn active={tab === "saida"} onClick={() => setTab("saida")} icon={<HardHat className="h-4 w-4" />}>
             Ferramentas
           </TabBtn>
+          <TabBtn active={tab === "checklist"} onClick={() => setTab("checklist")} icon={<ClipboardCheck className="h-4 w-4" />}>
+            Checklist de Saída
+          </TabBtn>
         </nav>
       </header>
 
@@ -171,6 +174,7 @@ function OficinaPage() {
         {tab === "requisicao" && <RequisicaoTab pin={pin} />}
         {tab === "itens" && <ItensTab pin={pin} />}
         {tab === "saida" && <SaidaTab pin={pin} />}
+        {tab === "checklist" && <ChecklistSaidaTab />}
       </main>
     </div>
   );
