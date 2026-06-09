@@ -194,6 +194,9 @@ export const generateProposal = createServerFn({ method: "POST" })
               margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 },
             },
           },
+          headers: {
+            default: new Header({ children: [headerImage] }),
+          },
           footers: {
             default: new Footer({ children: [footerPara] }),
           },
