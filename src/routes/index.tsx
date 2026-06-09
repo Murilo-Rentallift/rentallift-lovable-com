@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listOperators } from "@/lib/app.functions";
-import { Shield, Warehouse, Wrench } from "lucide-react";
+import { FileText, Shield, Warehouse, Wrench } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/")({
@@ -82,6 +82,13 @@ function Index() {
           >
             <Wrench className="h-4 w-4" />
             Oficina
+          </Link>
+          <Link
+            to="/vendas"
+            className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            Vendas
           </Link>
           <Link
             to="/admin"
