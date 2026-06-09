@@ -222,7 +222,7 @@ function VendasPage() {
                   {eqFields.map(([k, label]) => (
                     <div key={String(k)} className="space-y-2">
                       <Label>{label}</Label>
-                      <Input value={eq[k]} onChange={(e) => updateEquip(ei, k, e.target.value)} />
+                      <Input value={eq[k]} onChange={(e) => updateEquip(ei, k, e.target.value)} placeholder={eqPlaceholders[k]} />
                     </div>
                   ))}
                 </div>
