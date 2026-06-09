@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { FileDown, Plus, Trash2, Camera } from "lucide-react";
+import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { PROPOSAL_LOGOS_B64 } from "@/lib/assets/proposal-logos";
+import { SignaturePad } from "@/components/SignaturePad";
 
 const ITENS_PADRAO: { nome: string; desc: string }[] = [
   { nome: "ÓLEO DE MOTOR", desc: "Verificar nível" },
@@ -39,6 +40,29 @@ type Item = { nome: string; desc: string; status: Status };
 type Foto = { name: string; dataUrl: string };
 
 const STATUS_OPTS: Status[] = ["", "OK", "CORRIGIR", "CORRIGIDO"];
+const STORAGE_KEY = "checklist-saida-drafts";
+
+type Draft = {
+  id: string;
+  savedAt: string;
+  data: string;
+  frota: string;
+  horimetro: string;
+  cliente: string;
+  extintorTipo: "" | "COMUM" | "PÓ ABC";
+  extintorKg: string;
+  bateriaMarca: string;
+  bateriaAmp: string;
+  obs: string;
+  vistoriador: string;
+  lider: string;
+  gerente: string;
+  vistoriadorSig: string;
+  liderSig: string;
+  gerenteSig: string;
+  itens: Item[];
+  fotos: Foto[];
+};
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -49,7 +73,26 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+function loadDrafts(): Draft[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+function saveDrafts(list: Draft[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch {
+    toast.error("Falha ao salvar (armazenamento cheio?)");
+  }
+}
+
 export function ChecklistSaidaTab() {
+  const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID());
   const [data, setData] = useState("");
   const [frota, setFrota] = useState("");
   const [horimetro, setHorimetro] = useState("");
@@ -62,11 +105,21 @@ export function ChecklistSaidaTab() {
   const [vistoriador, setVistoriador] = useState("");
   const [lider, setLider] = useState("");
   const [gerente, setGerente] = useState("");
+  const [vistoriadorSig, setVistoriadorSig] = useState("");
+  const [liderSig, setLiderSig] = useState("");
+  const [gerenteSig, setGerenteSig] = useState("");
   const [itens, setItens] = useState<Item[]>(
     ITENS_PADRAO.map((n) => ({ ...n, status: "" })),
   );
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [gerando, setGerando] = useState(false);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [showDrafts, setShowDrafts] = useState(false);
+  const [sigKey, setSigKey] = useState(0); // forces SignaturePad remount when loading draft
+
+  useEffect(() => {
+    setDrafts(loadDrafts());
+  }, []);
 
   function updateItem(i: number, patch: Partial<Item>) {
     setItens((p) => p.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
@@ -96,187 +149,255 @@ export function ChecklistSaidaTab() {
     setFotos((p) => p.filter((_, idx) => idx !== i));
   }
 
+  function currentDraft(): Draft {
+    return {
+      id: draftId,
+      savedAt: new Date().toISOString(),
+      data, frota, horimetro, cliente,
+      extintorTipo, extintorKg, bateriaMarca, bateriaAmp,
+      obs, vistoriador, lider, gerente,
+      vistoriadorSig, liderSig, gerenteSig,
+      itens, fotos,
+    };
+  }
+
+  function salvarRascunho() {
+    const d = currentDraft();
+    const list = loadDrafts();
+    const idx = list.findIndex((x) => x.id === d.id);
+    if (idx >= 0) list[idx] = d;
+    else list.unshift(d);
+    saveDrafts(list);
+    setDrafts(list);
+    toast.success("Checklist salvo");
+  }
+
+  function novoChecklist() {
+    setDraftId(crypto.randomUUID());
+    setData(""); setFrota(""); setHorimetro(""); setCliente("");
+    setExtintorTipo(""); setExtintorKg(""); setBateriaMarca(""); setBateriaAmp("");
+    setObs(""); setVistoriador(""); setLider(""); setGerente("");
+    setVistoriadorSig(""); setLiderSig(""); setGerenteSig("");
+    setItens(ITENS_PADRAO.map((n) => ({ ...n, status: "" })));
+    setFotos([]);
+    setSigKey((k) => k + 1);
+    toast.info("Novo checklist iniciado");
+  }
+
+  function carregarDraft(d: Draft) {
+    setDraftId(d.id);
+    setData(d.data); setFrota(d.frota); setHorimetro(d.horimetro); setCliente(d.cliente);
+    setExtintorTipo(d.extintorTipo); setExtintorKg(d.extintorKg);
+    setBateriaMarca(d.bateriaMarca); setBateriaAmp(d.bateriaAmp);
+    setObs(d.obs); setVistoriador(d.vistoriador); setLider(d.lider); setGerente(d.gerente);
+    setVistoriadorSig(d.vistoriadorSig || ""); setLiderSig(d.liderSig || ""); setGerenteSig(d.gerenteSig || "");
+    setItens(d.itens?.length ? d.itens : ITENS_PADRAO.map((n) => ({ ...n, status: "" })));
+    setFotos(d.fotos || []);
+    setSigKey((k) => k + 1);
+    setShowDrafts(false);
+    toast.success("Checklist carregado");
+  }
+
+  function excluirDraft(id: string) {
+    const list = loadDrafts().filter((x) => x.id !== id);
+    saveDrafts(list);
+    setDrafts(list);
+  }
+
+  async function buildPdf(): Promise<jsPDF> {
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const M = 10;
+    const contentW = W - M * 2;
+
+    const headerH = 18;
+    try {
+      doc.addImage(`data:image/png;base64,${PROPOSAL_LOGOS_B64}`, "PNG", M + 1, M + 1, 42, headerH - 2);
+    } catch { /* ignore */ }
+    doc.setLineWidth(0.3);
+    doc.rect(M, M, contentW, headerH);
+    doc.line(M + 45, M, M + 45, M + headerH);
+    const metaX = W - M - 45;
+    doc.line(metaX, M, metaX, M + headerH);
+
+    const titleCenterX = (M + 45 + metaX) / 2;
+    const titleMaxW = metaX - (M + 45) - 4;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    const titleLines = doc.splitTextToSize("CHECK LIST DE LIBERAÇÃO DE EQUIPAMENTO - OFICINA", titleMaxW);
+    doc.text(titleLines, titleCenterX, M + 7, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text("SAÍDA DE EQUIPAMENTOS", titleCenterX, M + 14, { align: "center" });
+
+    doc.setFontSize(8);
+    doc.text("F.MA-003", metaX + 2, M + 5);
+    doc.text("Revisão: 00", metaX + 2, M + 10);
+    doc.text("Data da revisão: 03/09/2025", metaX + 2, M + 15);
+
+    let y = M + headerH;
+
+    autoTable(doc, {
+      startY: y,
+      theme: "grid",
+      styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+      body: [
+        [
+          { content: "DATA", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 22 } },
+          { content: data || "", styles: { cellWidth: 45 } },
+          { content: "FROTA", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 22 } },
+          { content: frota || "", styles: { cellWidth: 35 } },
+          { content: "HORÍMETRO", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 28 } },
+          { content: horimetro || "", styles: { cellWidth: "auto" } },
+        ],
+        [
+          { content: "CLIENTE", styles: { fillColor: [217, 217, 217], fontStyle: "bold" } },
+          { content: cliente || "", colSpan: 5 },
+        ],
+      ],
+      margin: { left: M, right: M },
+    });
+    y = (doc as any).lastAutoTable.finalY;
+
+    const rows = itens.map((it) => {
+      let label = it.nome;
+      if (/extintor/i.test(it.nome)) {
+        const tComum = extintorTipo === "COMUM" ? "X" : " ";
+        const tABC = extintorTipo === "PÓ ABC" ? "X" : " ";
+        label =
+          `EXTINTOR - TIPO ( ${tComum} ) COMUM   ( ${tABC} ) PÓ ABC - QUILOS ${extintorKg || "______"}\n` +
+          "Verificar lacre";
+      } else if (/bateria/i.test(it.nome)) {
+        label =
+          `BATERIA - MARCA ${bateriaMarca || "______________________________"}   AMPERAGEM ${bateriaAmp || "______________"}\n` +
+          "Verificar estado de conservação";
+      } else if (it.desc) {
+        label = `${it.nome}: ${it.desc}`;
+      }
+      return [
+        label,
+        it.status === "OK" ? "X" : "",
+        it.status === "CORRIGIR" ? "X" : "",
+        it.status === "CORRIGIDO" ? "X" : "",
+      ];
+    });
+
+    autoTable(doc, {
+      startY: y,
+      theme: "grid",
+      head: [["ITENS A VERIFICAR", "OK", "CORRIGIR", "CORRIGIDO"]],
+      body: rows,
+      styles: { fontSize: 9, cellPadding: 1.6, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+      headStyles: { fillColor: [217, 217, 217], textColor: [0, 0, 0], halign: "center", fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: "auto" },
+        1: { cellWidth: 18, halign: "center" },
+        2: { cellWidth: 22, halign: "center" },
+        3: { cellWidth: 24, halign: "center" },
+      },
+      margin: { left: M, right: M },
+    });
+    y = (doc as any).lastAutoTable.finalY;
+
+    autoTable(doc, {
+      startY: y,
+      theme: "grid",
+      body: [
+        [
+          { content: "OBSERVAÇÕES:", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 32 } },
+          { content: obs || "", styles: { minCellHeight: 20 } },
+        ],
+      ],
+      styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+      margin: { left: M, right: M },
+    });
+    y = (doc as any).lastAutoTable.finalY;
+
+    // Assinaturas com imagens
+    const sigBoxH = 28;
+    const colW = contentW / 3;
+    const sigY = y;
+    doc.setLineWidth(0.2);
+    doc.rect(M, sigY, contentW, sigBoxH);
+    doc.line(M + colW, sigY, M + colW, sigY + sigBoxH);
+    doc.line(M + colW * 2, sigY, M + colW * 2, sigY + sigBoxH);
+    // Header strip
+    const headStripH = 5;
+    doc.setFillColor(217, 217, 217);
+    doc.rect(M, sigY, contentW, headStripH, "F");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text("VISTORIADOR", M + colW / 2, sigY + 3.5, { align: "center" });
+    doc.text("LÍDER MANUTENÇÃO", M + colW + colW / 2, sigY + 3.5, { align: "center" });
+    doc.text("GERENTE MANUTENÇÃO", M + colW * 2 + colW / 2, sigY + 3.5, { align: "center" });
+    // Signatures
+    const sigs = [vistoriadorSig, liderSig, gerenteSig];
+    const names = [vistoriador, lider, gerente];
+    sigs.forEach((sig, i) => {
+      const cx = M + colW * i + 2;
+      const cy = sigY + headStripH + 1;
+      const cw = colW - 4;
+      const ch = sigBoxH - headStripH - 6;
+      if (sig) {
+        try { doc.addImage(sig, "PNG", cx, cy, cw, ch); } catch { /* skip */ }
+      }
+      if (names[i]) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.text(names[i], M + colW * i + colW / 2, sigY + sigBoxH - 1.5, { align: "center" });
+      }
+    });
+
+    if (fotos.length) {
+      doc.addPage();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("FOTOS", W / 2, M + 5, { align: "center" });
+
+      const cols = 2;
+      const gap = 5;
+      const cellW = (contentW - gap * (cols - 1)) / cols;
+      const cellH = 80;
+      const rowsPerPage = Math.floor((H - (M + 12) - M) / (cellH + gap));
+      const perPage = cols * rowsPerPage;
+
+      for (let i = 0; i < fotos.length; i++) {
+        const idxInPage = i % perPage;
+        if (i > 0 && idxInPage === 0) {
+          doc.addPage();
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(14);
+          doc.text("FOTOS", W / 2, M + 5, { align: "center" });
+        }
+        const col = idxInPage % cols;
+        const row = Math.floor(idxInPage / cols);
+        const x = M + col * (cellW + gap);
+        const yImg = M + 12 + row * (cellH + gap);
+        try {
+          doc.addImage(fotos[i].dataUrl, "JPEG", x, yImg, cellW, cellH, undefined, "FAST");
+        } catch {
+          try { doc.addImage(fotos[i].dataUrl, "PNG", x, yImg, cellW, cellH, undefined, "FAST"); } catch { /* skip */ }
+        }
+      }
+    }
+    return doc;
+  }
+
+  function pdfFileName() {
+    return `checklist-saida${frota ? "-" + frota : ""}${data ? "-" + data : ""}.pdf`;
+  }
+
   async function gerarPDF(autoPrint = false) {
     setGerando(true);
     try {
-      const doc = new jsPDF({ unit: "mm", format: "a4" });
-      const W = doc.internal.pageSize.getWidth();
-      const H = doc.internal.pageSize.getHeight();
-      const M = 10;
-      const contentW = W - M * 2;
-
-      // ===== Cabeçalho com logos =====
-      const headerH = 18;
-      // Logos à esquerda
-      try {
-        doc.addImage(`data:image/png;base64,${PROPOSAL_LOGOS_B64}`, "PNG", M + 1, M + 1, 42, headerH - 2);
-      } catch {
-        // ignore
-      }
-      // Caixa cabeçalho
-      doc.setLineWidth(0.3);
-      doc.rect(M, M, contentW, headerH);
-      // Linha vertical entre logo e título
-      doc.line(M + 45, M, M + 45, M + headerH);
-      // Linha vertical entre título e meta
-      const metaX = W - M - 45;
-      doc.line(metaX, M, metaX, M + headerH);
-
-      const titleCenterX = (M + 45 + metaX) / 2;
-      const titleMaxW = metaX - (M + 45) - 4;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      const titleLines = doc.splitTextToSize(
-        "CHECK LIST DE LIBERAÇÃO DE EQUIPAMENTO - OFICINA",
-        titleMaxW,
-      );
-      doc.text(titleLines, titleCenterX, M + 7, { align: "center" });
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.text("SAÍDA DE EQUIPAMENTOS", titleCenterX, M + 14, { align: "center" });
-
-      doc.setFontSize(8);
-      doc.text("F.MA-003", metaX + 2, M + 5);
-      doc.text("Revisão: 00", metaX + 2, M + 10);
-      doc.text("Data da revisão: 03/09/2025", metaX + 2, M + 15);
-
-      let y = M + headerH;
-
-      // ===== Dados do equipamento =====
-      autoTable(doc, {
-        startY: y,
-        theme: "grid",
-        styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
-        body: [
-          [
-            { content: "DATA", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 22 } },
-            { content: data || "", styles: { cellWidth: 45 } },
-            { content: "FROTA", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 22 } },
-            { content: frota || "", styles: { cellWidth: 35 } },
-            { content: "HORÍMETRO", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 28 } },
-            { content: horimetro || "", styles: { cellWidth: "auto" } },
-          ],
-          [
-            { content: "CLIENTE", styles: { fillColor: [217, 217, 217], fontStyle: "bold" } },
-            { content: cliente || "", colSpan: 5 },
-          ],
-        ],
-        margin: { left: M, right: M },
-      });
-      y = (doc as any).lastAutoTable.finalY;
-
-      // ===== Itens a verificar =====
-      const rows = itens.map((it) => {
-        let label = it.nome;
-        if (/extintor/i.test(it.nome)) {
-          const tComum = extintorTipo === "COMUM" ? "X" : " ";
-          const tABC = extintorTipo === "PÓ ABC" ? "X" : " ";
-          label =
-            `EXTINTOR - TIPO ( ${tComum} ) COMUM   ( ${tABC} ) PÓ ABC - QUILOS ${extintorKg || "______"}\n` +
-            "Verificar lacre";
-        } else if (/bateria/i.test(it.nome)) {
-          label =
-            `BATERIA - MARCA ${bateriaMarca || "______________________________"}   AMPERAGEM ${bateriaAmp || "______________"}\n` +
-            "Verificar estado de conservação";
-        } else if (it.desc) {
-          label = `${it.nome}: ${it.desc}`;
-        }
-        return [
-          label,
-          it.status === "OK" ? "X" : "",
-          it.status === "CORRIGIR" ? "X" : "",
-          it.status === "CORRIGIDO" ? "X" : "",
-        ];
-      });
-
-      autoTable(doc, {
-        startY: y,
-        theme: "grid",
-        head: [["ITENS A VERIFICAR", "OK", "CORRIGIR", "CORRIGIDO"]],
-        body: rows,
-        styles: { fontSize: 9, cellPadding: 1.6, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
-        headStyles: { fillColor: [217, 217, 217], textColor: [0, 0, 0], halign: "center", fontStyle: "bold" },
-        columnStyles: {
-          0: { cellWidth: "auto" },
-          1: { cellWidth: 18, halign: "center" },
-          2: { cellWidth: 22, halign: "center" },
-          3: { cellWidth: 24, halign: "center" },
-        },
-        margin: { left: M, right: M },
-      });
-      y = (doc as any).lastAutoTable.finalY;
-
-      // ===== Observações =====
-      autoTable(doc, {
-        startY: y,
-        theme: "grid",
-        body: [
-          [
-            { content: "OBSERVAÇÕES:", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 32 } },
-            { content: obs || "", styles: { minCellHeight: 20 } },
-          ],
-        ],
-        styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
-        margin: { left: M, right: M },
-      });
-      y = (doc as any).lastAutoTable.finalY;
-
-      // ===== Assinaturas =====
-      autoTable(doc, {
-        startY: y,
-        theme: "grid",
-        head: [["VISTORIADOR", "LÍDER MANUTENÇÃO", "GERENTE MANUTENÇÃO"]],
-        body: [[vistoriador || "", lider || "", gerente || ""]],
-        styles: { fontSize: 9, halign: "center", minCellHeight: 20, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
-        headStyles: { fillColor: [217, 217, 217], textColor: [0, 0, 0], fontStyle: "normal", halign: "center" },
-        margin: { left: M, right: M },
-      });
-
-      // ===== Página 2: Fotos =====
-      if (fotos.length) {
-        doc.addPage();
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(14);
-        doc.text("FOTOS", W / 2, M + 5, { align: "center" });
-
-        const cols = 2;
-        const gap = 5;
-        const cellW = (contentW - gap * (cols - 1)) / cols;
-        const cellH = 80;
-        const rowsPerPage = Math.floor((H - (M + 12) - M) / (cellH + gap));
-        const perPage = cols * rowsPerPage;
-
-        for (let i = 0; i < fotos.length; i++) {
-          const idxInPage = i % perPage;
-          if (i > 0 && idxInPage === 0) {
-            doc.addPage();
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(14);
-            doc.text("FOTOS", W / 2, M + 5, { align: "center" });
-          }
-          const col = idxInPage % cols;
-          const row = Math.floor(idxInPage / cols);
-          const x = M + col * (cellW + gap);
-          const yImg = M + 12 + row * (cellH + gap);
-          try {
-            doc.addImage(fotos[i].dataUrl, "JPEG", x, yImg, cellW, cellH, undefined, "FAST");
-          } catch {
-            try {
-              doc.addImage(fotos[i].dataUrl, "PNG", x, yImg, cellW, cellH, undefined, "FAST");
-            } catch {
-              // skip
-            }
-          }
-        }
-      }
-
-      const nome = `checklist-saida${frota ? "-" + frota : ""}${data ? "-" + data : ""}.pdf`;
+      const doc = await buildPdf();
       if (autoPrint) {
         doc.autoPrint();
         const url = doc.output("bloburl");
         window.open(url, "_blank");
       } else {
-        doc.save(nome);
+        doc.save(pdfFileName());
       }
     } catch (e: any) {
       toast.error(e?.message || "Erro ao gerar PDF");
@@ -285,8 +406,78 @@ export function ChecklistSaidaTab() {
     }
   }
 
+  async function enviarPorEmail() {
+    setGerando(true);
+    try {
+      const doc = await buildPdf();
+      const fileName = pdfFileName();
+      const blob = doc.output("blob");
+      const file = new File([blob], fileName, { type: "application/pdf" });
+      const subject = `Checklist de Saída${frota ? " - Frota " + frota : ""}${data ? " - " + data : ""}`;
+      const body = `Segue em anexo o checklist de saída.${cliente ? "\nCliente: " + cliente : ""}${frota ? "\nFrota: " + frota : ""}${data ? "\nData: " + data : ""}`;
+
+      const nav: any = navigator;
+      if (nav.canShare && nav.canShare({ files: [file] })) {
+        await nav.share({ files: [file], title: subject, text: body });
+      } else {
+        // Fallback: baixa o PDF e abre o cliente de email
+        doc.save(fileName);
+        const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body + "\n\n(Anexe o arquivo PDF baixado: " + fileName + ")")}`;
+        window.location.href = mailto;
+        toast.info("PDF baixado. Anexe-o no seu cliente de email.");
+      }
+    } catch (e: any) {
+      if (e?.name !== "AbortError") toast.error(e?.message || "Erro ao enviar por email");
+    } finally {
+      setGerando(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" onClick={salvarRascunho}>
+          <Save className="h-4 w-4 mr-1" /> Salvar
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setShowDrafts((v) => !v)}>
+          <FolderOpen className="h-4 w-4 mr-1" /> Salvos ({drafts.length})
+        </Button>
+        <Button variant="ghost" size="sm" onClick={novoChecklist}>
+          <Plus className="h-4 w-4 mr-1" /> Novo
+        </Button>
+      </div>
+
+      {showDrafts && (
+        <section className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <h3 className="font-medium">Checklists salvos</h3>
+          {drafts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum checklist salvo ainda.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {drafts.map((d) => (
+                <li key={d.id} className="py-2 flex items-center justify-between gap-2">
+                  <div className="text-sm">
+                    <div className="font-medium">
+                      {d.data || "Sem data"} {d.frota ? "· Frota " + d.frota : ""} {d.cliente ? "· " + d.cliente : ""}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Salvo em {new Date(d.savedAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" onClick={() => carregarDraft(d)}>Abrir</Button>
+                    <Button size="icon" variant="ghost" className="text-destructive" onClick={() => excluirDraft(d.id)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <h2 className="font-display text-lg font-bold uppercase">Dados do equipamento</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -360,18 +551,10 @@ export function ChecklistSaidaTab() {
               {itens.map((it, i) => (
                 <tr key={i} className="border-b border-border/50">
                   <td className="py-2 pr-2">
-                    <Input
-                      value={it.nome}
-                      onChange={(e) => updateItem(i, { nome: e.target.value })}
-                      className="h-9"
-                    />
+                    <Input value={it.nome} onChange={(e) => updateItem(i, { nome: e.target.value })} className="h-9" />
                   </td>
                   <td className="py-2 pr-2">
-                    <Input
-                      value={it.desc}
-                      onChange={(e) => updateItem(i, { desc: e.target.value })}
-                      className="h-9"
-                    />
+                    <Input value={it.desc} onChange={(e) => updateItem(i, { desc: e.target.value })} className="h-9" />
                   </td>
                   <td className="py-2 pr-2">
                     <select
@@ -380,9 +563,7 @@ export function ChecklistSaidaTab() {
                       onChange={(e) => updateItem(i, { status: e.target.value as Status })}
                     >
                       {STATUS_OPTS.map((s) => (
-                        <option key={s} value={s}>
-                          {s || "—"}
-                        </option>
+                        <option key={s} value={s}>{s || "—"}</option>
                       ))}
                     </select>
                   </td>
@@ -405,18 +586,27 @@ export function ChecklistSaidaTab() {
 
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <h2 className="font-display text-lg font-bold uppercase">Responsáveis</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="space-y-1.5">
-            <Label>Vistoriador</Label>
-            <Input value={vistoriador} onChange={(e) => setVistoriador(e.target.value)} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <div className="space-y-1.5">
+              <Label>Vistoriador</Label>
+              <Input value={vistoriador} onChange={(e) => setVistoriador(e.target.value)} placeholder="Nome" />
+            </div>
+            <SignaturePad key={"v" + sigKey} label="Assinatura" value={vistoriadorSig} onChange={setVistoriadorSig} />
           </div>
-          <div className="space-y-1.5">
-            <Label>Líder manutenção</Label>
-            <Input value={lider} onChange={(e) => setLider(e.target.value)} />
+          <div className="space-y-2">
+            <div className="space-y-1.5">
+              <Label>Líder manutenção</Label>
+              <Input value={lider} onChange={(e) => setLider(e.target.value)} placeholder="Nome" />
+            </div>
+            <SignaturePad key={"l" + sigKey} label="Assinatura" value={liderSig} onChange={setLiderSig} />
           </div>
-          <div className="space-y-1.5">
-            <Label>Gerente manutenção</Label>
-            <Input value={gerente} onChange={(e) => setGerente(e.target.value)} />
+          <div className="space-y-2">
+            <div className="space-y-1.5">
+              <Label>Gerente manutenção</Label>
+              <Input value={gerente} onChange={(e) => setGerente(e.target.value)} placeholder="Nome" />
+            </div>
+            <SignaturePad key={"g" + sigKey} label="Assinatura" value={gerenteSig} onChange={setGerenteSig} />
           </div>
         </div>
       </section>
@@ -425,13 +615,7 @@ export function ChecklistSaidaTab() {
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-bold uppercase">Fotos (página 2 do PDF)</h2>
           <label className="inline-flex">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleFotos}
-            />
+            <input type="file" accept="image/*" multiple className="hidden" onChange={handleFotos} />
             <span className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 h-9 text-sm cursor-pointer hover:bg-accent">
               <Camera className="h-4 w-4" /> Adicionar fotos
             </span>
@@ -459,11 +643,17 @@ export function ChecklistSaidaTab() {
       </section>
 
       <div className="flex flex-wrap gap-2 justify-end">
+        <Button variant="outline" onClick={salvarRascunho}>
+          <Save className="h-4 w-4 mr-2" /> Salvar
+        </Button>
         <Button variant="outline" onClick={() => gerarPDF(true)} disabled={gerando}>
           <FileDown className="h-4 w-4 mr-2" /> Imprimir
         </Button>
-        <Button onClick={() => gerarPDF(false)} disabled={gerando}>
+        <Button variant="outline" onClick={() => gerarPDF(false)} disabled={gerando}>
           <FileDown className="h-4 w-4 mr-2" /> {gerando ? "Gerando..." : "Gerar PDF"}
+        </Button>
+        <Button onClick={enviarPorEmail} disabled={gerando}>
+          <Mail className="h-4 w-4 mr-2" /> Enviar por email
         </Button>
       </div>
     </div>
