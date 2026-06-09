@@ -66,10 +66,6 @@ export const generateProposal = createServerFn({ method: "POST" })
         } as never),
       ],
     });
-      ShadingType,
-      PageBreak,
-      HeightRule,
-    } = await import("docx");
 
     const FONT = "Century Gothic";
 
