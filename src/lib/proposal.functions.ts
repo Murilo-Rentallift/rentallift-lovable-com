@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { PROPOSAL_LOGOS_B64 } from "./assets/proposal-logos";
 
 export type ProposalInput = {
   data: string; // "04 de maio de 2026"
@@ -51,7 +52,20 @@ export const generateProposal = createServerFn({ method: "POST" })
       ShadingType,
       PageBreak,
       HeightRule,
+      ImageRun,
     } = await import("docx");
+
+    const logoBuffer = Buffer.from(PROPOSAL_LOGOS_B64, "base64");
+    const headerImage = new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [
+        new ImageRun({
+          type: "png",
+          data: logoBuffer,
+          transformation: { width: 480, height: 88 },
+        } as never),
+      ],
+    });
 
     const FONT = "Century Gothic";
 
@@ -179,6 +193,9 @@ export const generateProposal = createServerFn({ method: "POST" })
               size: { width: 11906, height: 16838 },
               margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 },
             },
+          },
+          headers: {
+            default: new Header({ children: [headerImage] }),
           },
           footers: {
             default: new Footer({ children: [footerPara] }),
