@@ -7,32 +7,35 @@ import { toast } from "sonner";
 import { FileDown, Plus, Trash2, Camera } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { PROPOSAL_LOGOS_B64 } from "@/lib/assets/proposal-logos";
 
-const ITENS_PADRAO = [
-  "ÓLEO DE MOTOR",
-  "ÓLEO DE TRANSMISSÃO",
-  "ÓLEO HIDRÁULICO",
-  "FILTRO DE AR",
-  "ÁGUA RADIADOR",
-  "VAZAMENTOS",
-  "GIROFLEX - CONDIÇÃO E FUNCIONAMENTO",
-  "BIP DE RÉ",
-  "EXTINTOR",
-  "FARÓIS E LANTERNAS - CONDIÇÃO E FUNCIONAMENTO",
-  "BATERIA",
-  "REGULAGEM DE CORRENTES",
-  "PINTURA",
-  "ADESIVOS",
-  "BANCO DO OPERADOR",
-  "BUZINA",
-  "FREIO",
-  "FREIO DE ESTACIONAMENTO",
-  "REAPERTO DE RODAS",
-  "LUBRIFICAÇÃO",
+const ITENS_PADRAO: { nome: string; desc: string }[] = [
+  { nome: "ÓLEO DE MOTOR", desc: "Verificar nível" },
+  { nome: "ÓLEO DE TRANSMISSÃO", desc: "Verificar nível" },
+  { nome: "ÓLEO HIDRAULICO", desc: "Verificar nível" },
+  { nome: "FILTRO DE AR", desc: "Verificar estado" },
+  { nome: "ÁGUA RADIADOR", desc: "Verificar nível" },
+  { nome: "VAZAMENTOS", desc: "Verificar existência" },
+  { nome: "GIROFLEX", desc: "Verificar condição e funcionamento" },
+  { nome: "RETROVISORES", desc: "Verificar integridade" },
+  { nome: "BIP DE RÉ", desc: "Verificar funcionamento" },
+  { nome: "EXTINTOR", desc: "Verificar lacre" },
+  { nome: "FAROIS E LANTERNAS", desc: "Verificar condição e funcionamento" },
+  { nome: "BLUESPOT", desc: "Verificar funcionamento (quando existente)" },
+  { nome: "BATERIA", desc: "Verificar estado de conservação" },
+  { nome: "CORRENTES", desc: "Verificar regulagem" },
+  { nome: "PINTURA", desc: "Verificar estado" },
+  { nome: "ADESIVOS", desc: "Verificar presença de todos os obrigatórios" },
+  { nome: "BANCO OPERADOR", desc: "Verificar estado" },
+  { nome: "BUZINA", desc: "Verificar funcionamento" },
+  { nome: "FREIO", desc: "Verificar funcionamento" },
+  { nome: "FREIO ESTACIONAMENTO", desc: "Verificar funcionamento" },
+  { nome: "RODAS", desc: "Verificar reaperto" },
+  { nome: "LUBRIFICAÇÃO", desc: "Verificar se todos os pontos de lubrificação estão OK" },
 ];
 
 type Status = "" | "OK" | "CORRIGIR" | "CORRIGIDO";
-type Item = { nome: string; status: Status; obs: string };
+type Item = { nome: string; desc: string; status: Status };
 type Foto = { name: string; dataUrl: string };
 
 const STATUS_OPTS: Status[] = ["", "OK", "CORRIGIR", "CORRIGIDO"];
@@ -51,7 +54,7 @@ export function ChecklistSaidaTab() {
   const [frota, setFrota] = useState("");
   const [horimetro, setHorimetro] = useState("");
   const [cliente, setCliente] = useState("");
-  const [extintorTipo, setExtintorTipo] = useState("");
+  const [extintorTipo, setExtintorTipo] = useState<"" | "COMUM" | "PÓ ABC">("");
   const [extintorKg, setExtintorKg] = useState("");
   const [bateriaMarca, setBateriaMarca] = useState("");
   const [bateriaAmp, setBateriaAmp] = useState("");
@@ -60,7 +63,7 @@ export function ChecklistSaidaTab() {
   const [lider, setLider] = useState("");
   const [gerente, setGerente] = useState("");
   const [itens, setItens] = useState<Item[]>(
-    ITENS_PADRAO.map((n) => ({ nome: n, status: "", obs: "" })),
+    ITENS_PADRAO.map((n) => ({ ...n, status: "" })),
   );
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [gerando, setGerando] = useState(false);
@@ -69,7 +72,7 @@ export function ChecklistSaidaTab() {
     setItens((p) => p.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
   }
   function addItem() {
-    setItens((p) => [...p, { nome: "", status: "", obs: "" }]);
+    setItens((p) => [...p, { nome: "", desc: "", status: "" }]);
   }
   function removeItem(i: number) {
     setItens((p) => p.filter((_, idx) => idx !== i));
@@ -98,119 +101,162 @@ export function ChecklistSaidaTab() {
     try {
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       const W = doc.internal.pageSize.getWidth();
-      const M = 14;
-      let y = M;
+      const H = doc.internal.pageSize.getHeight();
+      const M = 10;
+      const contentW = W - M * 2;
+
+      // ===== Cabeçalho com logos =====
+      const headerH = 18;
+      // Logos à esquerda
+      try {
+        doc.addImage(`data:image/png;base64,${PROPOSAL_LOGOS_B64}`, "PNG", M + 1, M + 1, 42, headerH - 2);
+      } catch {
+        // ignore
+      }
+      // Caixa cabeçalho
+      doc.setLineWidth(0.3);
+      doc.rect(M, M, contentW, headerH);
+      // Linha vertical entre logo e título
+      doc.line(M + 45, M, M + 45, M + headerH);
+      // Linha vertical entre título e meta
+      const metaX = W - M - 45;
+      doc.line(metaX, M, metaX, M + headerH);
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.text("CHECK LIST LIBERAÇÃO DE EQUIPAMENTO - OFICINA", W / 2, y, { align: "center" });
-      y += 6;
       doc.setFontSize(11);
-      doc.text("SAÍDA DE EQUIPAMENTOS", W / 2, y, { align: "center" });
-      y += 6;
-
+      doc.text("CHECK LIST DE LIBERAÇÃO DE EQUIPAMENTO - OFICINA", (M + 45 + metaX) / 2, M + 8, { align: "center" });
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
+      doc.text("SAÍDA DE EQUIPAMENTOS", (M + 45 + metaX) / 2, M + 13, { align: "center" });
 
+      doc.setFontSize(8);
+      doc.text("F.MA-003", metaX + 2, M + 5);
+      doc.text("Revisão: 00", metaX + 2, M + 10);
+      doc.text("Data da revisão: 03/09/2025", metaX + 2, M + 15);
+
+      let y = M + headerH;
+
+      // ===== Dados do equipamento =====
       autoTable(doc, {
         startY: y,
         theme: "grid",
-        styles: { fontSize: 9, cellPadding: 1.8 },
+        styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
         body: [
           [
-            { content: `DATA: ${data || ""}`, styles: { fontStyle: "bold" } },
-            { content: `FROTA: ${frota || ""}`, styles: { fontStyle: "bold" } },
-            { content: `HORÍMETRO: ${horimetro || ""}`, styles: { fontStyle: "bold" } },
+            { content: "DATA", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 22 } },
+            { content: data || "", styles: { cellWidth: 45 } },
+            { content: "FROTA", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 22 } },
+            { content: frota || "", styles: { cellWidth: 35 } },
+            { content: "HORÍMETRO", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 28 } },
+            { content: horimetro || "", styles: { cellWidth: "auto" } },
           ],
-          [{ content: `CLIENTE: ${cliente || ""}`, colSpan: 3, styles: { fontStyle: "bold" } }],
+          [
+            { content: "CLIENTE", styles: { fillColor: [217, 217, 217], fontStyle: "bold" } },
+            { content: cliente || "", colSpan: 5 },
+          ],
         ],
         margin: { left: M, right: M },
       });
-      y = (doc as any).lastAutoTable.finalY + 3;
+      y = (doc as any).lastAutoTable.finalY;
 
+      // ===== Itens a verificar =====
       const rows = itens.map((it) => {
-        let nome = it.nome;
+        let label = it.nome;
         if (/extintor/i.test(it.nome)) {
-          const t = extintorTipo ? `Tipo: ${extintorTipo}` : "";
-          const k = extintorKg ? `${extintorKg} kg` : "";
-          const extra = [t, k].filter(Boolean).join(" - ");
-          if (extra) nome += `  (${extra})`;
-        }
-        if (/bateria/i.test(it.nome)) {
-          const m = bateriaMarca ? `Marca: ${bateriaMarca}` : "";
-          const a = bateriaAmp ? `Amp: ${bateriaAmp}` : "";
-          const extra = [m, a].filter(Boolean).join(" - ");
-          if (extra) nome += `  (${extra})`;
+          const tComum = extintorTipo === "COMUM" ? "X" : " ";
+          const tABC = extintorTipo === "PÓ ABC" ? "X" : " ";
+          label =
+            `EXTINTOR - TIPO ( ${tComum} ) COMUM   ( ${tABC} ) PÓ ABC - QUILOS ${extintorKg || "______"}\n` +
+            "Verificar lacre";
+        } else if (/bateria/i.test(it.nome)) {
+          label =
+            `BATERIA - MARCA ${bateriaMarca || "______________________________"}   AMPERAGEM ${bateriaAmp || "______________"}\n` +
+            "Verificar estado de conservação";
+        } else if (it.desc) {
+          label = `${it.nome}: ${it.desc}`;
         }
         return [
-          nome,
+          label,
           it.status === "OK" ? "X" : "",
           it.status === "CORRIGIR" ? "X" : "",
           it.status === "CORRIGIDO" ? "X" : "",
-          it.obs || "",
         ];
       });
 
       autoTable(doc, {
         startY: y,
         theme: "grid",
-        head: [["ITENS A VERIFICAR", "OK", "CORRIGIR", "CORRIGIDO", "OBS"]],
+        head: [["ITENS A VERIFICAR", "OK", "CORRIGIR", "CORRIGIDO"]],
         body: rows,
-        styles: { fontSize: 8.5, cellPadding: 1.5 },
-        headStyles: { fillColor: [40, 40, 40], halign: "center" },
+        styles: { fontSize: 9, cellPadding: 1.6, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+        headStyles: { fillColor: [217, 217, 217], textColor: [0, 0, 0], halign: "center", fontStyle: "bold" },
         columnStyles: {
-          0: { cellWidth: 78 },
-          1: { cellWidth: 14, halign: "center" },
-          2: { cellWidth: 18, halign: "center" },
-          3: { cellWidth: 22, halign: "center" },
-          4: { cellWidth: "auto" },
+          0: { cellWidth: "auto" },
+          1: { cellWidth: 18, halign: "center" },
+          2: { cellWidth: 22, halign: "center" },
+          3: { cellWidth: 24, halign: "center" },
         },
         margin: { left: M, right: M },
       });
-      y = (doc as any).lastAutoTable.finalY + 4;
+      y = (doc as any).lastAutoTable.finalY;
 
-      if (obs.trim()) {
-        autoTable(doc, {
-          startY: y,
-          theme: "grid",
-          body: [[{ content: `OBS: ${obs}`, styles: { fontStyle: "bold" } }]],
-          styles: { fontSize: 9, cellPadding: 2, minCellHeight: 18 },
-          margin: { left: M, right: M },
-        });
-        y = (doc as any).lastAutoTable.finalY + 4;
-      }
-
+      // ===== Observações =====
       autoTable(doc, {
         startY: y,
         theme: "grid",
         body: [
           [
-            { content: `VISTORIADOR\n\n${vistoriador || ""}`, styles: { halign: "center", minCellHeight: 18 } },
-            { content: `LÍDER\n\n${lider || ""}`, styles: { halign: "center", minCellHeight: 18 } },
-            { content: `GERENTE MANUTENÇÃO\n\n${gerente || ""}`, styles: { halign: "center", minCellHeight: 18 } },
+            { content: "OBSERVAÇÕES:", styles: { fillColor: [217, 217, 217], fontStyle: "bold", cellWidth: 32 } },
+            { content: obs || "", styles: { minCellHeight: 20 } },
           ],
         ],
-        styles: { fontSize: 9 },
+        styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+        margin: { left: M, right: M },
+      });
+      y = (doc as any).lastAutoTable.finalY;
+
+      // ===== Assinaturas =====
+      autoTable(doc, {
+        startY: y,
+        theme: "grid",
+        head: [["VISTORIADOR", "LÍDER MANUTENÇÃO", "GERENTE MANUTENÇÃO"]],
+        body: [[vistoriador || "", lider || "", gerente || ""]],
+        styles: { fontSize: 9, halign: "center", minCellHeight: 20, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+        headStyles: { fillColor: [217, 217, 217], textColor: [0, 0, 0], fontStyle: "normal", halign: "center" },
         margin: { left: M, right: M },
       });
 
-      // Fotos: 2 por página
+      // ===== Página 2: Fotos =====
       if (fotos.length) {
-        const photoPageW = W - M * 2;
-        const photoH = 115;
+        doc.addPage();
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("FOTOS", W / 2, M + 5, { align: "center" });
+
+        const cols = 2;
+        const gap = 5;
+        const cellW = (contentW - gap * (cols - 1)) / cols;
+        const cellH = 80;
+        const rowsPerPage = Math.floor((H - (M + 12) - M) / (cellH + gap));
+        const perPage = cols * rowsPerPage;
+
         for (let i = 0; i < fotos.length; i++) {
-          if (i % 2 === 0) {
+          const idxInPage = i % perPage;
+          if (i > 0 && idxInPage === 0) {
             doc.addPage();
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("FOTOS", W / 2, M, { align: "center" });
+            doc.setFontSize(14);
+            doc.text("FOTOS", W / 2, M + 5, { align: "center" });
           }
-          const top = i % 2 === 0 ? M + 5 : M + 5 + photoH + 8;
+          const col = idxInPage % cols;
+          const row = Math.floor(idxInPage / cols);
+          const x = M + col * (cellW + gap);
+          const yImg = M + 12 + row * (cellH + gap);
           try {
-            doc.addImage(fotos[i].dataUrl, "JPEG", M, top, photoPageW, photoH, undefined, "FAST");
+            doc.addImage(fotos[i].dataUrl, "JPEG", x, yImg, cellW, cellH, undefined, "FAST");
           } catch {
             try {
-              doc.addImage(fotos[i].dataUrl, "PNG", M, top, photoPageW, photoH, undefined, "FAST");
+              doc.addImage(fotos[i].dataUrl, "PNG", x, yImg, cellW, cellH, undefined, "FAST");
             } catch {
               // skip
             }
@@ -265,7 +311,7 @@ export function ChecklistSaidaTab() {
             <select
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={extintorTipo}
-              onChange={(e) => setExtintorTipo(e.target.value)}
+              onChange={(e) => setExtintorTipo(e.target.value as "" | "COMUM" | "PÓ ABC")}
             >
               <option value="">—</option>
               <option value="COMUM">COMUM</option>
@@ -273,7 +319,7 @@ export function ChecklistSaidaTab() {
             </select>
           </div>
           <div className="space-y-1.5">
-            <Label>Extintor — Kilos</Label>
+            <Label>Extintor — Quilos</Label>
             <Input value={extintorKg} onChange={(e) => setExtintorKg(e.target.value)} placeholder="Ex: 4" />
           </div>
           <div className="space-y-1.5">
@@ -281,7 +327,7 @@ export function ChecklistSaidaTab() {
             <Input value={bateriaMarca} onChange={(e) => setBateriaMarca(e.target.value)} placeholder="Ex: Moura" />
           </div>
           <div className="space-y-1.5">
-            <Label>Bateria — Amp</Label>
+            <Label>Bateria — Amperagem</Label>
             <Input value={bateriaAmp} onChange={(e) => setBateriaAmp(e.target.value)} placeholder="Ex: 150" />
           </div>
         </div>
@@ -298,9 +344,9 @@ export function ChecklistSaidaTab() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-                <th className="py-2 pr-2">Item</th>
+                <th className="py-2 pr-2 w-56">Item</th>
+                <th className="py-2 pr-2">Descrição</th>
                 <th className="py-2 pr-2 w-40">Status</th>
-                <th className="py-2 pr-2">Obs.</th>
                 <th className="py-2 w-10"></th>
               </tr>
             </thead>
@@ -311,6 +357,13 @@ export function ChecklistSaidaTab() {
                     <Input
                       value={it.nome}
                       onChange={(e) => updateItem(i, { nome: e.target.value })}
+                      className="h-9"
+                    />
+                  </td>
+                  <td className="py-2 pr-2">
+                    <Input
+                      value={it.desc}
+                      onChange={(e) => updateItem(i, { desc: e.target.value })}
                       className="h-9"
                     />
                   </td>
@@ -327,14 +380,6 @@ export function ChecklistSaidaTab() {
                       ))}
                     </select>
                   </td>
-                  <td className="py-2 pr-2">
-                    <Input
-                      value={it.obs}
-                      onChange={(e) => updateItem(i, { obs: e.target.value })}
-                      className="h-9"
-                      placeholder="Opcional"
-                    />
-                  </td>
                   <td className="py-2">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeItem(i)}>
                       <Trash2 className="h-4 w-4" />
@@ -348,7 +393,7 @@ export function ChecklistSaidaTab() {
       </section>
 
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-        <h2 className="font-display text-lg font-bold uppercase">Observações gerais</h2>
+        <h2 className="font-display text-lg font-bold uppercase">Observações</h2>
         <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={4} placeholder="Observações..." />
       </section>
 
@@ -360,11 +405,11 @@ export function ChecklistSaidaTab() {
             <Input value={vistoriador} onChange={(e) => setVistoriador(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Líder</Label>
+            <Label>Líder manutenção</Label>
             <Input value={lider} onChange={(e) => setLider(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Gerente de manutenção</Label>
+            <Label>Gerente manutenção</Label>
             <Input value={gerente} onChange={(e) => setGerente(e.target.value)} />
           </div>
         </div>
@@ -372,7 +417,7 @@ export function ChecklistSaidaTab() {
 
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold uppercase">Fotos</h2>
+          <h2 className="font-display text-lg font-bold uppercase">Fotos (página 2 do PDF)</h2>
           <label className="inline-flex">
             <input
               type="file"
