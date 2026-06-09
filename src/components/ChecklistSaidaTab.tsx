@@ -122,12 +122,18 @@ export function ChecklistSaidaTab() {
       const metaX = W - M - 45;
       doc.line(metaX, M, metaX, M + headerH);
 
+      const titleCenterX = (M + 45 + metaX) / 2;
+      const titleMaxW = metaX - (M + 45) - 4;
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.text("CHECK LIST DE LIBERAÇÃO DE EQUIPAMENTO - OFICINA", (M + 45 + metaX) / 2, M + 8, { align: "center" });
+      doc.setFontSize(9);
+      const titleLines = doc.splitTextToSize(
+        "CHECK LIST DE LIBERAÇÃO DE EQUIPAMENTO - OFICINA",
+        titleMaxW,
+      );
+      doc.text(titleLines, titleCenterX, M + 7, { align: "center" });
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text("SAÍDA DE EQUIPAMENTOS", (M + 45 + metaX) / 2, M + 13, { align: "center" });
+      doc.setFontSize(8);
+      doc.text("SAÍDA DE EQUIPAMENTOS", titleCenterX, M + 14, { align: "center" });
 
       doc.setFontSize(8);
       doc.text("F.MA-003", metaX + 2, M + 5);
