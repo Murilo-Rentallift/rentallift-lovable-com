@@ -28,17 +28,17 @@ const today = () => {
 };
 
 const emptyEquip = (): EquipDesc => ({
-  tipo: "Empilhadeira contrabalançada NOVA",
-  combustivel: "GLP",
-  capacidade: "2,5 ton",
-  tipoTorre: "Triplex",
-  alturaFechada: "2300 fechada",
-  alturaAberta: "4700 aberta",
-  acessorioTorre: "Não",
-  garfos: "Padrão - 1100",
-  tipoPneus: "Maciços",
-  itensSeguranca: "Iluminação completa + blue spot",
-  quantidade: "01",
+  tipo: "",
+  combustivel: "",
+  capacidade: "",
+  tipoTorre: "",
+  alturaFechada: "",
+  alturaAberta: "",
+  acessorioTorre: "",
+  garfos: "",
+  tipoPneus: "",
+  itensSeguranca: "",
+  quantidade: "",
 });
 
 function VendasPage() {
