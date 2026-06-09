@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { generateProposal, type ProposalInput } from "@/lib/proposal.functions";
+import { useState, useEffect } from "react";
+import { generateProposal, type ProposalInput, type EquipDesc } from "@/lib/proposal.functions";
+import { reaisPorExtenso, parseBR, formatBR } from "@/lib/numberToWords";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,20 @@ const today = () => {
   return `${String(d.getDate()).padStart(2, "0")} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
 };
 
+const emptyEquip = (): EquipDesc => ({
+  tipo: "Empilhadeira contrabalançada NOVA",
+  combustivel: "GLP",
+  capacidade: "2,5 ton",
+  tipoTorre: "Triplex",
+  alturaFechada: "2300 fechada",
+  alturaAberta: "4700 aberta",
+  acessorioTorre: "Não",
+  garfos: "Padrão - 1100",
+  tipoPneus: "Maciços",
+  itensSeguranca: "Iluminação completa + blue spot",
+  quantidade: "01",
+});
+
 function VendasPage() {
   const gen = useServerFn(generateProposal);
   const [loading, setLoading] = useState(false);
@@ -33,19 +48,7 @@ function VendasPage() {
     data: today(),
     cliente: "",
     responsavel: "",
-    equip: {
-      tipo: "Empilhadeira contrabalançada NOVA",
-      combustivel: "GLP",
-      capacidade: "2,5 ton",
-      tipoTorre: "Triplex",
-      alturaFechada: "2300 fechada",
-      alturaAberta: "4700 aberta",
-      acessorioTorre: "Não",
-      garfos: "Padrão - 1100",
-      tipoPneus: "Maciços",
-      itensSeguranca: "Iluminação completa + blue spot",
-      quantidade: "01",
-    },
+    equipamentos: [emptyEquip()],
     itensValor: [
       { quant: "01", equipamento: "EMPILHADEIRA 2.5 TON NOVA", valorUnitario: "5.200,00", valorTotal: "5.200,00" },
     ],
@@ -60,13 +63,34 @@ function VendasPage() {
 
   const set = <K extends keyof ProposalInput>(k: K, v: ProposalInput[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
-  const setEq = <K extends keyof ProposalInput["equip"]>(k: K, v: string) =>
-    setForm((f) => ({ ...f, equip: { ...f.equip, [k]: v } }));
+
+  const updateEquip = (i: number, k: keyof EquipDesc, v: string) =>
+    setForm((f) => ({
+      ...f,
+      equipamentos: f.equipamentos.map((e, idx) => (idx === i ? { ...e, [k]: v } : e)),
+    }));
+  const addEquip = () =>
+    setForm((f) => ({ ...f, equipamentos: [...f.equipamentos, emptyEquip()] }));
+  const removeEquip = (i: number) =>
+    setForm((f) => ({
+      ...f,
+      equipamentos: f.equipamentos.length > 1 ? f.equipamentos.filter((_, idx) => idx !== i) : f.equipamentos,
+    }));
 
   const updateItem = (i: number, field: keyof ProposalInput["itensValor"][number], val: string) =>
     setForm((f) => ({
       ...f,
-      itensValor: f.itensValor.map((it, idx) => (idx === i ? { ...it, [field]: val } : it)),
+      itensValor: f.itensValor.map((it, idx) => {
+        if (idx !== i) return it;
+        const next = { ...it, [field]: val };
+        // Auto-calc valorTotal when quant or valorUnitario change
+        if (field === "quant" || field === "valorUnitario") {
+          const q = parseBR(field === "quant" ? val : next.quant);
+          const u = parseBR(field === "valorUnitario" ? val : next.valorUnitario);
+          if (q > 0 && u > 0) next.valorTotal = formatBR(q * u);
+        }
+        return next;
+      }),
     }));
   const addItem = () =>
     setForm((f) => ({
@@ -75,6 +99,18 @@ function VendasPage() {
     }));
   const removeItem = (i: number) =>
     setForm((f) => ({ ...f, itensValor: f.itensValor.filter((_, idx) => idx !== i) }));
+
+  // Auto sum total mensal + extenso
+  useEffect(() => {
+    const soma = form.itensValor.reduce((acc, it) => acc + parseBR(it.valorTotal), 0);
+    const totalStr = formatBR(soma);
+    const extenso = reaisPorExtenso(soma);
+    setForm((f) =>
+      f.valorTotalMensal === totalStr && f.valorTotalExtenso === extenso
+        ? f
+        : { ...f, valorTotalMensal: totalStr, valorTotalExtenso: extenso },
+    );
+  }, [form.itensValor]);
 
   const handleGenerate = async () => {
     if (!form.cliente.trim()) {
@@ -105,7 +141,7 @@ function VendasPage() {
     }
   };
 
-  const eqFields: Array<[keyof ProposalInput["equip"], string]> = [
+  const eqFields: Array<[keyof EquipDesc, string]> = [
     ["tipo", "TIPO"],
     ["combustivel", "COMBUSTÍVEL"],
     ["capacidade", "CAPACIDADE"],
@@ -153,12 +189,31 @@ function VendasPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Descrição do Equipamento</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {eqFields.map(([k, label]) => (
-              <div key={k} className="space-y-2">
-                <Label>{label}</Label>
-                <Input value={form.equip[k]} onChange={(e) => setEq(k, e.target.value)} />
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Descrição do Equipamento</CardTitle>
+            <Button size="sm" variant="outline" onClick={addEquip}>
+              <Plus className="h-4 w-4" /> Equipamento
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {form.equipamentos.map((eq, ei) => (
+              <div key={ei} className="space-y-3 border rounded-md p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm">Equipamento {ei + 1}</h3>
+                  {form.equipamentos.length > 1 && (
+                    <Button size="icon" variant="ghost" onClick={() => removeEquip(ei)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {eqFields.map(([k, label]) => (
+                    <div key={String(k)} className="space-y-2">
+                      <Label>{label}</Label>
+                      <Input value={eq[k]} onChange={(e) => updateEquip(ei, k, e.target.value)} />
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </CardContent>
@@ -185,7 +240,7 @@ function VendasPage() {
                   <Input value={it.valorUnitario} onChange={(e) => updateItem(i, "valorUnitario", e.target.value)} />
                 </div>
                 <div className="col-span-2 space-y-1">
-                  <Label className="text-xs">Vlr Total</Label>
+                  <Label className="text-xs">Vlr Total (auto)</Label>
                   <Input value={it.valorTotal} onChange={(e) => updateItem(i, "valorTotal", e.target.value)} />
                 </div>
                 <div className="col-span-1">
@@ -197,12 +252,12 @@ function VendasPage() {
             ))}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t">
               <div className="space-y-2">
-                <Label>Valor Total Mensal (R$)</Label>
-                <Input value={form.valorTotalMensal} onChange={(e) => set("valorTotalMensal", e.target.value)} />
+                <Label>Valor Total Mensal (R$) — auto</Label>
+                <Input value={form.valorTotalMensal} readOnly className="bg-muted" />
               </div>
               <div className="space-y-2">
-                <Label>Valor por Extenso</Label>
-                <Input value={form.valorTotalExtenso} onChange={(e) => set("valorTotalExtenso", e.target.value)} />
+                <Label>Valor por Extenso — auto</Label>
+                <Input value={form.valorTotalExtenso} readOnly className="bg-muted" />
               </div>
             </div>
           </CardContent>
