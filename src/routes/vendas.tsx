@@ -49,16 +49,14 @@ function VendasPage() {
     cliente: "",
     responsavel: "",
     equipamentos: [emptyEquip()],
-    itensValor: [
-      { quant: "01", equipamento: "EMPILHADEIRA 2.5 TON NOVA", valorUnitario: "5.200,00", valorTotal: "5.200,00" },
-    ],
-    valorTotalMensal: "5.200,00",
-    valorTotalExtenso: "cinco mil e duzentos reais",
-    prazoEntrega: "A pronta entrega – confirmar disponibilidade de caminhão para frete",
-    periodoContrato: "24 meses",
-    condicoesPagamento: "10 DDL após fechamento do mês",
-    validadeProposta: "Proposta valida por 15 dias",
-    custoFrete: "Por conta do cliente",
+    itensValor: [],
+    valorTotalMensal: "0,00",
+    valorTotalExtenso: "zero real",
+    prazoEntrega: "",
+    periodoContrato: "",
+    condicoesPagamento: "",
+    validadeProposta: "",
+    custoFrete: "",
   });
 
   const set = <K extends keyof ProposalInput>(k: K, v: ProposalInput[K]) =>
