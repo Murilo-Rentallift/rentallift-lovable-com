@@ -52,6 +52,23 @@ export const generateProposal = createServerFn({ method: "POST" })
       ShadingType,
       PageBreak,
       HeightRule,
+      ImageRun,
+    } = await import("docx");
+
+    const logoBuffer = Buffer.from(PROPOSAL_LOGOS_B64, "base64");
+    const headerImage = new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [
+        new ImageRun({
+          type: "png",
+          data: logoBuffer,
+          transformation: { width: 480, height: 88 },
+        } as never),
+      ],
+    });
+      ShadingType,
+      PageBreak,
+      HeightRule,
     } = await import("docx");
 
     const FONT = "Century Gothic";
