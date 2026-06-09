@@ -153,6 +153,20 @@ function VendasPage() {
     ["quantidade", "QUANTIDADE"],
   ];
 
+  const eqPlaceholders: Record<keyof EquipDesc, string> = {
+    tipo: "Ex: Empilhadeira contrabalançada NOVA",
+    combustivel: "Ex: GLP",
+    capacidade: "Ex: 2,5 ton",
+    tipoTorre: "Ex: Triplex",
+    alturaFechada: "Ex: 2300 fechada",
+    alturaAberta: "Ex: 4700 aberta",
+    acessorioTorre: "Ex: Não",
+    garfos: "Ex: Padrão - 1100",
+    tipoPneus: "Ex: Maciços",
+    itensSeguranca: "Ex: Iluminação completa + blue spot",
+    quantidade: "Ex: 01",
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-border bg-card/50">
