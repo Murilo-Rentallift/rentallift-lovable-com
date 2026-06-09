@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { PROPOSAL_LOGOS_B64 } from "./assets/proposal-logos";
 
 export type ProposalInput = {
   data: string; // "04 de maio de 2026"
