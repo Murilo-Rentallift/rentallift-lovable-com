@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VendasRouteImport } from './routes/vendas'
 import { Route as OficinaRouteImport } from './routes/oficina'
 import { Route as AlmoxarifadoRouteImport } from './routes/almoxarifado'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OperadorIdRouteImport } from './routes/operador.$id'
 
+const VendasRoute = VendasRouteImport.update({
+  id: '/vendas',
+  path: '/vendas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OficinaRoute = OficinaRouteImport.update({
   id: '/oficina',
   path: '/oficina',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/almoxarifado': typeof AlmoxarifadoRoute
   '/oficina': typeof OficinaRoute
+  '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/almoxarifado': typeof AlmoxarifadoRoute
   '/oficina': typeof OficinaRoute
+  '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
 }
 export interface FileRoutesById {
@@ -61,19 +69,33 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/almoxarifado': typeof AlmoxarifadoRoute
   '/oficina': typeof OficinaRoute
+  '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/almoxarifado' | '/oficina' | '/operador/$id'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/almoxarifado'
+    | '/oficina'
+    | '/vendas'
+    | '/operador/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/almoxarifado' | '/oficina' | '/operador/$id'
+  to:
+    | '/'
+    | '/admin'
+    | '/almoxarifado'
+    | '/oficina'
+    | '/vendas'
+    | '/operador/$id'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/almoxarifado'
     | '/oficina'
+    | '/vendas'
     | '/operador/$id'
   fileRoutesById: FileRoutesById
 }
@@ -82,11 +104,19 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AlmoxarifadoRoute: typeof AlmoxarifadoRoute
   OficinaRoute: typeof OficinaRoute
+  VendasRoute: typeof VendasRoute
   OperadorIdRoute: typeof OperadorIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vendas': {
+      id: '/vendas'
+      path: '/vendas'
+      fullPath: '/vendas'
+      preLoaderRoute: typeof VendasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/oficina': {
       id: '/oficina'
       path: '/oficina'
@@ -130,18 +160,9 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AlmoxarifadoRoute: AlmoxarifadoRoute,
   OficinaRoute: OficinaRoute,
+  VendasRoute: VendasRoute,
   OperadorIdRoute: OperadorIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
