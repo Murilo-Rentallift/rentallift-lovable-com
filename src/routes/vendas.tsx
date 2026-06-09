@@ -241,15 +241,15 @@ function VendasPage() {
               <div key={i} className="grid grid-cols-12 gap-2 items-end">
                 <div className="col-span-2 space-y-1">
                   <Label className="text-xs">Quant.</Label>
-                  <Input value={it.quant} onChange={(e) => updateItem(i, "quant", e.target.value)} />
+                  <Input value={it.quant} onChange={(e) => updateItem(i, "quant", e.target.value)} placeholder="Ex: 01" />
                 </div>
                 <div className="col-span-5 space-y-1">
                   <Label className="text-xs">Equipamento</Label>
-                  <Input value={it.equipamento} onChange={(e) => updateItem(i, "equipamento", e.target.value)} />
+                  <Input value={it.equipamento} onChange={(e) => updateItem(i, "equipamento", e.target.value)} placeholder="Ex: EMPILHADEIRA 2.5 TON NOVA" />
                 </div>
                 <div className="col-span-2 space-y-1">
                   <Label className="text-xs">Vlr Unit.</Label>
-                  <Input value={it.valorUnitario} onChange={(e) => updateItem(i, "valorUnitario", e.target.value)} />
+                  <Input value={it.valorUnitario} onChange={(e) => updateItem(i, "valorUnitario", e.target.value)} placeholder="Ex: 5.200,00" />
                 </div>
                 <div className="col-span-2 space-y-1">
                   <Label className="text-xs">Vlr Total (auto)</Label>
@@ -280,24 +280,24 @@ function VendasPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Prazo de Entrega</Label>
-              <Textarea rows={2} value={form.prazoEntrega} onChange={(e) => set("prazoEntrega", e.target.value)} />
+              <Textarea rows={2} value={form.prazoEntrega} onChange={(e) => set("prazoEntrega", e.target.value)} placeholder="Ex: A pronta entrega – confirmar disponibilidade de caminhão para frete" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Período de Contrato</Label>
-                <Input value={form.periodoContrato} onChange={(e) => set("periodoContrato", e.target.value)} />
+                <Input value={form.periodoContrato} onChange={(e) => set("periodoContrato", e.target.value)} placeholder="Ex: 24 meses" />
               </div>
               <div className="space-y-2">
                 <Label>Condições de Pagamento</Label>
-                <Input value={form.condicoesPagamento} onChange={(e) => set("condicoesPagamento", e.target.value)} />
+                <Input value={form.condicoesPagamento} onChange={(e) => set("condicoesPagamento", e.target.value)} placeholder="Ex: 10 DDL após fechamento do mês" />
               </div>
               <div className="space-y-2">
                 <Label>Validade da Proposta</Label>
-                <Input value={form.validadeProposta} onChange={(e) => set("validadeProposta", e.target.value)} />
+                <Input value={form.validadeProposta} onChange={(e) => set("validadeProposta", e.target.value)} placeholder="Ex: Proposta válida por 15 dias" />
               </div>
               <div className="space-y-2">
                 <Label>Custo de Frete</Label>
-                <Input value={form.custoFrete} onChange={(e) => set("custoFrete", e.target.value)} />
+                <Input value={form.custoFrete} onChange={(e) => set("custoFrete", e.target.value)} placeholder="Ex: Por conta do cliente" />
               </div>
             </div>
           </CardContent>
