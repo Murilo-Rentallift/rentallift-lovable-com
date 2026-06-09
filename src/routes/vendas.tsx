@@ -28,17 +28,17 @@ const today = () => {
 };
 
 const emptyEquip = (): EquipDesc => ({
-  tipo: "Empilhadeira contrabalançada NOVA",
-  combustivel: "GLP",
-  capacidade: "2,5 ton",
-  tipoTorre: "Triplex",
-  alturaFechada: "2300 fechada",
-  alturaAberta: "4700 aberta",
-  acessorioTorre: "Não",
-  garfos: "Padrão - 1100",
-  tipoPneus: "Maciços",
-  itensSeguranca: "Iluminação completa + blue spot",
-  quantidade: "01",
+  tipo: "",
+  combustivel: "",
+  capacidade: "",
+  tipoTorre: "",
+  alturaFechada: "",
+  alturaAberta: "",
+  acessorioTorre: "",
+  garfos: "",
+  tipoPneus: "",
+  itensSeguranca: "",
+  quantidade: "",
 });
 
 function VendasPage() {
@@ -49,16 +49,14 @@ function VendasPage() {
     cliente: "",
     responsavel: "",
     equipamentos: [emptyEquip()],
-    itensValor: [
-      { quant: "01", equipamento: "EMPILHADEIRA 2.5 TON NOVA", valorUnitario: "5.200,00", valorTotal: "5.200,00" },
-    ],
-    valorTotalMensal: "5.200,00",
-    valorTotalExtenso: "cinco mil e duzentos reais",
-    prazoEntrega: "A pronta entrega – confirmar disponibilidade de caminhão para frete",
-    periodoContrato: "24 meses",
-    condicoesPagamento: "10 DDL após fechamento do mês",
-    validadeProposta: "Proposta valida por 15 dias",
-    custoFrete: "Por conta do cliente",
+    itensValor: [],
+    valorTotalMensal: "0,00",
+    valorTotalExtenso: "zero real",
+    prazoEntrega: "",
+    periodoContrato: "",
+    condicoesPagamento: "",
+    validadeProposta: "",
+    custoFrete: "",
   });
 
   const set = <K extends keyof ProposalInput>(k: K, v: ProposalInput[K]) =>
@@ -155,6 +153,20 @@ function VendasPage() {
     ["quantidade", "QUANTIDADE"],
   ];
 
+  const eqPlaceholders: Record<keyof EquipDesc, string> = {
+    tipo: "Ex: Empilhadeira contrabalançada NOVA",
+    combustivel: "Ex: GLP",
+    capacidade: "Ex: 2,5 ton",
+    tipoTorre: "Ex: Triplex",
+    alturaFechada: "Ex: 2300 fechada",
+    alturaAberta: "Ex: 4700 aberta",
+    acessorioTorre: "Ex: Não",
+    garfos: "Ex: Padrão - 1100",
+    tipoPneus: "Ex: Maciços",
+    itensSeguranca: "Ex: Iluminação completa + blue spot",
+    quantidade: "Ex: 01",
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-border bg-card/50">
@@ -179,11 +191,11 @@ function VendasPage() {
             </div>
             <div className="space-y-2">
               <Label>Nome do Cliente</Label>
-              <Input value={form.cliente} onChange={(e) => set("cliente", e.target.value)} placeholder="ADESTE" />
+              <Input value={form.cliente} onChange={(e) => set("cliente", e.target.value)} placeholder="Ex: ADESTE" />
             </div>
             <div className="space-y-2">
               <Label>A/C (Responsável)</Label>
-              <Input value={form.responsavel} onChange={(e) => set("responsavel", e.target.value)} placeholder="CRISTIANE" />
+              <Input value={form.responsavel} onChange={(e) => set("responsavel", e.target.value)} placeholder="Ex: CRISTIANE" />
             </div>
           </CardContent>
         </Card>
@@ -210,7 +222,7 @@ function VendasPage() {
                   {eqFields.map(([k, label]) => (
                     <div key={String(k)} className="space-y-2">
                       <Label>{label}</Label>
-                      <Input value={eq[k]} onChange={(e) => updateEquip(ei, k, e.target.value)} />
+                      <Input value={eq[k]} onChange={(e) => updateEquip(ei, k, e.target.value)} placeholder={eqPlaceholders[k]} />
                     </div>
                   ))}
                 </div>
@@ -229,15 +241,15 @@ function VendasPage() {
               <div key={i} className="grid grid-cols-12 gap-2 items-end">
                 <div className="col-span-2 space-y-1">
                   <Label className="text-xs">Quant.</Label>
-                  <Input value={it.quant} onChange={(e) => updateItem(i, "quant", e.target.value)} />
+                  <Input value={it.quant} onChange={(e) => updateItem(i, "quant", e.target.value)} placeholder="Ex: 01" />
                 </div>
                 <div className="col-span-5 space-y-1">
                   <Label className="text-xs">Equipamento</Label>
-                  <Input value={it.equipamento} onChange={(e) => updateItem(i, "equipamento", e.target.value)} />
+                  <Input value={it.equipamento} onChange={(e) => updateItem(i, "equipamento", e.target.value)} placeholder="Ex: EMPILHADEIRA 2.5 TON NOVA" />
                 </div>
                 <div className="col-span-2 space-y-1">
                   <Label className="text-xs">Vlr Unit.</Label>
-                  <Input value={it.valorUnitario} onChange={(e) => updateItem(i, "valorUnitario", e.target.value)} />
+                  <Input value={it.valorUnitario} onChange={(e) => updateItem(i, "valorUnitario", e.target.value)} placeholder="Ex: 5.200,00" />
                 </div>
                 <div className="col-span-2 space-y-1">
                   <Label className="text-xs">Vlr Total (auto)</Label>
@@ -268,24 +280,24 @@ function VendasPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Prazo de Entrega</Label>
-              <Textarea rows={2} value={form.prazoEntrega} onChange={(e) => set("prazoEntrega", e.target.value)} />
+              <Textarea rows={2} value={form.prazoEntrega} onChange={(e) => set("prazoEntrega", e.target.value)} placeholder="Ex: A pronta entrega – confirmar disponibilidade de caminhão para frete" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Período de Contrato</Label>
-                <Input value={form.periodoContrato} onChange={(e) => set("periodoContrato", e.target.value)} />
+                <Input value={form.periodoContrato} onChange={(e) => set("periodoContrato", e.target.value)} placeholder="Ex: 24 meses" />
               </div>
               <div className="space-y-2">
                 <Label>Condições de Pagamento</Label>
-                <Input value={form.condicoesPagamento} onChange={(e) => set("condicoesPagamento", e.target.value)} />
+                <Input value={form.condicoesPagamento} onChange={(e) => set("condicoesPagamento", e.target.value)} placeholder="Ex: 10 DDL após fechamento do mês" />
               </div>
               <div className="space-y-2">
                 <Label>Validade da Proposta</Label>
-                <Input value={form.validadeProposta} onChange={(e) => set("validadeProposta", e.target.value)} />
+                <Input value={form.validadeProposta} onChange={(e) => set("validadeProposta", e.target.value)} placeholder="Ex: Proposta válida por 15 dias" />
               </div>
               <div className="space-y-2">
                 <Label>Custo de Frete</Label>
-                <Input value={form.custoFrete} onChange={(e) => set("custoFrete", e.target.value)} />
+                <Input value={form.custoFrete} onChange={(e) => set("custoFrete", e.target.value)} placeholder="Ex: Por conta do cliente" />
               </div>
             </div>
           </CardContent>
