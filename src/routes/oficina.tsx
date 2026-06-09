@@ -40,6 +40,8 @@ import {
   Check,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { ChecklistSaidaTab } from "@/components/ChecklistSaidaTab";
+import { ClipboardCheck } from "lucide-react";
 
 export const Route = createFileRoute("/oficina")({
   head: () => ({ meta: [{ title: "Oficina — Requisição de Peças" }] }),
