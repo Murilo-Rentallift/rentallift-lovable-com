@@ -195,7 +195,7 @@ function VendasPage() {
             </div>
             <div className="space-y-2">
               <Label>A/C (Responsável)</Label>
-              <Input value={form.responsavel} onChange={(e) => set("responsavel", e.target.value)} placeholder="CRISTIANE" />
+              <Input value={form.responsavel} onChange={(e) => set("responsavel", e.target.value)} placeholder="Ex: CRISTIANE" />
             </div>
           </CardContent>
         </Card>
