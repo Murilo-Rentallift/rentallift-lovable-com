@@ -1,31 +1,33 @@
 import { createServerFn } from "@tanstack/react-start";
 import { PROPOSAL_LOGOS_B64 } from "./assets/proposal-logos";
 
+export type EquipDesc = {
+  tipo: string;
+  combustivel: string;
+  capacidade: string;
+  tipoTorre: string;
+  alturaFechada: string;
+  alturaAberta: string;
+  acessorioTorre: string;
+  garfos: string;
+  tipoPneus: string;
+  itensSeguranca: string;
+  quantidade: string;
+};
+
 export type ProposalInput = {
-  data: string; // "04 de maio de 2026"
+  data: string;
   cliente: string;
   responsavel: string;
-  equip: {
-    tipo: string;
-    combustivel: string;
-    capacidade: string;
-    tipoTorre: string;
-    alturaFechada: string;
-    alturaAberta: string;
-    acessorioTorre: string;
-    garfos: string;
-    tipoPneus: string;
-    itensSeguranca: string;
-    quantidade: string;
-  };
+  equipamentos: EquipDesc[];
   itensValor: Array<{
     quant: string;
     equipamento: string;
     valorUnitario: string;
     valorTotal: string;
   }>;
-  valorTotalMensal: string; // "5.200,00"
-  valorTotalExtenso: string; // "cinco mil e duzentos reais"
+  valorTotalMensal: string;
+  valorTotalExtenso: string;
   prazoEntrega: string;
   periodoContrato: string;
   condicoesPagamento: string;
@@ -51,7 +53,6 @@ export const generateProposal = createServerFn({ method: "POST" })
       BorderStyle,
       ShadingType,
       PageBreak,
-      HeightRule,
       ImageRun,
     } = await import("docx");
 
@@ -97,22 +98,23 @@ export const generateProposal = createServerFn({ method: "POST" })
         ],
       });
 
-    const equipTable = new Table({
-      width: { size: 9360, type: WidthType.DXA },
-      columnWidths: [3600, 5760],
-      rows: [
-        equipRow("TIPO", data.equip.tipo),
-        equipRow("COMBUSTÍVEL", data.equip.combustivel),
-        equipRow("CAPACIDADE", data.equip.capacidade),
-        equipRow("TIPO TORRE", data.equip.tipoTorre),
-        equipRow("ALTURA (fechada / aberta) mm", data.equip.alturaFechada, data.equip.alturaAberta),
-        equipRow("ACESSÓRIO TORRE", data.equip.acessorioTorre),
-        equipRow("GARFOS (mm)", data.equip.garfos),
-        equipRow("TIPO PNEUS", data.equip.tipoPneus),
-        equipRow("ITENS SEGURANÇA", data.equip.itensSeguranca),
-        equipRow("QUANTIDADE", data.equip.quantidade),
-      ],
-    });
+    const buildEquipTable = (eq: EquipDesc) =>
+      new Table({
+        width: { size: 9360, type: WidthType.DXA },
+        columnWidths: [3600, 5760],
+        rows: [
+          equipRow("TIPO", eq.tipo),
+          equipRow("COMBUSTÍVEL", eq.combustivel),
+          equipRow("CAPACIDADE", eq.capacidade),
+          equipRow("TIPO TORRE", eq.tipoTorre),
+          equipRow("ALTURA (fechada / aberta) mm", eq.alturaFechada, eq.alturaAberta),
+          equipRow("ACESSÓRIO TORRE", eq.acessorioTorre),
+          equipRow("GARFOS (mm)", eq.garfos),
+          equipRow("TIPO PNEUS", eq.tipoPneus),
+          equipRow("ITENS SEGURANÇA", eq.itensSeguranca),
+          equipRow("QUANTIDADE", eq.quantidade),
+        ],
+      });
 
     const headerCell = (text: string, w: number) =>
       new TableCell({
@@ -182,6 +184,20 @@ export const generateProposal = createServerFn({ method: "POST" })
       { alignment: AlignmentType.CENTER },
     );
 
+    const equipmentBlocks: any[] = [];
+    data.equipamentos.forEach((eq, i) => {
+      if (i > 0) {
+        equipmentBlocks.push(
+          p([t(`Equipamento ${i + 1}`, { bold: true })], { spacing: { before: 200, after: 80 } }),
+        );
+      } else if (data.equipamentos.length > 1) {
+        equipmentBlocks.push(
+          p([t(`Equipamento ${i + 1}`, { bold: true })], { spacing: { before: 0, after: 80 } }),
+        );
+      }
+      equipmentBlocks.push(buildEquipTable(eq));
+    });
+
     const doc = new Document({
       styles: {
         default: { document: { run: { font: FONT, size: 19 } } },
@@ -218,7 +234,7 @@ export const generateProposal = createServerFn({ method: "POST" })
             ),
 
             sectionTitle(1, "Descrição do Equipamento:"),
-            equipTable,
+            ...equipmentBlocks,
 
             sectionTitle(2, "São por conta da CONTRATANTE:"),
             bullet("Operador habilitado e suas respectivas obrigações e responsabilidades."),
