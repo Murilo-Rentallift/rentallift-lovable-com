@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X } from "lucide-react";
+import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X, Search } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { PROPOSAL_LOGOS_B64 } from "@/lib/assets/proposal-logos";
@@ -116,10 +116,42 @@ export function ChecklistSaidaTab() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [showDrafts, setShowDrafts] = useState(false);
   const [sigKey, setSigKey] = useState(0); // forces SignaturePad remount when loading draft
+  const [filtroMes, setFiltroMes] = useState("");
+  const [filtroFrota, setFiltroFrota] = useState("");
 
   useEffect(() => {
     setDrafts(loadDrafts());
   }, []);
+
+  const meses = [
+    { value: "01", label: "Janeiro" },
+    { value: "02", label: "Fevereiro" },
+    { value: "03", label: "Março" },
+    { value: "04", label: "Abril" },
+    { value: "05", label: "Maio" },
+    { value: "06", label: "Junho" },
+    { value: "07", label: "Julho" },
+    { value: "08", label: "Agosto" },
+    { value: "09", label: "Setembro" },
+    { value: "10", label: "Outubro" },
+    { value: "11", label: "Novembro" },
+    { value: "12", label: "Dezembro" },
+  ];
+
+  const filteredDrafts = useMemo(() => {
+    return drafts.filter((d) => {
+      let okMes = true;
+      if (filtroMes) {
+        const src = d.data || d.savedAt;
+        okMes = src ? src.slice(5, 7) === filtroMes : false;
+      }
+      let okFrota = true;
+      if (filtroFrota.trim()) {
+        okFrota = d.frota.toLowerCase().includes(filtroFrota.trim().toLowerCase());
+      }
+      return okMes && okFrota;
+    });
+  }, [drafts, filtroMes, filtroFrota]);
 
   function updateItem(i: number, patch: Partial<Item>) {
     setItens((p) => p.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
@@ -449,13 +481,44 @@ export function ChecklistSaidaTab() {
       </div>
 
       {showDrafts && (
-        <section className="rounded-lg border border-border bg-card p-4 space-y-2">
+        <section className="rounded-lg border border-border bg-card p-4 space-y-3">
           <h3 className="font-medium">Checklists salvos</h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Mês</Label>
+              <select
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={filtroMes}
+                onChange={(e) => setFiltroMes(e.target.value)}
+              >
+                <option value="">Todos os meses</option>
+                {meses.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Frota</Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={filtroFrota}
+                  onChange={(e) => setFiltroFrota(e.target.value)}
+                  placeholder="Número da frota"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+          </div>
+
           {drafts.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum checklist salvo ainda.</p>
+          ) : filteredDrafts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum resultado para os filtros selecionados.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {drafts.map((d) => (
+              {filteredDrafts.map((d) => (
                 <li key={d.id} className="py-2 flex items-center justify-between gap-2">
                   <div className="text-sm">
                     <div className="font-medium">
