@@ -481,13 +481,44 @@ export function ChecklistSaidaTab() {
       </div>
 
       {showDrafts && (
-        <section className="rounded-lg border border-border bg-card p-4 space-y-2">
+        <section className="rounded-lg border border-border bg-card p-4 space-y-3">
           <h3 className="font-medium">Checklists salvos</h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Mês</Label>
+              <select
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={filtroMes}
+                onChange={(e) => setFiltroMes(e.target.value)}
+              >
+                <option value="">Todos os meses</option>
+                {meses.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Frota</Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={filtroFrota}
+                  onChange={(e) => setFiltroFrota(e.target.value)}
+                  placeholder="Número da frota"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+          </div>
+
           {drafts.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhum checklist salvo ainda.</p>
+          ) : filteredDrafts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum resultado para os filtros selecionados.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {drafts.map((d) => (
+              {filteredDrafts.map((d) => (
                 <li key={d.id} className="py-2 flex items-center justify-between gap-2">
                   <div className="text-sm">
                     <div className="font-medium">
