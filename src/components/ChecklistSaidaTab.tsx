@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X } from "lucide-react";
+import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X, Search } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { PROPOSAL_LOGOS_B64 } from "@/lib/assets/proposal-logos";
