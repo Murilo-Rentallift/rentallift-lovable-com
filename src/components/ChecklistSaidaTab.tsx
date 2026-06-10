@@ -116,6 +116,8 @@ export function ChecklistSaidaTab() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [showDrafts, setShowDrafts] = useState(false);
   const [sigKey, setSigKey] = useState(0); // forces SignaturePad remount when loading draft
+  const [filtroMes, setFiltroMes] = useState("");
+  const [filtroFrota, setFiltroFrota] = useState("");
 
   useEffect(() => {
     setDrafts(loadDrafts());
