@@ -123,6 +123,36 @@ export function ChecklistSaidaTab() {
     setDrafts(loadDrafts());
   }, []);
 
+  const meses = [
+    { value: "01", label: "Janeiro" },
+    { value: "02", label: "Fevereiro" },
+    { value: "03", label: "Março" },
+    { value: "04", label: "Abril" },
+    { value: "05", label: "Maio" },
+    { value: "06", label: "Junho" },
+    { value: "07", label: "Julho" },
+    { value: "08", label: "Agosto" },
+    { value: "09", label: "Setembro" },
+    { value: "10", label: "Outubro" },
+    { value: "11", label: "Novembro" },
+    { value: "12", label: "Dezembro" },
+  ];
+
+  const filteredDrafts = useMemo(() => {
+    return drafts.filter((d) => {
+      let okMes = true;
+      if (filtroMes) {
+        const src = d.data || d.savedAt;
+        okMes = src ? src.slice(5, 7) === filtroMes : false;
+      }
+      let okFrota = true;
+      if (filtroFrota.trim()) {
+        okFrota = d.frota.toLowerCase().includes(filtroFrota.trim().toLowerCase());
+      }
+      return okMes && okFrota;
+    });
+  }, [drafts, filtroMes, filtroFrota]);
+
   function updateItem(i: number, patch: Partial<Item>) {
     setItens((p) => p.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
   }
