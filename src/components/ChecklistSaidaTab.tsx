@@ -443,23 +443,21 @@ export function ChecklistSaidaTab() {
     try {
       const doc = await buildPdf();
       const fileName = pdfFileName();
-      const blob = doc.output("blob");
-      const file = new File([blob], fileName, { type: "application/pdf" });
       const subject = `Checklist de Saída${frota ? " - Frota " + frota : ""}${data ? " - " + data : ""}`;
       const body = `Segue em anexo o checklist de saída.${cliente ? "\nCliente: " + cliente : ""}${frota ? "\nFrota: " + frota : ""}${data ? "\nData: " + data : ""}`;
 
-      const nav: any = navigator;
-      if (nav.canShare && nav.canShare({ files: [file] })) {
-        await nav.share({ files: [file], title: subject, text: body });
-      } else {
-        // Fallback: baixa o PDF e abre o cliente de email
-        doc.save(fileName);
-        const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body + "\n\n(Anexe o arquivo PDF baixado: " + fileName + ")")}`;
-        window.location.href = mailto;
-        toast.info("PDF baixado. Anexe-o no seu cliente de email.");
-      }
+      // Converte PDF para base64 (sem o prefixo data:application/pdf;base64,)
+      const dataUri = doc.output("datauristring");
+      const pdfBase64 = dataUri.split(",")[1];
+
+      toast.loading("Enviando email...", { id: "send-email" });
+      const { sendChecklistEmail } = await import("@/lib/email.functions");
+      const result = await sendChecklistEmail({
+        data: { subject, body, fileName, pdfBase64 },
+      });
+      toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email" });
     } catch (e: any) {
-      if (e?.name !== "AbortError") toast.error(e?.message || "Erro ao enviar por email");
+      toast.error(e?.message || "Erro ao enviar por email", { id: "send-email" });
     } finally {
       setGerando(false);
     }
