@@ -103,5 +103,5 @@ export const sendChecklistEmail = createServerFn({ method: "POST" })
     const result = await res.json();
     // Suprime warning de variável não usada caso o helper deixe de ser necessário
     void base64ToBase64Url;
-    return { ok: true, id: result?.id, recipients: DESTINATARIOS };
+    return { ok: true, id: result?.id, recipients };
   });
