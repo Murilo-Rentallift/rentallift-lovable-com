@@ -471,33 +471,54 @@ export function ChecklistSaidaTab() {
     }
   }
 
-  async function enviarParaCliente() {
-    const email = window.prompt("Digite o email do cliente:");
-    if (!email) return;
-    const trimmed = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      toast.error("Email do cliente inválido");
-      return;
-    }
-    setGerando(true);
+  async function abrirPreviewCliente() {
+    setPreviewLoading(true);
+    setPreviewOpen(true);
     try {
       const doc = await buildPdf();
       const fileName = pdfFileName();
       const body = `Segue em anexo o checklist de saída.${cliente ? "\nCliente: " + cliente : ""}${frota ? "\nFrota: " + frota : ""}${data ? "\nData: " + data : ""}`;
-
       const dataUri = doc.output("datauristring");
       const pdfBase64 = dataUri.split(",")[1];
+      const blob = doc.output("blob");
+      const url = URL.createObjectURL(blob);
+      // revoke previous
+      if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
+      setPreviewPdfUrl(url);
+      setPreviewPdfBase64(pdfBase64);
+      setPreviewFileName(fileName);
+      setPreviewBody(body);
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao gerar pré-visualização");
+      setPreviewOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
 
+  async function confirmarEnvioCliente() {
+    const trimmed = previewEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("Email do cliente inválido");
+      return;
+    }
+    setPreviewEnviando(true);
+    try {
       toast.loading("Enviando email...", { id: "send-email-client" });
       const { sendChecklistEmail } = await import("@/lib/email.functions");
       const result = await sendChecklistEmail({
-        data: { body, fileName, pdfBase64, clientEmail: trimmed },
+        data: { body: previewBody, fileName: previewFileName, pdfBase64: previewPdfBase64, clientEmail: trimmed },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email-client" });
+      setPreviewOpen(false);
+      if (previewPdfUrl) {
+        URL.revokeObjectURL(previewPdfUrl);
+        setPreviewPdfUrl(null);
+      }
     } catch (e: any) {
       toast.error(e?.message || "Erro ao enviar por email", { id: "send-email-client" });
     } finally {
-      setGerando(false);
+      setPreviewEnviando(false);
     }
   }
 
