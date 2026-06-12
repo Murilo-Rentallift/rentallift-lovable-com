@@ -440,11 +440,15 @@ export function ChecklistSaidaTab() {
   }
 
   async function enviarPorEmail() {
+    const emailCliente = clienteEmail.trim();
+    if (emailCliente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailCliente)) {
+      toast.error("Email do cliente inválido");
+      return;
+    }
     setGerando(true);
     try {
       const doc = await buildPdf();
       const fileName = pdfFileName();
-      const subject = `Checklist de Saída${frota ? " - Frota " + frota : ""}${data ? " - " + data : ""}`;
       const body = `Segue em anexo o checklist de saída.${cliente ? "\nCliente: " + cliente : ""}${frota ? "\nFrota: " + frota : ""}${data ? "\nData: " + data : ""}`;
 
       // Converte PDF para base64 (sem o prefixo data:application/pdf;base64,)
@@ -454,7 +458,7 @@ export function ChecklistSaidaTab() {
       toast.loading("Enviando email...", { id: "send-email" });
       const { sendChecklistEmail } = await import("@/lib/email.functions");
       const result = await sendChecklistEmail({
-        data: { subject, body, fileName, pdfBase64 },
+        data: { body, fileName, pdfBase64, clientEmail: emailCliente || undefined },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email" });
     } catch (e: any) {
