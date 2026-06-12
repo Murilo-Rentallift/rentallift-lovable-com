@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X, Search } from "lucide-react";
+import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X, Search, Send } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { PROPOSAL_LOGOS_B64 } from "@/lib/assets/proposal-logos";
@@ -113,6 +114,15 @@ export function ChecklistSaidaTab() {
   );
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [gerando, setGerando] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewEmail, setPreviewEmail] = useState("");
+  const [previewBody, setPreviewBody] = useState("");
+  const [previewSubject] = useState("CHECKLIST DE SAIDA");
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [previewPdfBase64, setPreviewPdfBase64] = useState<string>("");
+  const [previewFileName, setPreviewFileName] = useState<string>("");
+  const [previewEnviando, setPreviewEnviando] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [showDrafts, setShowDrafts] = useState(false);
   const [sigKey, setSigKey] = useState(0); // forces SignaturePad remount when loading draft
@@ -461,33 +471,54 @@ export function ChecklistSaidaTab() {
     }
   }
 
-  async function enviarParaCliente() {
-    const email = window.prompt("Digite o email do cliente:");
-    if (!email) return;
-    const trimmed = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      toast.error("Email do cliente inválido");
-      return;
-    }
-    setGerando(true);
+  async function abrirPreviewCliente() {
+    setPreviewLoading(true);
+    setPreviewOpen(true);
     try {
       const doc = await buildPdf();
       const fileName = pdfFileName();
       const body = `Segue em anexo o checklist de saída.${cliente ? "\nCliente: " + cliente : ""}${frota ? "\nFrota: " + frota : ""}${data ? "\nData: " + data : ""}`;
-
       const dataUri = doc.output("datauristring");
       const pdfBase64 = dataUri.split(",")[1];
+      const blob = doc.output("blob");
+      const url = URL.createObjectURL(blob);
+      // revoke previous
+      if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
+      setPreviewPdfUrl(url);
+      setPreviewPdfBase64(pdfBase64);
+      setPreviewFileName(fileName);
+      setPreviewBody(body);
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao gerar pré-visualização");
+      setPreviewOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
 
+  async function confirmarEnvioCliente() {
+    const trimmed = previewEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("Email do cliente inválido");
+      return;
+    }
+    setPreviewEnviando(true);
+    try {
       toast.loading("Enviando email...", { id: "send-email-client" });
       const { sendChecklistEmail } = await import("@/lib/email.functions");
       const result = await sendChecklistEmail({
-        data: { body, fileName, pdfBase64, clientEmail: trimmed },
+        data: { body: previewBody, fileName: previewFileName, pdfBase64: previewPdfBase64, clientEmail: trimmed },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email-client" });
+      setPreviewOpen(false);
+      if (previewPdfUrl) {
+        URL.revokeObjectURL(previewPdfUrl);
+        setPreviewPdfUrl(null);
+      }
     } catch (e: any) {
       toast.error(e?.message || "Erro ao enviar por email", { id: "send-email-client" });
     } finally {
-      setGerando(false);
+      setPreviewEnviando(false);
     }
   }
 
@@ -744,10 +775,86 @@ export function ChecklistSaidaTab() {
         <Button onClick={enviarPorEmail} disabled={gerando}>
           <Mail className="h-4 w-4 mr-2" /> Enviar por email
         </Button>
-        <Button variant="secondary" onClick={enviarParaCliente} disabled={gerando}>
+        <Button variant="secondary" onClick={abrirPreviewCliente} disabled={gerando}>
           <Mail className="h-4 w-4 mr-2" /> Enviar para o cliente
         </Button>
       </div>
+
+      <Dialog
+        open={previewOpen}
+        onOpenChange={(o) => {
+          setPreviewOpen(o);
+          if (!o && previewPdfUrl) {
+            URL.revokeObjectURL(previewPdfUrl);
+            setPreviewPdfUrl(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Pré-visualização do envio</DialogTitle>
+            <DialogDescription>
+              Revise o email e o PDF antes de confirmar o envio ao cliente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 overflow-auto">
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Email do cliente</Label>
+                <Input
+                  type="email"
+                  value={previewEmail}
+                  onChange={(e) => setPreviewEmail(e.target.value)}
+                  placeholder="cliente@exemplo.com"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Assunto</Label>
+                <Input value={previewSubject} disabled />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Mensagem</Label>
+                <Textarea
+                  rows={8}
+                  value={previewBody}
+                  onChange={(e) => setPreviewBody(e.target.value)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Anexo: {previewFileName || "checklist.pdf"}
+              </p>
+            </div>
+
+            <div className="space-y-2 min-h-[400px] flex flex-col">
+              <Label>Pré-visualização do PDF</Label>
+              <div className="flex-1 rounded-md border border-border bg-muted overflow-hidden min-h-[400px]">
+                {previewLoading ? (
+                  <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    Gerando PDF...
+                  </div>
+                ) : previewPdfUrl ? (
+                  <iframe
+                    src={previewPdfUrl}
+                    title="Pré-visualização do checklist"
+                    className="w-full h-full min-h-[400px]"
+                  />
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)} disabled={previewEnviando}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarEnvioCliente} disabled={previewEnviando || previewLoading || !previewPdfBase64}>
+              <Send className="h-4 w-4 mr-2" />
+              {previewEnviando ? "Enviando..." : "Confirmar envio"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
