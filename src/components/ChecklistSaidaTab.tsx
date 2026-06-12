@@ -775,10 +775,86 @@ export function ChecklistSaidaTab() {
         <Button onClick={enviarPorEmail} disabled={gerando}>
           <Mail className="h-4 w-4 mr-2" /> Enviar por email
         </Button>
-        <Button variant="secondary" onClick={enviarParaCliente} disabled={gerando}>
+        <Button variant="secondary" onClick={abrirPreviewCliente} disabled={gerando}>
           <Mail className="h-4 w-4 mr-2" /> Enviar para o cliente
         </Button>
       </div>
+
+      <Dialog
+        open={previewOpen}
+        onOpenChange={(o) => {
+          setPreviewOpen(o);
+          if (!o && previewPdfUrl) {
+            URL.revokeObjectURL(previewPdfUrl);
+            setPreviewPdfUrl(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Pré-visualização do envio</DialogTitle>
+            <DialogDescription>
+              Revise o email e o PDF antes de confirmar o envio ao cliente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 overflow-auto">
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Email do cliente</Label>
+                <Input
+                  type="email"
+                  value={previewEmail}
+                  onChange={(e) => setPreviewEmail(e.target.value)}
+                  placeholder="cliente@exemplo.com"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Assunto</Label>
+                <Input value={previewSubject} disabled />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Mensagem</Label>
+                <Textarea
+                  rows={8}
+                  value={previewBody}
+                  onChange={(e) => setPreviewBody(e.target.value)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Anexo: {previewFileName || "checklist.pdf"}
+              </p>
+            </div>
+
+            <div className="space-y-2 min-h-[400px] flex flex-col">
+              <Label>Pré-visualização do PDF</Label>
+              <div className="flex-1 rounded-md border border-border bg-muted overflow-hidden min-h-[400px]">
+                {previewLoading ? (
+                  <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    Gerando PDF...
+                  </div>
+                ) : previewPdfUrl ? (
+                  <iframe
+                    src={previewPdfUrl}
+                    title="Pré-visualização do checklist"
+                    className="w-full h-full min-h-[400px]"
+                  />
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)} disabled={previewEnviando}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarEnvioCliente} disabled={previewEnviando || previewLoading || !previewPdfBase64}>
+              <Send className="h-4 w-4 mr-2" />
+              {previewEnviando ? "Enviando..." : "Confirmar envio"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
