@@ -11,11 +11,14 @@ const DESTINATARIOS = [
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
 
 type Input = {
-  subject: string;
   body: string;
   fileName: string;
   pdfBase64: string; // base64 (sem prefixo data:)
+  clientEmail?: string;
 };
+
+const SUBJECT_FIXO = "CHECKLIST DE SAIDA";
+
 
 // Codifica string UTF-8 em base64url (compatível com Gmail API)
 function toBase64Url(input: string): string {
