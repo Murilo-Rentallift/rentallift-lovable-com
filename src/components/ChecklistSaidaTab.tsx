@@ -97,7 +97,6 @@ export function ChecklistSaidaTab() {
   const [frota, setFrota] = useState("");
   const [horimetro, setHorimetro] = useState("");
   const [cliente, setCliente] = useState("");
-  const [clienteEmail, setClienteEmail] = useState("");
   const [extintorTipo, setExtintorTipo] = useState<"" | "COMUM" | "PÓ ABC">("");
   const [extintorKg, setExtintorKg] = useState("");
   const [bateriaMarca, setBateriaMarca] = useState("");
@@ -440,8 +439,33 @@ export function ChecklistSaidaTab() {
   }
 
   async function enviarPorEmail() {
-    const emailCliente = clienteEmail.trim();
-    if (emailCliente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailCliente)) {
+    setGerando(true);
+    try {
+      const doc = await buildPdf();
+      const fileName = pdfFileName();
+      const body = `Segue em anexo o checklist de saída.${cliente ? "\nCliente: " + cliente : ""}${frota ? "\nFrota: " + frota : ""}${data ? "\nData: " + data : ""}`;
+
+      const dataUri = doc.output("datauristring");
+      const pdfBase64 = dataUri.split(",")[1];
+
+      toast.loading("Enviando email...", { id: "send-email" });
+      const { sendChecklistEmail } = await import("@/lib/email.functions");
+      const result = await sendChecklistEmail({
+        data: { body, fileName, pdfBase64 },
+      });
+      toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email" });
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao enviar por email", { id: "send-email" });
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  async function enviarParaCliente() {
+    const email = window.prompt("Digite o email do cliente:");
+    if (!email) return;
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       toast.error("Email do cliente inválido");
       return;
     }
@@ -451,18 +475,17 @@ export function ChecklistSaidaTab() {
       const fileName = pdfFileName();
       const body = `Segue em anexo o checklist de saída.${cliente ? "\nCliente: " + cliente : ""}${frota ? "\nFrota: " + frota : ""}${data ? "\nData: " + data : ""}`;
 
-      // Converte PDF para base64 (sem o prefixo data:application/pdf;base64,)
       const dataUri = doc.output("datauristring");
       const pdfBase64 = dataUri.split(",")[1];
 
-      toast.loading("Enviando email...", { id: "send-email" });
+      toast.loading("Enviando email...", { id: "send-email-client" });
       const { sendChecklistEmail } = await import("@/lib/email.functions");
       const result = await sendChecklistEmail({
-        data: { body, fileName, pdfBase64, clientEmail: emailCliente || undefined },
+        data: { body, fileName, pdfBase64, clientEmail: trimmed },
       });
-      toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email" });
+      toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email-client" });
     } catch (e: any) {
-      toast.error(e?.message || "Erro ao enviar por email", { id: "send-email" });
+      toast.error(e?.message || "Erro ao enviar por email", { id: "send-email-client" });
     } finally {
       setGerando(false);
     }
@@ -562,15 +585,6 @@ export function ChecklistSaidaTab() {
           <div className="space-y-1.5 md:col-span-3">
             <Label>Cliente</Label>
             <Input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nome do cliente" />
-          </div>
-          <div className="space-y-1.5 md:col-span-3">
-            <Label>Enviar para o cliente</Label>
-            <Input
-              type="email"
-              value={clienteEmail}
-              onChange={(e) => setClienteEmail(e.target.value)}
-              placeholder="email@cliente.com (opcional)"
-            />
           </div>
         </div>
       </section>
@@ -729,6 +743,9 @@ export function ChecklistSaidaTab() {
         </Button>
         <Button onClick={enviarPorEmail} disabled={gerando}>
           <Mail className="h-4 w-4 mr-2" /> Enviar por email
+        </Button>
+        <Button variant="secondary" onClick={enviarParaCliente} disabled={gerando}>
+          <Mail className="h-4 w-4 mr-2" /> Enviar para o cliente
         </Button>
       </div>
     </div>
