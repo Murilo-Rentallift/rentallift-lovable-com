@@ -97,6 +97,7 @@ export function ChecklistSaidaTab() {
   const [frota, setFrota] = useState("");
   const [horimetro, setHorimetro] = useState("");
   const [cliente, setCliente] = useState("");
+  const [clienteEmail, setClienteEmail] = useState("");
   const [extintorTipo, setExtintorTipo] = useState<"" | "COMUM" | "PÓ ABC">("");
   const [extintorKg, setExtintorKg] = useState("");
   const [bateriaMarca, setBateriaMarca] = useState("");
