@@ -33,13 +33,18 @@ function base64ToBase64Url(b64: string): string {
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export const sendChecklistEmail = createServerFn({ method: "POST" })
   .inputValidator((data: Input) => {
     if (!data || typeof data !== "object") throw new Error("Payload inválido");
-    if (!data.subject || data.subject.length > 300) throw new Error("Assunto inválido");
     if (!data.body || data.body.length > 5000) throw new Error("Corpo inválido");
     if (!data.fileName || !/^[\w\-\. ]+\.pdf$/i.test(data.fileName)) throw new Error("Nome de arquivo inválido");
     if (!data.pdfBase64 || data.pdfBase64.length > 15_000_000) throw new Error("PDF inválido ou muito grande");
+    if (data.clientEmail) {
+      const e = data.clientEmail.trim();
+      if (e.length > 320 || !EMAIL_RE.test(e)) throw new Error("Email do cliente inválido");
+    }
     return data;
   })
   .handler(async ({ data }) => {
@@ -52,9 +57,13 @@ export const sendChecklistEmail = createServerFn({ method: "POST" })
     const boundary = `bnd_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const pdfB64 = data.pdfBase64.replace(/\s+/g, "");
 
+    const recipients = [...DESTINATARIOS];
+    if (data.clientEmail) recipients.push(data.clientEmail.trim());
+
     const mime = [
-      `To: ${DESTINATARIOS.join(", ")}`,
-      `Subject: ${data.subject}`,
+      `To: ${recipients.join(", ")}`,
+      `Subject: ${SUBJECT_FIXO}`,
+
       `MIME-Version: 1.0`,
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
       ``,
