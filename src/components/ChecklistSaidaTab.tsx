@@ -97,6 +97,7 @@ export function ChecklistSaidaTab() {
   const [frota, setFrota] = useState("");
   const [horimetro, setHorimetro] = useState("");
   const [cliente, setCliente] = useState("");
+  const [clienteEmail, setClienteEmail] = useState("");
   const [extintorTipo, setExtintorTipo] = useState<"" | "COMUM" | "PÓ ABC">("");
   const [extintorKg, setExtintorKg] = useState("");
   const [bateriaMarca, setBateriaMarca] = useState("");
@@ -439,11 +440,15 @@ export function ChecklistSaidaTab() {
   }
 
   async function enviarPorEmail() {
+    const emailCliente = clienteEmail.trim();
+    if (emailCliente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailCliente)) {
+      toast.error("Email do cliente inválido");
+      return;
+    }
     setGerando(true);
     try {
       const doc = await buildPdf();
       const fileName = pdfFileName();
-      const subject = `Checklist de Saída${frota ? " - Frota " + frota : ""}${data ? " - " + data : ""}`;
       const body = `Segue em anexo o checklist de saída.${cliente ? "\nCliente: " + cliente : ""}${frota ? "\nFrota: " + frota : ""}${data ? "\nData: " + data : ""}`;
 
       // Converte PDF para base64 (sem o prefixo data:application/pdf;base64,)
@@ -453,7 +458,7 @@ export function ChecklistSaidaTab() {
       toast.loading("Enviando email...", { id: "send-email" });
       const { sendChecklistEmail } = await import("@/lib/email.functions");
       const result = await sendChecklistEmail({
-        data: { subject, body, fileName, pdfBase64 },
+        data: { body, fileName, pdfBase64, clientEmail: emailCliente || undefined },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email" });
     } catch (e: any) {
@@ -557,6 +562,15 @@ export function ChecklistSaidaTab() {
           <div className="space-y-1.5 md:col-span-3">
             <Label>Cliente</Label>
             <Input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nome do cliente" />
+          </div>
+          <div className="space-y-1.5 md:col-span-3">
+            <Label>Enviar para o cliente</Label>
+            <Input
+              type="email"
+              value={clienteEmail}
+              onChange={(e) => setClienteEmail(e.target.value)}
+              placeholder="email@cliente.com (opcional)"
+            />
           </div>
         </div>
       </section>
