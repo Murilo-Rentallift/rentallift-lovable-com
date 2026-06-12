@@ -114,6 +114,15 @@ export function ChecklistSaidaTab() {
   );
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [gerando, setGerando] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewEmail, setPreviewEmail] = useState("");
+  const [previewBody, setPreviewBody] = useState("");
+  const [previewSubject] = useState("CHECKLIST DE SAIDA");
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [previewPdfBase64, setPreviewPdfBase64] = useState<string>("");
+  const [previewFileName, setPreviewFileName] = useState<string>("");
+  const [previewEnviando, setPreviewEnviando] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [showDrafts, setShowDrafts] = useState(false);
   const [sigKey, setSigKey] = useState(0); // forces SignaturePad remount when loading draft
