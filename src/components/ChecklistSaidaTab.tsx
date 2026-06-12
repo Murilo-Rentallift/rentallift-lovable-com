@@ -586,15 +586,6 @@ export function ChecklistSaidaTab() {
             <Label>Cliente</Label>
             <Input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nome do cliente" />
           </div>
-          <div className="space-y-1.5 md:col-span-3">
-            <Label>Enviar para o cliente</Label>
-            <Input
-              type="email"
-              value={clienteEmail}
-              onChange={(e) => setClienteEmail(e.target.value)}
-              placeholder="email@cliente.com (opcional)"
-            />
-          </div>
         </div>
       </section>
 
@@ -752,6 +743,9 @@ export function ChecklistSaidaTab() {
         </Button>
         <Button onClick={enviarPorEmail} disabled={gerando}>
           <Mail className="h-4 w-4 mr-2" /> Enviar por email
+        </Button>
+        <Button variant="secondary" onClick={enviarParaCliente} disabled={gerando}>
+          <Mail className="h-4 w-4 mr-2" /> Enviar para o cliente
         </Button>
       </div>
     </div>
