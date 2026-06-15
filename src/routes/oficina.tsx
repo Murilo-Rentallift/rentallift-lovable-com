@@ -78,7 +78,7 @@ const WORKSHOP_STATUSES = [
 ] as const;
 
 type Line = { partName: string; quantity: number; code: string };
-type TabKey = "requisicao" | "itens" | "saida" | "checklist";
+type TabKey = "requisicao" | "itens" | "saida" | "checklist" | "checklist-retorno";
 
 function OficinaPage() {
   const doLogin = useServerFn(oficinaLogin);
@@ -168,6 +168,9 @@ function OficinaPage() {
           <TabBtn active={tab === "checklist"} onClick={() => setTab("checklist")} icon={<ClipboardCheck className="h-4 w-4" />}>
             Checklist de Saída
           </TabBtn>
+          <TabBtn active={tab === "checklist-retorno"} onClick={() => setTab("checklist-retorno")} icon={<ClipboardCheck className="h-4 w-4" />}>
+            Checklist de Retorno
+          </TabBtn>
         </nav>
       </header>
 
@@ -176,6 +179,7 @@ function OficinaPage() {
         {tab === "itens" && <ItensTab pin={pin} />}
         {tab === "saida" && <SaidaTab pin={pin} />}
         {tab === "checklist" && <ChecklistSaidaTab />}
+        {tab === "checklist-retorno" && <ChecklistRetornoTab />}
       </main>
     </div>
   );
