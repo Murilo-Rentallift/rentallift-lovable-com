@@ -62,9 +62,11 @@ export const sendChecklistEmail = createServerFn({ method: "POST" })
     const recipients = [...DESTINATARIOS];
     if (data.clientEmail) recipients.push(data.clientEmail.trim());
 
+    const subject = data.subject && SUBJECTS_PERMITIDOS.has(data.subject) ? data.subject : SUBJECT_PADRAO;
     const mime = [
       `To: ${recipients.join(", ")}`,
-      `Subject: ${SUBJECT_FIXO}`,
+      `Subject: ${subject}`,
+
 
       `MIME-Version: 1.0`,
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
