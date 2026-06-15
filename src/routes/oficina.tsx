@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ChecklistSaidaTab } from "@/components/ChecklistSaidaTab";
+import { ChecklistRetornoTab } from "@/components/ChecklistRetornoTab";
 import { ClipboardCheck } from "lucide-react";
 
 export const Route = createFileRoute("/oficina")({
