@@ -15,9 +15,11 @@ type Input = {
   fileName: string;
   pdfBase64: string; // base64 (sem prefixo data:)
   clientEmail?: string;
+  subject?: string;
 };
 
-const SUBJECT_FIXO = "CHECKLIST DE SAIDA";
+const SUBJECT_PADRAO = "CHECKLIST DE SAIDA";
+const SUBJECTS_PERMITIDOS = new Set(["CHECKLIST DE SAIDA", "CHECKLIST DE RETORNO"]);
 
 
 // Codifica string UTF-8 em base64url (compatível com Gmail API)
