@@ -15,9 +15,11 @@ type Input = {
   fileName: string;
   pdfBase64: string; // base64 (sem prefixo data:)
   clientEmail?: string;
+  subject?: string;
 };
 
-const SUBJECT_FIXO = "CHECKLIST DE SAIDA";
+const SUBJECT_PADRAO = "CHECKLIST DE SAIDA";
+const SUBJECTS_PERMITIDOS = new Set(["CHECKLIST DE SAIDA", "CHECKLIST DE RETORNO"]);
 
 
 // Codifica string UTF-8 em base64url (compatível com Gmail API)
@@ -60,9 +62,11 @@ export const sendChecklistEmail = createServerFn({ method: "POST" })
     const recipients = [...DESTINATARIOS];
     if (data.clientEmail) recipients.push(data.clientEmail.trim());
 
+    const subject = data.subject && SUBJECTS_PERMITIDOS.has(data.subject) ? data.subject : SUBJECT_PADRAO;
     const mime = [
       `To: ${recipients.join(", ")}`,
-      `Subject: ${SUBJECT_FIXO}`,
+      `Subject: ${subject}`,
+
 
       `MIME-Version: 1.0`,
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
