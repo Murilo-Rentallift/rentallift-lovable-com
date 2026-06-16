@@ -148,15 +148,15 @@ Transportadora: ${transportadora}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Cliente</Label>
-              <Input value={cliente} onChange={(e) => setCliente(e.target.value)} />
+              <Textarea rows={2} value={cliente} onChange={(e) => setCliente(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Empilhadeira</Label>
-              <Input value={empilhadeira} onChange={(e) => setEmpilhadeira(e.target.value)} />
+              <Textarea rows={2} value={empilhadeira} onChange={(e) => setEmpilhadeira(e.target.value)} placeholder={"Ex:\nVai E630\nVolta E294"} />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Acessórios</Label>
-              <Input value={acessorios} onChange={(e) => setAcessorios(e.target.value)} />
+              <Textarea rows={2} value={acessorios} onChange={(e) => setAcessorios(e.target.value)} />
             </div>
           </div>
 
