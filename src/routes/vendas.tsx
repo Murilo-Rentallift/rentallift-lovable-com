@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LiberacaoEquipamentoTab } from "@/components/LiberacaoEquipamentoTab";
 import { ArrowLeft, FileDown, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -182,6 +184,12 @@ function VendasPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-8 space-y-6">
+        <Tabs defaultValue="proposta" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="proposta">Proposta</TabsTrigger>
+            <TabsTrigger value="liberacao">Liberação de Equipamento</TabsTrigger>
+          </TabsList>
+          <TabsContent value="proposta" className="space-y-6">
         <Card>
           <CardHeader><CardTitle>Cabeçalho</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -309,6 +317,13 @@ function VendasPage() {
             {loading ? "Gerando..." : "Gerar Proposta (Word)"}
           </Button>
         </div>
+
+
+        </TabsContent>
+        <TabsContent value="liberacao">
+          <LiberacaoEquipamentoTab />
+        </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

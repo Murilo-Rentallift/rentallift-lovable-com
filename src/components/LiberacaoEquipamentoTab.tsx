@@ -1,0 +1,282 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Copy, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
+
+type Empresa = "Rental" | "Rle" | "Empisa";
+type TipoLib =
+  | "Nova Locação"
+  | "Encerramento de Locação"
+  | "Troca de Equipamento"
+  | "Retorno para Manutenção"
+  | "Empréstimo ou Teste";
+type SimNao = "Sim" | "Não";
+type Frete = "Remetente" | "Cliente" | "Junto na Loc.";
+
+const empresas: Empresa[] = ["Rental", "Rle", "Empisa"];
+const tipos: TipoLib[] = [
+  "Nova Locação",
+  "Encerramento de Locação",
+  "Troca de Equipamento",
+  "Retorno para Manutenção",
+  "Empréstimo ou Teste",
+];
+const fretes: Frete[] = ["Remetente", "Cliente", "Junto na Loc."];
+
+const formatDataBR = (iso: string) => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return iso;
+  return `${d}/${m}/${y}`;
+};
+
+export function LiberacaoEquipamentoTab() {
+  const [empresa, setEmpresa] = useState<Empresa>("Rental");
+  const [tipo, setTipo] = useState<TipoLib>("Nova Locação");
+  const [cliente, setCliente] = useState("");
+  const [empilhadeira, setEmpilhadeira] = useState("");
+  const [acessorios, setAcessorios] = useState("");
+  const [desmontagem, setDesmontagem] = useState<SimNao>("Não");
+  const [valorLocacao, setValorLocacao] = useState("");
+  const [endereco, setEndereco] = useState("");
+  const [dataEntrega, setDataEntrega] = useState("");
+  const [frete, setFrete] = useState<Frete>("Cliente");
+  const [transportadora, setTransportadora] = useState("");
+  const [valorFrete, setValorFrete] = useState("");
+  const [dataCobranca, setDataCobranca] = useState("");
+  const [mensagem, setMensagem] = useState("");
+
+  const gerarMensagem = () => {
+    const tiposLinhas = tipos
+      .map((t) => `[${t === tipo ? "X" : " "}] ${t}`)
+      .join("\n");
+    const fretesLinhas = fretes
+      .map((f) => `[${f === frete ? "X" : " "}] ${f}`)
+      .join("\n");
+    const desmontagemLinha = (["Sim", "Não"] as SimNao[])
+      .map((s) => `[${s === desmontagem ? "X" : " "}] ${s}`)
+      .join("  ");
+
+    const msg = `*Empresa:* ${empresa}
+
+*Tipo liberação*:
+${tiposLinhas}
+
+*CLIENTE:* ${cliente}
+*EMPILHADEIRA:* ${empilhadeira}
+*ACESSORIOS:* ${acessorios}
+*Necessário Desmontagem da Torre:* ${desmontagemLinha}
+*Valor Locação:* R$ ${valorLocacao}
+*End. de entrega*: ${endereco}
+*Data de Entrega*: ${formatDataBR(dataEntrega)}
+
+*Frete por conta do:*
+${fretesLinhas}
+
+Transportadora: ${transportadora}
+*Valor FRETE*: R$ ${valorFrete}
+
+*Data de Início ou Encerramento da Cobrança*: ${formatDataBR(dataCobranca)}`;
+
+    setMensagem(msg);
+    toast.success("Mensagem gerada");
+  };
+
+  const copiar = async () => {
+    if (!mensagem) {
+      toast.error("Gere a mensagem primeiro");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(mensagem);
+      toast.success("Mensagem copiada");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-emerald-600" />
+            Liberação de Equipamento
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label>Empresa</Label>
+            <RadioGroup
+              value={empresa}
+              onValueChange={(v) => setEmpresa(v as Empresa)}
+              className="flex flex-wrap gap-4"
+            >
+              {empresas.map((e) => (
+                <label key={e} className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value={e} id={`emp-${e}`} />
+                  <span className="text-sm">{e}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tipo de Liberação</Label>
+            <RadioGroup
+              value={tipo}
+              onValueChange={(v) => setTipo(v as TipoLib)}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+            >
+              {tipos.map((t) => (
+                <label key={t} className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value={t} id={`tipo-${t}`} />
+                  <span className="text-sm">{t}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Cliente</Label>
+              <Input value={cliente} onChange={(e) => setCliente(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Empilhadeira</Label>
+              <Input value={empilhadeira} onChange={(e) => setEmpilhadeira(e.target.value)} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Acessórios</Label>
+              <Input value={acessorios} onChange={(e) => setAcessorios(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Necessário Desmontagem da Torre</Label>
+            <RadioGroup
+              value={desmontagem}
+              onValueChange={(v) => setDesmontagem(v as SimNao)}
+              className="flex gap-4"
+            >
+              {(["Sim", "Não"] as SimNao[]).map((s) => (
+                <label key={s} className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value={s} id={`des-${s}`} />
+                  <span className="text-sm">{s}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Valor Locação</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  className="pl-10"
+                  inputMode="decimal"
+                  value={valorLocacao}
+                  onChange={(e) => setValorLocacao(e.target.value)}
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Data de Entrega</Label>
+              <Input
+                type="date"
+                value={dataEntrega}
+                onChange={(e) => setDataEntrega(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Endereço de Entrega</Label>
+              <Input value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Frete por conta do</Label>
+            <RadioGroup
+              value={frete}
+              onValueChange={(v) => setFrete(v as Frete)}
+              className="flex flex-wrap gap-4"
+            >
+              {fretes.map((f) => (
+                <label key={f} className="flex items-center gap-2 cursor-pointer">
+                  <RadioGroupItem value={f} id={`frete-${f}`} />
+                  <span className="text-sm">{f}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Transportadora</Label>
+              <Input
+                value={transportadora}
+                onChange={(e) => setTransportadora(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Valor do Frete</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  className="pl-10"
+                  inputMode="decimal"
+                  value={valorFrete}
+                  onChange={(e) => setValorFrete(e.target.value)}
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Data de Início ou Encerramento da Cobrança</Label>
+              <Input
+                type="date"
+                value={dataCobranca}
+                onChange={(e) => setDataCobranca(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Button
+              onClick={gerarMensagem}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <MessageSquare className="h-4 w-4" /> Gerar Mensagem
+            </Button>
+            <Button onClick={copiar} variant="outline" disabled={!mensagem}>
+              <Copy className="h-4 w-4" /> Copiar Mensagem
+            </Button>
+          </div>
+
+          {mensagem && (
+            <div className="space-y-2">
+              <Label>Mensagem (WhatsApp)</Label>
+              <Textarea
+                value={mensagem}
+                onChange={(e) => setMensagem(e.target.value)}
+                rows={18}
+                className="font-mono text-sm"
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
