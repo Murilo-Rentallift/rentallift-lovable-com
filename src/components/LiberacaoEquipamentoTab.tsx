@@ -45,10 +45,13 @@ export function LiberacaoEquipamentoTab() {
   const [valorLocacao, setValorLocacao] = useState("");
   const [endereco, setEndereco] = useState("");
   const [dataEntrega, setDataEntrega] = useState("");
+  const [dataEntregaTexto, setDataEntregaTexto] = useState("");
   const [frete, setFrete] = useState<Frete>("Cliente");
   const [transportadora, setTransportadora] = useState("");
   const [valorFrete, setValorFrete] = useState("");
   const [dataCobranca, setDataCobranca] = useState("");
+  const [dataCobrancaTexto, setDataCobrancaTexto] = useState("");
+  const [dataCobrancaBranco, setDataCobrancaBranco] = useState(false);
   const [mensagem, setMensagem] = useState("");
 
   const gerarMensagem = () => {
