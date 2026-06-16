@@ -311,12 +311,11 @@ function VendasPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end">
-          <Button size="lg" onClick={handleGenerate} disabled={loading}>
-            <FileDown className="h-5 w-5" />
-            {loading ? "Gerando..." : "Gerar Proposta (Word)"}
-          </Button>
-        </div>
+        </TabsContent>
+        <TabsContent value="liberacao">
+          <LiberacaoEquipamentoTab />
+        </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
