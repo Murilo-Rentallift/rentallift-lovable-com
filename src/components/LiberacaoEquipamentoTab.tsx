@@ -230,7 +230,8 @@ Transportadora: ${transportadora}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Transportadora</Label>
-              <Input
+              <Textarea
+                rows={2}
                 value={transportadora}
                 onChange={(e) => setTransportadora(e.target.value)}
               />
@@ -256,7 +257,22 @@ Transportadora: ${transportadora}
                 type="date"
                 value={dataCobranca}
                 onChange={(e) => setDataCobranca(e.target.value)}
+                disabled={dataCobrancaBranco}
               />
+              <Input
+                value={dataCobrancaTexto}
+                onChange={(e) => setDataCobrancaTexto(e.target.value)}
+                placeholder="ou texto (ex: A combinar) — sobrescreve a data"
+                disabled={dataCobrancaBranco}
+              />
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={dataCobrancaBranco}
+                  onChange={(e) => setDataCobrancaBranco(e.target.checked)}
+                />
+                Deixar em branco
+              </label>
             </div>
           </div>
 
