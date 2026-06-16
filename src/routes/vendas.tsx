@@ -184,6 +184,12 @@ function VendasPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-8 space-y-6">
+        <Tabs defaultValue="proposta" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="proposta">Proposta</TabsTrigger>
+            <TabsTrigger value="liberacao">Liberação de Equipamento</TabsTrigger>
+          </TabsList>
+          <TabsContent value="proposta" className="space-y-6">
         <Card>
           <CardHeader><CardTitle>Cabeçalho</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
