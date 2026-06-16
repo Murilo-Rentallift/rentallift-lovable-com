@@ -45,10 +45,13 @@ export function LiberacaoEquipamentoTab() {
   const [valorLocacao, setValorLocacao] = useState("");
   const [endereco, setEndereco] = useState("");
   const [dataEntrega, setDataEntrega] = useState("");
+  const [dataEntregaTexto, setDataEntregaTexto] = useState("");
   const [frete, setFrete] = useState<Frete>("Cliente");
   const [transportadora, setTransportadora] = useState("");
   const [valorFrete, setValorFrete] = useState("");
   const [dataCobranca, setDataCobranca] = useState("");
+  const [dataCobrancaTexto, setDataCobrancaTexto] = useState("");
+  const [dataCobrancaBranco, setDataCobrancaBranco] = useState(false);
   const [mensagem, setMensagem] = useState("");
 
   const gerarMensagem = () => {
@@ -73,7 +76,7 @@ ${tiposLinhas}
 *Necessário Desmontagem da Torre:* ${desmontagemLinha}
 *Valor Locação:* R$ ${valorLocacao}
 *End. de entrega*: ${endereco}
-*Data de Entrega*: ${formatDataBR(dataEntrega)}
+*Data de Entrega*: ${dataEntregaTexto.trim() || formatDataBR(dataEntrega)}
 
 *Frete por conta do:*
 ${fretesLinhas}
@@ -81,7 +84,7 @@ ${fretesLinhas}
 Transportadora: ${transportadora}
 *Valor FRETE*: R$ ${valorFrete}
 
-*Data de Início ou Encerramento da Cobrança*: ${formatDataBR(dataCobranca)}`;
+*Data de Início ou Encerramento da Cobrança*: ${dataCobrancaBranco ? "" : dataCobrancaTexto.trim() || formatDataBR(dataCobranca)}`;
 
     setMensagem(msg);
     toast.success("Mensagem gerada");
@@ -145,15 +148,15 @@ Transportadora: ${transportadora}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Cliente</Label>
-              <Input value={cliente} onChange={(e) => setCliente(e.target.value)} />
+              <Textarea rows={2} value={cliente} onChange={(e) => setCliente(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Empilhadeira</Label>
-              <Input value={empilhadeira} onChange={(e) => setEmpilhadeira(e.target.value)} />
+              <Textarea rows={2} value={empilhadeira} onChange={(e) => setEmpilhadeira(e.target.value)} placeholder={"Ex:\nVai E630\nVolta E294"} />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Acessórios</Label>
-              <Input value={acessorios} onChange={(e) => setAcessorios(e.target.value)} />
+              <Textarea rows={2} value={acessorios} onChange={(e) => setAcessorios(e.target.value)} />
             </div>
           </div>
 
@@ -196,10 +199,15 @@ Transportadora: ${transportadora}
                 value={dataEntrega}
                 onChange={(e) => setDataEntrega(e.target.value)}
               />
+              <Input
+                value={dataEntregaTexto}
+                onChange={(e) => setDataEntregaTexto(e.target.value)}
+                placeholder="ou texto (ex: A combinar) — sobrescreve a data"
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Endereço de Entrega</Label>
-              <Input value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+              <Textarea rows={2} value={endereco} onChange={(e) => setEndereco(e.target.value)} />
             </div>
           </div>
 
@@ -222,7 +230,8 @@ Transportadora: ${transportadora}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Transportadora</Label>
-              <Input
+              <Textarea
+                rows={2}
                 value={transportadora}
                 onChange={(e) => setTransportadora(e.target.value)}
               />
@@ -248,7 +257,22 @@ Transportadora: ${transportadora}
                 type="date"
                 value={dataCobranca}
                 onChange={(e) => setDataCobranca(e.target.value)}
+                disabled={dataCobrancaBranco}
               />
+              <Input
+                value={dataCobrancaTexto}
+                onChange={(e) => setDataCobrancaTexto(e.target.value)}
+                placeholder="ou texto (ex: A combinar) — sobrescreve a data"
+                disabled={dataCobrancaBranco}
+              />
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={dataCobrancaBranco}
+                  onChange={(e) => setDataCobrancaBranco(e.target.checked)}
+                />
+                Deixar em branco
+              </label>
             </div>
           </div>
 
