@@ -199,10 +199,15 @@ Transportadora: ${transportadora}
                 value={dataEntrega}
                 onChange={(e) => setDataEntrega(e.target.value)}
               />
+              <Input
+                value={dataEntregaTexto}
+                onChange={(e) => setDataEntregaTexto(e.target.value)}
+                placeholder="ou texto (ex: A combinar) — sobrescreve a data"
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Endereço de Entrega</Label>
-              <Input value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+              <Textarea rows={2} value={endereco} onChange={(e) => setEndereco(e.target.value)} />
             </div>
           </div>
 
