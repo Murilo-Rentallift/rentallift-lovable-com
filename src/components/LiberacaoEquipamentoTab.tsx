@@ -76,7 +76,7 @@ ${tiposLinhas}
 *Necessário Desmontagem da Torre:* ${desmontagemLinha}
 *Valor Locação:* R$ ${valorLocacao}
 *End. de entrega*: ${endereco}
-*Data de Entrega*: ${formatDataBR(dataEntrega)}
+*Data de Entrega*: ${dataEntregaTexto.trim() || formatDataBR(dataEntrega)}
 
 *Frete por conta do:*
 ${fretesLinhas}
@@ -84,7 +84,7 @@ ${fretesLinhas}
 Transportadora: ${transportadora}
 *Valor FRETE*: R$ ${valorFrete}
 
-*Data de Início ou Encerramento da Cobrança*: ${formatDataBR(dataCobranca)}`;
+*Data de Início ou Encerramento da Cobrança*: ${dataCobrancaBranco ? "" : dataCobrancaTexto.trim() || formatDataBR(dataCobranca)}`;
 
     setMensagem(msg);
     toast.success("Mensagem gerada");
