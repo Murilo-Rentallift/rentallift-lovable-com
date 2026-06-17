@@ -136,14 +136,9 @@ OBS: ${observacao}`;
     }
   };
 
-  const enviarWhatsApp = () => {
-    if (!mensagem) {
-      toast.error("Gere a mensagem primeiro");
-      return;
-    }
-    const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
-    window.open(url, "_blank");
-  };
+  const whatsappUrl = mensagem
+    ? `https://wa.me/?text=${encodeURIComponent(mensagem)}`
+    : "";
 
   return (
     <div className="space-y-6">
@@ -344,11 +339,17 @@ OBS: ${observacao}`;
               <Copy className="h-4 w-4" /> Copiar Mensagem
             </Button>
             <Button
-              onClick={enviarWhatsApp}
+              asChild
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
               disabled={!mensagem}
             >
-              <Send className="h-4 w-4" /> Enviar pelo WhatsApp
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Send className="h-4 w-4" /> Enviar pelo WhatsApp
+              </a>
             </Button>
           </div>
 
