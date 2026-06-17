@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Copy, MessageSquare } from "lucide-react";
+import { Copy, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 
 type Empresa = "Rental" | "Rle" | "Empisa";
@@ -52,39 +52,72 @@ export function LiberacaoEquipamentoTab() {
   const [dataCobranca, setDataCobranca] = useState("");
   const [dataCobrancaTexto, setDataCobrancaTexto] = useState("");
   const [dataCobrancaBranco, setDataCobrancaBranco] = useState(false);
+  const [observacao, setObservacao] = useState("");
   const [mensagem, setMensagem] = useState("");
 
   const gerarMensagem = () => {
-    const tiposLinhas = tipos
-      .map((t) => `[${t === tipo ? "X" : " "}] ${t}`)
-      .join("\n");
-    const fretesLinhas = fretes
-      .map((f) => `[${f === frete ? "X" : " "}] ${f}`)
-      .join("\n");
+    const empresaLinha = empresas
+      .map((e) => `(${e === empresa ? "x" : " "}) ${e}`)
+      .join(" ");
+
+    const tiposLinhas: string[] = [];
+    for (let i = 0; i < tipos.length; i += 2) {
+      const linha = [tipos[i], tipos[i + 1]]
+        .filter(Boolean)
+        .map((t) => `(${t === tipo ? "x" : " "}) ${t}`)
+        .join(" ");
+      tiposLinhas.push(linha);
+    }
+
+    const freteLinha = fretes
+      .map((f) => `(${f === frete ? "x" : " "}) ${f.toLowerCase()}`)
+      .join(" ");
+
     const desmontagemLinha = (["Sim", "Não"] as SimNao[])
-      .map((s) => `[${s === desmontagem ? "X" : " "}] ${s}`)
+      .map((s) => `(${s === desmontagem ? " x " : " "}) ${s}`)
       .join("  ");
 
-    const msg = `*Empresa:* ${empresa}
+    const dataEntregaFinal = dataEntregaTexto.trim() || formatDataBR(dataEntrega) || "";
+    const dataCobrancaFinal = dataCobrancaBranco
+      ? ""
+      : dataCobrancaTexto.trim() || formatDataBR(dataCobranca) || "";
 
-*Tipo liberação*:
-${tiposLinhas}
+    const msg = `Empresa: ${empresaLinha}
 
-*CLIENTE:* ${cliente}
-*EMPILHADEIRA:* ${empilhadeira}
-*ACESSORIOS:* ${acessorios}
-*Necessário Desmontagem da Torre:* ${desmontagemLinha}
-*Valor Locação:* R$ ${valorLocacao}
-*End. de entrega*: ${endereco}
-*Data de Entrega*: ${dataEntregaTexto.trim() || formatDataBR(dataEntrega)}
+Tipo liberação:
 
-*Frete por conta do:*
-${fretesLinhas}
+${tiposLinhas.join("\n")}
+
+CLIENTE:
+
+${cliente}
+
+EMPILHADEIRA:
+
+${empilhadeira}
+
+ACESSORIOS:
+
+${acessorios}
+
+Necessário Desmontagem da Torre: ${desmontagemLinha}
+
+Valor Locação: ${valorLocacao}
+
+End. de entrega: ${endereco}
+
+Data de Entrega: ${dataEntregaFinal}
+
+Frete por conta do:
+
+${freteLinha}
 
 Transportadora: ${transportadora}
-*Valor FRETE*: R$ ${valorFrete}
+Valor FRETE: ${valorFrete}
 
-*Data de Início ou Encerramento da Cobrança*: ${dataCobrancaBranco ? "" : dataCobrancaTexto.trim() || formatDataBR(dataCobranca)}`;
+Data de Início ou Encerramento da Cobrança: ${dataCobrancaFinal}
+
+OBS: ${observacao}`;
 
     setMensagem(msg);
     toast.success("Mensagem gerada");
@@ -103,12 +136,21 @@ Transportadora: ${transportadora}
     }
   };
 
+  const enviarWhatsApp = () => {
+    if (!mensagem) {
+      toast.error("Gere a mensagem primeiro");
+      return;
+    }
+    const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, "_blank");
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-emerald-600" />
+            <MessageSquare className="h-5 w-5 text-emerald-500" />
             Liberação de Equipamento
           </CardTitle>
         </CardHeader>
@@ -152,7 +194,12 @@ Transportadora: ${transportadora}
             </div>
             <div className="space-y-2">
               <Label>Empilhadeira</Label>
-              <Textarea rows={2} value={empilhadeira} onChange={(e) => setEmpilhadeira(e.target.value)} placeholder={"Ex:\nVai E630\nVolta E294"} />
+              <Textarea
+                rows={2}
+                value={empilhadeira}
+                onChange={(e) => setEmpilhadeira(e.target.value)}
+                placeholder={"Ex:\nVai E630\nVolta E294"}
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Acessórios</Label>
@@ -276,15 +323,32 @@ Transportadora: ${transportadora}
             </div>
           </div>
 
+          <div className="space-y-2 md:col-span-2">
+            <Label>OBS</Label>
+            <Textarea
+              rows={2}
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Observações adicionais"
+            />
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <Button
               onClick={gerarMensagem}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-emerald-700 hover:bg-emerald-800 text-white"
             >
               <MessageSquare className="h-4 w-4" /> Gerar Mensagem
             </Button>
             <Button onClick={copiar} variant="outline" disabled={!mensagem}>
               <Copy className="h-4 w-4" /> Copiar Mensagem
+            </Button>
+            <Button
+              onClick={enviarWhatsApp}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={!mensagem}
+            >
+              <Send className="h-4 w-4" /> Enviar pelo WhatsApp
             </Button>
           </div>
 
@@ -294,7 +358,7 @@ Transportadora: ${transportadora}
               <Textarea
                 value={mensagem}
                 onChange={(e) => setMensagem(e.target.value)}
-                rows={18}
+                rows={22}
                 className="font-mono text-sm"
               />
             </div>
