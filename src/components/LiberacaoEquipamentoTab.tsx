@@ -339,11 +339,17 @@ OBS: ${observacao}`;
               <Copy className="h-4 w-4" /> Copiar Mensagem
             </Button>
             <Button
-              onClick={enviarWhatsApp}
+              asChild
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
               disabled={!mensagem}
             >
-              <Send className="h-4 w-4" /> Enviar pelo WhatsApp
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Send className="h-4 w-4" /> Enviar pelo WhatsApp
+              </a>
             </Button>
           </div>
 
