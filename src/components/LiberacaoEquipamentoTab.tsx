@@ -136,14 +136,9 @@ OBS: ${observacao}`;
     }
   };
 
-  const enviarWhatsApp = () => {
-    if (!mensagem) {
-      toast.error("Gere a mensagem primeiro");
-      return;
-    }
-    const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
-    window.open(url, "_blank");
-  };
+  const whatsappUrl = mensagem
+    ? `https://wa.me/?text=${encodeURIComponent(mensagem)}`
+    : "";
 
   return (
     <div className="space-y-6">
