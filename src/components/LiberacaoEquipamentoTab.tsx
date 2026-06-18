@@ -137,7 +137,7 @@ OBS: ${observacao}`;
   };
 
   const whatsappUrl = mensagem
-    ? `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`
+    ? `https://wa.me/?text=${encodeURIComponent(mensagem)}`
     : undefined;
 
   return (
@@ -227,10 +227,10 @@ OBS: ${observacao}`;
                 </span>
                 <Input
                   className="pl-10"
-                  inputMode="decimal"
+
                   value={valorLocacao}
                   onChange={(e) => setValorLocacao(e.target.value)}
-                  placeholder="0,00"
+                  placeholder="Ex: 1.500,00 ou A combinar"
                 />
               </div>
             </div>
@@ -286,10 +286,10 @@ OBS: ${observacao}`;
                 </span>
                 <Input
                   className="pl-10"
-                  inputMode="decimal"
+
                   value={valorFrete}
                   onChange={(e) => setValorFrete(e.target.value)}
-                  placeholder="0,00"
+                  placeholder="Ex: 1.500,00 ou A combinar"
                 />
               </div>
             </div>
