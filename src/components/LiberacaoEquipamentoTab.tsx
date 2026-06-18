@@ -137,7 +137,7 @@ OBS: ${observacao}`;
   };
 
   const whatsappUrl = mensagem
-    ? `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`
+    ? `https://wa.me/?text=${encodeURIComponent(mensagem)}`
     : undefined;
 
   return (
