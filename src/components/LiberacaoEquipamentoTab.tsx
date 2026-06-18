@@ -137,8 +137,8 @@ OBS: ${observacao}`;
   };
 
   const whatsappUrl = mensagem
-    ? `https://wa.me/?text=${encodeURIComponent(mensagem)}`
-    : "";
+    ? `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -338,19 +338,18 @@ OBS: ${observacao}`;
             <Button onClick={copiar} variant="outline" disabled={!mensagem}>
               <Copy className="h-4 w-4" /> Copiar Mensagem
             </Button>
-            <Button
-              asChild
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={!mensagem}
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white transition-colors ${
+                mensagem
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "pointer-events-none bg-emerald-300"
+              }`}
             >
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Send className="h-4 w-4" /> Enviar pelo WhatsApp
-              </a>
-            </Button>
+              <Send className="h-4 w-4" /> Enviar pelo WhatsApp
+            </a>
           </div>
 
           {mensagem && (
