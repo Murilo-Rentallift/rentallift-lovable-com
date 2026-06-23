@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X, Search, Send } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { PROPOSAL_LOGOS_B64 } from "@/lib/assets/proposal-logos";
+import { RENTAL_LIFT_LOGO_B64 } from "@/lib/assets/rental-lift-logo-b64";
 import { SignaturePad } from "@/components/SignaturePad";
 
 const ITENS_PADRAO: { nome: string; desc: string }[] = [
@@ -29,6 +29,7 @@ const ITENS_PADRAO: { nome: string; desc: string }[] = [
   { nome: "PINTURA", desc: "Verificar estado" },
   { nome: "ADESIVOS", desc: "Verificar presença de todos os obrigatórios" },
   { nome: "BANCO OPERADOR", desc: "Verificar estado" },
+  { nome: "CINTO DE SEGURANÇA", desc: "Verificar funcionamento" },
   { nome: "BUZINA", desc: "Verificar funcionamento" },
   { nome: "FREIO", desc: "Verificar funcionamento" },
   { nome: "FREIO ESTACIONAMENTO", desc: "Verificar funcionamento" },
@@ -254,8 +255,18 @@ export function ChecklistSaidaTab() {
     const contentW = W - M * 2;
 
     const headerH = 18;
+    // Rental LIFT logo only — aspect ratio 550x279 ≈ 1.97:1
+    const logoW = 28;
+    const logoH = logoW / (550 / 279);
     try {
-      doc.addImage(`data:image/png;base64,${PROPOSAL_LOGOS_B64}`, "PNG", M + 1, M + 1, 42, headerH - 2);
+      doc.addImage(
+        `data:image/png;base64,${RENTAL_LIFT_LOGO_B64}`,
+        "PNG",
+        M + (45 - logoW) / 2,
+        M + (headerH - logoH) / 2,
+        logoW,
+        logoH,
+      );
     } catch { /* ignore */ }
     doc.setLineWidth(0.3);
     doc.rect(M, M, contentW, headerH);
@@ -305,10 +316,8 @@ export function ChecklistSaidaTab() {
     const rows = itens.map((it) => {
       let label = it.nome;
       if (/extintor/i.test(it.nome)) {
-        const tComum = extintorTipo === "COMUM" ? "X" : " ";
-        const tABC = extintorTipo === "PÓ ABC" ? "X" : " ";
         label =
-          `EXTINTOR - TIPO ( ${tComum} ) COMUM   ( ${tABC} ) PÓ ABC - QUILOS ${extintorKg || "______"}\n` +
+          `EXTINTOR - PÓ ABC - QUILOS ${extintorKg || "_________"}\n` +
           "Verificar lacre";
       } else if (/bateria/i.test(it.nome)) {
         label =
@@ -355,6 +364,17 @@ export function ChecklistSaidaTab() {
       margin: { left: M, right: M },
     });
     y = (doc as any).lastAutoTable.finalY;
+
+    // Faixa REGISTROS FOTOGRAFICOS
+    autoTable(doc, {
+      startY: y,
+      theme: "grid",
+      body: [[{ content: "REGISTROS FOTOGRAFICOS", styles: { fillColor: [217, 217, 217], fontStyle: "bold", halign: "center" } }]],
+      styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+      margin: { left: M, right: M },
+    });
+    y = (doc as any).lastAutoTable.finalY;
+
 
     // Assinaturas com imagens
     const sigBoxH = 28;
@@ -624,19 +644,7 @@ export function ChecklistSaidaTab() {
         <h2 className="font-display text-lg font-bold uppercase">Detalhes adicionais</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Extintor — Tipo</Label>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={extintorTipo}
-              onChange={(e) => setExtintorTipo(e.target.value as "" | "COMUM" | "PÓ ABC")}
-            >
-              <option value="">—</option>
-              <option value="COMUM">COMUM</option>
-              <option value="PÓ ABC">PÓ ABC</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Extintor — Quilos</Label>
+            <Label>Extintor — Quilos (Pó ABC)</Label>
             <Input value={extintorKg} onChange={(e) => setExtintorKg(e.target.value)} placeholder="Ex: 4" />
           </div>
           <div className="space-y-1.5">
@@ -649,6 +657,7 @@ export function ChecklistSaidaTab() {
           </div>
         </div>
       </section>
+
 
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div className="flex items-center justify-between">
