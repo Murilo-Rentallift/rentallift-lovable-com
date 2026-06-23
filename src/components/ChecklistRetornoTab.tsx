@@ -257,8 +257,8 @@ export function ChecklistRetornoTab() {
 
     doc.setFontSize(8);
     doc.text("F.MA-002", metaX + 2, M + 5);
-    doc.text("Revisão: 00", metaX + 2, M + 10);
-    doc.text("Data da revisão: 03/09/2025", metaX + 2, M + 15);
+    doc.text("Revisão: 01", metaX + 2, M + 10);
+    doc.text("Data da revisão: 23/06/2026", metaX + 2, M + 15);
 
     let y = M + headerH;
 
