@@ -365,6 +365,17 @@ export function ChecklistSaidaTab() {
     });
     y = (doc as any).lastAutoTable.finalY;
 
+    // Faixa REGISTROS FOTOGRAFICOS
+    autoTable(doc, {
+      startY: y,
+      theme: "grid",
+      body: [[{ content: "REGISTROS FOTOGRAFICOS", styles: { fillColor: [217, 217, 217], fontStyle: "bold", halign: "center" } }]],
+      styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+      margin: { left: M, right: M },
+    });
+    y = (doc as any).lastAutoTable.finalY;
+
+
     // Assinaturas com imagens
     const sigBoxH = 28;
     const colW = contentW / 3;
@@ -633,19 +644,7 @@ export function ChecklistSaidaTab() {
         <h2 className="font-display text-lg font-bold uppercase">Detalhes adicionais</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Extintor — Tipo</Label>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={extintorTipo}
-              onChange={(e) => setExtintorTipo(e.target.value as "" | "COMUM" | "PÓ ABC")}
-            >
-              <option value="">—</option>
-              <option value="COMUM">COMUM</option>
-              <option value="PÓ ABC">PÓ ABC</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Extintor — Quilos</Label>
+            <Label>Extintor — Quilos (Pó ABC)</Label>
             <Input value={extintorKg} onChange={(e) => setExtintorKg(e.target.value)} placeholder="Ex: 4" />
           </div>
           <div className="space-y-1.5">
@@ -658,6 +657,7 @@ export function ChecklistSaidaTab() {
           </div>
         </div>
       </section>
+
 
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div className="flex items-center justify-between">
