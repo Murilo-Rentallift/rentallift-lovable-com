@@ -717,7 +717,7 @@ export function ChecklistRetornoTab() {
 
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold uppercase">Fotos (página 2 do PDF)</h2>
+          <h2 className="font-display text-lg font-bold uppercase">Registros fotográficos</h2>
           <label className="inline-flex">
             <input type="file" accept="image/*" multiple className="hidden" onChange={handleFotos} />
             <span className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 h-9 text-sm cursor-pointer hover:bg-accent">
