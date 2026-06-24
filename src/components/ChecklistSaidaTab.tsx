@@ -24,7 +24,7 @@ const ITENS_PADRAO: { nome: string; desc: string }[] = [
   { nome: "EXTINTOR", desc: "Verificar lacre" },
   { nome: "FAROIS E LANTERNAS", desc: "Verificar condição e funcionamento" },
   { nome: "BLUESPOT", desc: "Verificar funcionamento (quando existente)" },
-  { nome: "BATERIA", desc: "Verificar estado de conservação" },
+  { nome: "BATERIA", desc: "" },
   { nome: "CORRENTES", desc: "Verificar regulagem" },
   { nome: "PINTURA", desc: "Verificar estado" },
   { nome: "ADESIVOS", desc: "Verificar presença de todos os obrigatórios" },
@@ -320,9 +320,7 @@ export function ChecklistSaidaTab() {
           `EXTINTOR - PÓ ABC - QUILOS ${extintorKg || "_________"}\n` +
           "Verificar lacre";
       } else if (/bateria/i.test(it.nome)) {
-        label =
-          `BATERIA - MARCA ${bateriaMarca || "______________________________"}   AMPERAGEM ${bateriaAmp || "______________"}\n` +
-          "Verificar estado de conservação";
+        label = `BATERIA - MARCA ${bateriaMarca || "______________________________"}   AMPERAGEM ${bateriaAmp || "______________"}`;
       } else if (it.desc) {
         label = `${it.nome}: ${it.desc}`;
       }
@@ -375,8 +373,37 @@ export function ChecklistSaidaTab() {
     });
     y = (doc as any).lastAutoTable.finalY;
 
+    // Fotos inline (acima das assinaturas)
+    if (fotos.length) {
+      const cols = 2;
+      const gap = 3;
+      const cellW = (contentW - gap * (cols - 1)) / cols;
+      const cellH = 55;
+      for (let i = 0; i < fotos.length; i++) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        if (col === 0) {
+          if (y + cellH + 2 > H - M - 35) {
+            doc.addPage();
+            y = M;
+          }
+        }
+        const x = M + col * (cellW + gap);
+        const yImg = y + 2 + row * (cellH + gap) - Math.floor(i / cols) * 0;
+        // recompute yImg based on current y baseline for this row
+        const rowY = y + 2 + row * (cellH + gap);
+        try {
+          doc.addImage(fotos[i].dataUrl, "JPEG", x, rowY, cellW, cellH, undefined, "FAST");
+        } catch {
+          try { doc.addImage(fotos[i].dataUrl, "PNG", x, rowY, cellW, cellH, undefined, "FAST"); } catch { /* skip */ }
+        }
+      }
+      const totalRows = Math.ceil(fotos.length / cols);
+      y = y + 2 + totalRows * (cellH + gap);
+    }
 
     // Assinaturas com imagens
+    if (y + 30 > H - M) { doc.addPage(); y = M; }
     const sigBoxH = 28;
     const colW = contentW / 3;
     const sigY = y;
@@ -384,7 +411,6 @@ export function ChecklistSaidaTab() {
     doc.rect(M, sigY, contentW, sigBoxH);
     doc.line(M + colW, sigY, M + colW, sigY + sigBoxH);
     doc.line(M + colW * 2, sigY, M + colW * 2, sigY + sigBoxH);
-    // Header strip
     const headStripH = 5;
     doc.setFillColor(217, 217, 217);
     doc.rect(M, sigY, contentW, headStripH, "F");
@@ -393,7 +419,6 @@ export function ChecklistSaidaTab() {
     doc.text("VISTORIADOR", M + colW / 2, sigY + 3.5, { align: "center" });
     doc.text("LÍDER MANUTENÇÃO", M + colW + colW / 2, sigY + 3.5, { align: "center" });
     doc.text("GERENTE MANUTENÇÃO", M + colW * 2 + colW / 2, sigY + 3.5, { align: "center" });
-    // Signatures
     const sigs = [vistoriadorSig, liderSig, gerenteSig];
     const names = [vistoriador, lider, gerente];
     sigs.forEach((sig, i) => {
@@ -410,39 +435,6 @@ export function ChecklistSaidaTab() {
         doc.text(names[i], M + colW * i + colW / 2, sigY + sigBoxH - 1.5, { align: "center" });
       }
     });
-
-    if (fotos.length) {
-      doc.addPage();
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.text("FOTOS", W / 2, M + 5, { align: "center" });
-
-      const cols = 2;
-      const gap = 5;
-      const cellW = (contentW - gap * (cols - 1)) / cols;
-      const cellH = 80;
-      const rowsPerPage = Math.floor((H - (M + 12) - M) / (cellH + gap));
-      const perPage = cols * rowsPerPage;
-
-      for (let i = 0; i < fotos.length; i++) {
-        const idxInPage = i % perPage;
-        if (i > 0 && idxInPage === 0) {
-          doc.addPage();
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(14);
-          doc.text("FOTOS", W / 2, M + 5, { align: "center" });
-        }
-        const col = idxInPage % cols;
-        const row = Math.floor(idxInPage / cols);
-        const x = M + col * (cellW + gap);
-        const yImg = M + 12 + row * (cellH + gap);
-        try {
-          doc.addImage(fotos[i].dataUrl, "JPEG", x, yImg, cellW, cellH, undefined, "FAST");
-        } catch {
-          try { doc.addImage(fotos[i].dataUrl, "PNG", x, yImg, cellW, cellH, undefined, "FAST"); } catch { /* skip */ }
-        }
-      }
-    }
     return doc;
   }
 
