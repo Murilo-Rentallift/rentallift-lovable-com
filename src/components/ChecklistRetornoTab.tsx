@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X, Search, Send } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { PROPOSAL_LOGOS_B64 } from "@/lib/assets/proposal-logos";
+import { RENTAL_LIFT_LOGO_B64 } from "@/lib/assets/rental-lift-logo-b64";
 import { SignaturePad } from "@/components/SignaturePad";
 
 const ITENS_PADRAO: { nome: string; desc: string }[] = [
@@ -236,8 +236,17 @@ export function ChecklistRetornoTab() {
     const contentW = W - M * 2;
 
     const headerH = 18;
+    const logoW = 28;
+    const logoH = logoW / (550 / 279);
     try {
-      doc.addImage(`data:image/png;base64,${PROPOSAL_LOGOS_B64}`, "PNG", M + 1, M + 1, 42, headerH - 2);
+      doc.addImage(
+        `data:image/png;base64,${RENTAL_LIFT_LOGO_B64}`,
+        "PNG",
+        M + (45 - logoW) / 2,
+        M + (headerH - logoH) / 2,
+        logoW,
+        logoH,
+      );
     } catch { /* ignore */ }
     doc.setLineWidth(0.3);
     doc.rect(M, M, contentW, headerH);
@@ -287,10 +296,8 @@ export function ChecklistRetornoTab() {
     const rows = itens.map((it) => {
       let label = it.nome;
       if (/extintor/i.test(it.nome)) {
-        const tComum = extintorTipo === "COMUM" ? "X" : " ";
-        const tABC = extintorTipo === "PÓ ABC" ? "X" : " ";
         label =
-          `EXTINTOR - TIPO ( ${tComum} ) COMUM   ( ${tABC} ) PÓ ABC - QUILOS ${extintorKg || "______"}\n` +
+          `EXTINTOR - PÓ ABC - QUILOS ${extintorKg || "_________"}\n` +
           "Verificar lacre";
       } else if (/bateria/i.test(it.nome)) {
         label =
@@ -338,8 +345,52 @@ export function ChecklistRetornoTab() {
     });
     y = (doc as any).lastAutoTable.finalY;
 
+    // REGISTROS FOTOGRAFICOS + fotos antes das assinaturas
+    autoTable(doc, {
+      startY: y,
+      theme: "grid",
+      body: [[{ content: "REGISTROS FOTOGRAFICOS", styles: { fillColor: [217, 217, 217], fontStyle: "bold", halign: "center" } }]],
+      styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+      margin: { left: M, right: M },
+    });
+    y = (doc as any).lastAutoTable.finalY;
+
+    if (fotos.length) {
+      const cols = 2;
+      const gap = 4;
+      const cellW = (contentW - gap * (cols - 1)) / cols;
+      const cellH = 55;
+      const sigBlockH = 32;
+      for (let i = 0; i < fotos.length; i++) {
+        const col = i % cols;
+        if (col === 0) {
+          if (y + cellH + sigBlockH > H - M) {
+            doc.addPage();
+            y = M;
+          } else if (i > 0) {
+            y += cellH + gap;
+          } else {
+            y += 2;
+          }
+        }
+        const x = M + col * (cellW + gap);
+        try {
+          doc.addImage(fotos[i].dataUrl, "JPEG", x, y, cellW, cellH, undefined, "FAST");
+        } catch {
+          try { doc.addImage(fotos[i].dataUrl, "PNG", x, y, cellW, cellH, undefined, "FAST"); } catch { /* skip */ }
+        }
+      }
+      y += cellH + gap;
+    } else {
+      y += 2;
+    }
+
     const sigBoxH = 28;
     const colW = contentW / 3;
+    if (y + sigBoxH > H - M) {
+      doc.addPage();
+      y = M;
+    }
     const sigY = y;
     doc.setLineWidth(0.2);
     doc.rect(M, sigY, contentW, sigBoxH);
@@ -370,38 +421,6 @@ export function ChecklistRetornoTab() {
       }
     });
 
-    if (fotos.length) {
-      doc.addPage();
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.text("FOTOS", W / 2, M + 5, { align: "center" });
-
-      const cols = 2;
-      const gap = 5;
-      const cellW = (contentW - gap * (cols - 1)) / cols;
-      const cellH = 80;
-      const rowsPerPage = Math.floor((H - (M + 12) - M) / (cellH + gap));
-      const perPage = cols * rowsPerPage;
-
-      for (let i = 0; i < fotos.length; i++) {
-        const idxInPage = i % perPage;
-        if (i > 0 && idxInPage === 0) {
-          doc.addPage();
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(14);
-          doc.text("FOTOS", W / 2, M + 5, { align: "center" });
-        }
-        const col = idxInPage % cols;
-        const row = Math.floor(idxInPage / cols);
-        const x = M + col * (cellW + gap);
-        const yImg = M + 12 + row * (cellH + gap);
-        try {
-          doc.addImage(fotos[i].dataUrl, "JPEG", x, yImg, cellW, cellH, undefined, "FAST");
-        } catch {
-          try { doc.addImage(fotos[i].dataUrl, "PNG", x, yImg, cellW, cellH, undefined, "FAST"); } catch { /* skip */ }
-        }
-      }
-    }
     return doc;
   }
 
@@ -601,19 +620,7 @@ export function ChecklistRetornoTab() {
         <h2 className="font-display text-lg font-bold uppercase">Detalhes adicionais</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Extintor — Tipo</Label>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={extintorTipo}
-              onChange={(e) => setExtintorTipo(e.target.value as "" | "COMUM" | "PÓ ABC")}
-            >
-              <option value="">—</option>
-              <option value="COMUM">COMUM</option>
-              <option value="PÓ ABC">PÓ ABC</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Extintor — Quilos</Label>
+            <Label>Extintor — Quilos (Pó ABC)</Label>
             <Input value={extintorKg} onChange={(e) => setExtintorKg(e.target.value)} placeholder="Ex: 4" />
           </div>
           <div className="space-y-1.5">
@@ -710,7 +717,7 @@ export function ChecklistRetornoTab() {
 
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold uppercase">Fotos (página 2 do PDF)</h2>
+          <h2 className="font-display text-lg font-bold uppercase">Registros fotográficos</h2>
           <label className="inline-flex">
             <input type="file" accept="image/*" multiple className="hidden" onChange={handleFotos} />
             <span className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 h-9 text-sm cursor-pointer hover:bg-accent">
