@@ -624,10 +624,6 @@ export function ChecklistRetornoTab() {
             <Input value={extintorKg} onChange={(e) => setExtintorKg(e.target.value)} placeholder="Ex: 4" />
           </div>
           <div className="space-y-1.5">
-            <Label>Extintor — Quilos</Label>
-            <Input value={extintorKg} onChange={(e) => setExtintorKg(e.target.value)} placeholder="Ex: 4" />
-          </div>
-          <div className="space-y-1.5">
             <Label>Bateria — Marca</Label>
             <Input value={bateriaMarca} onChange={(e) => setBateriaMarca(e.target.value)} placeholder="Ex: Moura" />
           </div>
