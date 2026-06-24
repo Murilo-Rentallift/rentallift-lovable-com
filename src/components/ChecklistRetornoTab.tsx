@@ -620,16 +620,8 @@ export function ChecklistRetornoTab() {
         <h2 className="font-display text-lg font-bold uppercase">Detalhes adicionais</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label>Extintor — Tipo</Label>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={extintorTipo}
-              onChange={(e) => setExtintorTipo(e.target.value as "" | "COMUM" | "PÓ ABC")}
-            >
-              <option value="">—</option>
-              <option value="COMUM">COMUM</option>
-              <option value="PÓ ABC">PÓ ABC</option>
-            </select>
+            <Label>Extintor — Quilos (Pó ABC)</Label>
+            <Input value={extintorKg} onChange={(e) => setExtintorKg(e.target.value)} placeholder="Ex: 4" />
           </div>
           <div className="space-y-1.5">
             <Label>Extintor — Quilos</Label>
