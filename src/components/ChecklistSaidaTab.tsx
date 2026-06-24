@@ -24,7 +24,7 @@ const ITENS_PADRAO: { nome: string; desc: string }[] = [
   { nome: "EXTINTOR", desc: "Verificar lacre" },
   { nome: "FAROIS E LANTERNAS", desc: "Verificar condição e funcionamento" },
   { nome: "BLUESPOT", desc: "Verificar funcionamento (quando existente)" },
-  { nome: "BATERIA", desc: "Verificar estado de conservação" },
+  { nome: "BATERIA", desc: "" },
   { nome: "CORRENTES", desc: "Verificar regulagem" },
   { nome: "PINTURA", desc: "Verificar estado" },
   { nome: "ADESIVOS", desc: "Verificar presença de todos os obrigatórios" },
@@ -320,9 +320,7 @@ export function ChecklistSaidaTab() {
           `EXTINTOR - PÓ ABC - QUILOS ${extintorKg || "_________"}\n` +
           "Verificar lacre";
       } else if (/bateria/i.test(it.nome)) {
-        label =
-          `BATERIA - MARCA ${bateriaMarca || "______________________________"}   AMPERAGEM ${bateriaAmp || "______________"}\n` +
-          "Verificar estado de conservação";
+        label = `BATERIA - MARCA ${bateriaMarca || "______________________________"}   AMPERAGEM ${bateriaAmp || "______________"}`;
       } else if (it.desc) {
         label = `${it.nome}: ${it.desc}`;
       }
