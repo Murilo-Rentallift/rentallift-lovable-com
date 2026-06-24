@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { FileDown, Plus, Trash2, Camera, Save, FolderOpen, Mail, X, Search, Send } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { PROPOSAL_LOGOS_B64 } from "@/lib/assets/proposal-logos";
+import { RENTAL_LIFT_LOGO_B64 } from "@/lib/assets/rental-lift-logo-b64";
 import { SignaturePad } from "@/components/SignaturePad";
 
 const ITENS_PADRAO: { nome: string; desc: string }[] = [
@@ -236,8 +236,17 @@ export function ChecklistRetornoTab() {
     const contentW = W - M * 2;
 
     const headerH = 18;
+    const logoW = 28;
+    const logoH = logoW / (550 / 279);
     try {
-      doc.addImage(`data:image/png;base64,${PROPOSAL_LOGOS_B64}`, "PNG", M + 1, M + 1, 42, headerH - 2);
+      doc.addImage(
+        `data:image/png;base64,${RENTAL_LIFT_LOGO_B64}`,
+        "PNG",
+        M + (45 - logoW) / 2,
+        M + (headerH - logoH) / 2,
+        logoW,
+        logoH,
+      );
     } catch { /* ignore */ }
     doc.setLineWidth(0.3);
     doc.rect(M, M, contentW, headerH);
@@ -287,10 +296,8 @@ export function ChecklistRetornoTab() {
     const rows = itens.map((it) => {
       let label = it.nome;
       if (/extintor/i.test(it.nome)) {
-        const tComum = extintorTipo === "COMUM" ? "X" : " ";
-        const tABC = extintorTipo === "PÓ ABC" ? "X" : " ";
         label =
-          `EXTINTOR - TIPO ( ${tComum} ) COMUM   ( ${tABC} ) PÓ ABC - QUILOS ${extintorKg || "______"}\n` +
+          `EXTINTOR - PÓ ABC - QUILOS ${extintorKg || "_________"}\n` +
           "Verificar lacre";
       } else if (/bateria/i.test(it.nome)) {
         label =
