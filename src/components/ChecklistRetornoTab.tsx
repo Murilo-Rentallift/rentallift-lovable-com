@@ -345,8 +345,52 @@ export function ChecklistRetornoTab() {
     });
     y = (doc as any).lastAutoTable.finalY;
 
+    // REGISTROS FOTOGRAFICOS + fotos antes das assinaturas
+    autoTable(doc, {
+      startY: y,
+      theme: "grid",
+      body: [[{ content: "REGISTROS FOTOGRAFICOS", styles: { fillColor: [217, 217, 217], fontStyle: "bold", halign: "center" } }]],
+      styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+      margin: { left: M, right: M },
+    });
+    y = (doc as any).lastAutoTable.finalY;
+
+    if (fotos.length) {
+      const cols = 2;
+      const gap = 4;
+      const cellW = (contentW - gap * (cols - 1)) / cols;
+      const cellH = 55;
+      const sigBlockH = 32;
+      for (let i = 0; i < fotos.length; i++) {
+        const col = i % cols;
+        if (col === 0) {
+          if (y + cellH + sigBlockH > H - M) {
+            doc.addPage();
+            y = M;
+          } else if (i > 0) {
+            y += cellH + gap;
+          } else {
+            y += 2;
+          }
+        }
+        const x = M + col * (cellW + gap);
+        try {
+          doc.addImage(fotos[i].dataUrl, "JPEG", x, y, cellW, cellH, undefined, "FAST");
+        } catch {
+          try { doc.addImage(fotos[i].dataUrl, "PNG", x, y, cellW, cellH, undefined, "FAST"); } catch { /* skip */ }
+        }
+      }
+      y += cellH + gap;
+    } else {
+      y += 2;
+    }
+
     const sigBoxH = 28;
     const colW = contentW / 3;
+    if (y + sigBoxH > H - M) {
+      doc.addPage();
+      y = M;
+    }
     const sigY = y;
     doc.setLineWidth(0.2);
     doc.rect(M, sigY, contentW, sigBoxH);
@@ -377,38 +421,6 @@ export function ChecklistRetornoTab() {
       }
     });
 
-    if (fotos.length) {
-      doc.addPage();
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.text("FOTOS", W / 2, M + 5, { align: "center" });
-
-      const cols = 2;
-      const gap = 5;
-      const cellW = (contentW - gap * (cols - 1)) / cols;
-      const cellH = 80;
-      const rowsPerPage = Math.floor((H - (M + 12) - M) / (cellH + gap));
-      const perPage = cols * rowsPerPage;
-
-      for (let i = 0; i < fotos.length; i++) {
-        const idxInPage = i % perPage;
-        if (i > 0 && idxInPage === 0) {
-          doc.addPage();
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(14);
-          doc.text("FOTOS", W / 2, M + 5, { align: "center" });
-        }
-        const col = idxInPage % cols;
-        const row = Math.floor(idxInPage / cols);
-        const x = M + col * (cellW + gap);
-        const yImg = M + 12 + row * (cellH + gap);
-        try {
-          doc.addImage(fotos[i].dataUrl, "JPEG", x, yImg, cellW, cellH, undefined, "FAST");
-        } catch {
-          try { doc.addImage(fotos[i].dataUrl, "PNG", x, yImg, cellW, cellH, undefined, "FAST"); } catch { /* skip */ }
-        }
-      }
-    }
     return doc;
   }
 
