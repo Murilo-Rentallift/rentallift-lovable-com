@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LiberacaoEquipamentoTab } from "@/components/LiberacaoEquipamentoTab";
+import { ContratosTab } from "@/components/ContratosTab";
 import { ArrowLeft, FileDown, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -188,6 +189,7 @@ function VendasPage() {
           <TabsList>
             <TabsTrigger value="proposta">Proposta</TabsTrigger>
             <TabsTrigger value="liberacao">Liberação de Equipamento</TabsTrigger>
+            <TabsTrigger value="contratos">Gerador de Contratos</TabsTrigger>
           </TabsList>
           <TabsContent value="proposta" className="space-y-6">
         <Card>
@@ -322,6 +324,9 @@ function VendasPage() {
         </TabsContent>
         <TabsContent value="liberacao">
           <LiberacaoEquipamentoTab />
+        </TabsContent>
+        <TabsContent value="contratos">
+          <ContratosTab />
         </TabsContent>
         </Tabs>
       </main>

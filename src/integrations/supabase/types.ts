@@ -68,6 +68,30 @@ export type Database = {
         }
         Relationships: []
       }
+      contracts: {
+        Row: {
+          contractor_name: string
+          created_at: string
+          data: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          contractor_name: string
+          created_at?: string
+          data: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          contractor_name?: string
+          created_at?: string
+          data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       maintenance_returns: {
         Row: {
           client_name: string
