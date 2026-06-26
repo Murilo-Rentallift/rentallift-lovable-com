@@ -577,10 +577,54 @@ export function ContratosTab() {
         <Card>
           <CardHeader><CardTitle>Assinaturas</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Data / Local</Label>
-              <Input value={form.dataAssinatura} onChange={(e) => setForm({ ...form, dataAssinatura: e.target.value })} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Cidade / Local</Label>
+                <Input
+                  value={form.cidadeAssinatura ?? ""}
+                  onChange={(e) => setForm({ ...form, cidadeAssinatura: e.target.value })}
+                  placeholder="Ex: Santo André"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Data da Assinatura</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !form.dataAssinaturaIso && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                      {form.dataAssinaturaIso
+                        ? formatDataExtenso(form.dataAssinaturaIso)
+                        : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={form.dataAssinaturaIso ? new Date(form.dataAssinaturaIso + "T00:00:00") : undefined}
+                      onSelect={(d) => {
+                        if (!d) { setForm({ ...form, dataAssinaturaIso: "" }); return; }
+                        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                        setForm({ ...form, dataAssinaturaIso: iso });
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
+            {form.dataAssinatura && (
+              <p className="text-xs text-muted-foreground">
+                No contrato será exibido como: <span className="font-medium text-foreground">{form.dataAssinatura}</span>
+              </p>
+            )}
+
 
             <div className="border rounded p-3 space-y-3">
               <p className="font-semibold text-sm">CONTRATANTE</p>
