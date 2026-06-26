@@ -181,7 +181,9 @@ const blank = (): ContratoData => ({
   testemunha1Rg: "",
   testemunha2Nome: "",
   testemunha2Rg: "",
-  dataAssinatura: "Santo André, ___ de ___________ de 2026",
+  dataAssinatura: "",
+  cidadeAssinatura: "Santo André",
+  dataAssinaturaIso: "",
 });
 
 function nextSubNumber(c: Clause): string {
