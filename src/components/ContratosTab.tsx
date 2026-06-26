@@ -656,12 +656,16 @@ export function ContratosTab() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-2 justify-end">
+        <div className="flex flex-wrap gap-2 justify-end">
           <Button variant="outline" onClick={novo}><RotateCcw className="h-4 w-4" /> Novo</Button>
           <Button onClick={handleSave} disabled={loading}>
             <Save className="h-4 w-4" /> {id ? "Atualizar Contrato" : "Salvar Contrato"}
           </Button>
+          <Button variant="default" onClick={handleGenerateDoc} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <FileDown className="h-4 w-4" /> {loading ? "Gerando..." : "Gerar Contrato (Word)"}
+          </Button>
         </div>
+
       </div>
 
       {/* Saved list */}
