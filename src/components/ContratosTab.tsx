@@ -1,13 +1,29 @@
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { listContracts, getContract, saveContract, deleteContract } from "@/lib/contracts.functions";
+import { generateContractDoc } from "@/lib/contract-doc.functions";
+import { reaisPorExtenso, parseBR } from "@/lib/numberToWords";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, Save, FileText, RotateCcw } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const MESES_PT = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+const formatDataExtenso = (iso: string) => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map((n) => parseInt(n, 10));
+  if (!y || !m || !d) return "";
+  return `${String(d).padStart(2, "0")} de ${MESES_PT[m - 1]} de ${y}`;
+};
 
 type SubClause = { numero: string; texto: string };
 type Clause = {
