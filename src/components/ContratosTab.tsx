@@ -63,7 +63,9 @@ type ContratoData = {
   testemunha1Rg: string;
   testemunha2Nome: string;
   testemunha2Rg: string;
-  dataAssinatura: string; // ex: "Santo André, 24 de junho de 2026"
+  dataAssinatura: string; // ex: "Santo André, 24 de junho de 2026" (composto)
+  cidadeAssinatura?: string;
+  dataAssinaturaIso?: string; // YYYY-MM-DD
 };
 
 const SUB32 = "3.2) O reajuste da parcela correspondente à locação dos equipamentos será automático e baseado no índice dos últimos 12 (doze) meses do IGP-M, ou outro índice que venha á substitui-lo, considerando como base o mês de {{MES}} / {{ANO}}, e será aplicado a cada 12 meses de contrato.";
