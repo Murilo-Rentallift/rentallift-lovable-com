@@ -454,8 +454,8 @@ export function ContratosTab() {
                 <Input value={form.precoTotal} onChange={(e) => setForm({ ...form, precoTotal: e.target.value })} placeholder="Ex: 4.000,00" />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label>D) Preço Total (por extenso)</Label>
-                <Input value={form.precoExtenso} onChange={(e) => setForm({ ...form, precoExtenso: e.target.value })} placeholder="Ex: quatro mil reais por mês" />
+                <Label>D) Preço Total (por extenso) — auto</Label>
+                <Input value={form.precoExtenso} readOnly className="bg-muted" placeholder="Preenchido automaticamente a partir do valor numérico" />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>E) Forma de Pagamento</Label>
