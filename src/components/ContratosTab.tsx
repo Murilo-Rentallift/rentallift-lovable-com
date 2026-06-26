@@ -218,7 +218,53 @@ export function ContratosTab() {
 
   useEffect(() => { refresh(); }, []);
 
+  // Auto preço por extenso a partir do valor numérico
+  useEffect(() => {
+    const n = parseBR(form.precoTotal);
+    const extenso = n > 0 ? reaisPorExtenso(n) : "";
+    setForm((f) => (f.precoExtenso === extenso ? f : { ...f, precoExtenso: extenso }));
+  }, [form.precoTotal]);
+
+  // Auto data assinatura: "Cidade, DD de mês de AAAA"
+  useEffect(() => {
+    const cidade = (form.cidadeAssinatura ?? "").trim();
+    const dataExt = formatDataExtenso(form.dataAssinaturaIso ?? "");
+    const composta = cidade && dataExt ? `${cidade}, ${dataExt}` : cidade ? `${cidade}, ___ de ___________ de ____` : "";
+    setForm((f) => (f.dataAssinatura === composta ? f : { ...f, dataAssinatura: composta }));
+  }, [form.cidadeAssinatura, form.dataAssinaturaIso]);
+
   const novo = () => { setId(null); setForm(blank()); };
+
+  const genDoc = useServerFn(generateContractDoc);
+  const handleGenerateDoc = async () => {
+    if (!form.contratanteNome.trim()) {
+      toast.error("Informe o nome do contratante");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await genDoc({ data: form });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Contrato gerado");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Erro ao gerar contrato");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleSave = async () => {
     if (!form.contratanteNome.trim()) {
