@@ -1,13 +1,29 @@
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { listContracts, getContract, saveContract, deleteContract } from "@/lib/contracts.functions";
+import { generateContractDoc } from "@/lib/contract-doc.functions";
+import { reaisPorExtenso, parseBR } from "@/lib/numberToWords";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, Save, FileText, RotateCcw } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const MESES_PT = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+const formatDataExtenso = (iso: string) => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map((n) => parseInt(n, 10));
+  if (!y || !m || !d) return "";
+  return `${String(d).padStart(2, "0")} de ${MESES_PT[m - 1]} de ${y}`;
+};
 
 type SubClause = { numero: string; texto: string };
 type Clause = {
@@ -47,7 +63,9 @@ type ContratoData = {
   testemunha1Rg: string;
   testemunha2Nome: string;
   testemunha2Rg: string;
-  dataAssinatura: string; // ex: "Santo André, 24 de junho de 2026"
+  dataAssinatura: string; // ex: "Santo André, 24 de junho de 2026" (composto)
+  cidadeAssinatura?: string;
+  dataAssinaturaIso?: string; // YYYY-MM-DD
 };
 
 const SUB32 = "3.2) O reajuste da parcela correspondente à locação dos equipamentos será automático e baseado no índice dos últimos 12 (doze) meses do IGP-M, ou outro índice que venha á substitui-lo, considerando como base o mês de {{MES}} / {{ANO}}, e será aplicado a cada 12 meses de contrato.";
@@ -163,7 +181,9 @@ const blank = (): ContratoData => ({
   testemunha1Rg: "",
   testemunha2Nome: "",
   testemunha2Rg: "",
-  dataAssinatura: "Santo André, ___ de ___________ de 2026",
+  dataAssinatura: "",
+  cidadeAssinatura: "Santo André",
+  dataAssinaturaIso: "",
 });
 
 function nextSubNumber(c: Clause): string {
@@ -198,7 +218,53 @@ export function ContratosTab() {
 
   useEffect(() => { refresh(); }, []);
 
+  // Auto preço por extenso a partir do valor numérico
+  useEffect(() => {
+    const n = parseBR(form.precoTotal);
+    const extenso = n > 0 ? reaisPorExtenso(n) : "";
+    setForm((f) => (f.precoExtenso === extenso ? f : { ...f, precoExtenso: extenso }));
+  }, [form.precoTotal]);
+
+  // Auto data assinatura: "Cidade, DD de mês de AAAA"
+  useEffect(() => {
+    const cidade = (form.cidadeAssinatura ?? "").trim();
+    const dataExt = formatDataExtenso(form.dataAssinaturaIso ?? "");
+    const composta = cidade && dataExt ? `${cidade}, ${dataExt}` : cidade ? `${cidade}, ___ de ___________ de ____` : "";
+    setForm((f) => (f.dataAssinatura === composta ? f : { ...f, dataAssinatura: composta }));
+  }, [form.cidadeAssinatura, form.dataAssinaturaIso]);
+
   const novo = () => { setId(null); setForm(blank()); };
+
+  const genDoc = useServerFn(generateContractDoc);
+  const handleGenerateDoc = async () => {
+    if (!form.contratanteNome.trim()) {
+      toast.error("Informe o nome do contratante");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await genDoc({ data: form });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Contrato gerado");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Erro ao gerar contrato");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleSave = async () => {
     if (!form.contratanteNome.trim()) {
@@ -388,8 +454,8 @@ export function ContratosTab() {
                 <Input value={form.precoTotal} onChange={(e) => setForm({ ...form, precoTotal: e.target.value })} placeholder="Ex: 4.000,00" />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label>D) Preço Total (por extenso)</Label>
-                <Input value={form.precoExtenso} onChange={(e) => setForm({ ...form, precoExtenso: e.target.value })} placeholder="Ex: quatro mil reais por mês" />
+                <Label>D) Preço Total (por extenso) — auto</Label>
+                <Input value={form.precoExtenso} readOnly className="bg-muted" placeholder="Preenchido automaticamente a partir do valor numérico" />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>E) Forma de Pagamento</Label>
@@ -511,10 +577,54 @@ export function ContratosTab() {
         <Card>
           <CardHeader><CardTitle>Assinaturas</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Data / Local</Label>
-              <Input value={form.dataAssinatura} onChange={(e) => setForm({ ...form, dataAssinatura: e.target.value })} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Cidade / Local</Label>
+                <Input
+                  value={form.cidadeAssinatura ?? ""}
+                  onChange={(e) => setForm({ ...form, cidadeAssinatura: e.target.value })}
+                  placeholder="Ex: Santo André"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Data da Assinatura</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !form.dataAssinaturaIso && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                      {form.dataAssinaturaIso
+                        ? formatDataExtenso(form.dataAssinaturaIso)
+                        : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={form.dataAssinaturaIso ? new Date(form.dataAssinaturaIso + "T00:00:00") : undefined}
+                      onSelect={(d) => {
+                        if (!d) { setForm({ ...form, dataAssinaturaIso: "" }); return; }
+                        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                        setForm({ ...form, dataAssinaturaIso: iso });
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
+            {form.dataAssinatura && (
+              <p className="text-xs text-muted-foreground">
+                No contrato será exibido como: <span className="font-medium text-foreground">{form.dataAssinatura}</span>
+              </p>
+            )}
+
 
             <div className="border rounded p-3 space-y-3">
               <p className="font-semibold text-sm">CONTRATANTE</p>
@@ -546,12 +656,16 @@ export function ContratosTab() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-2 justify-end">
+        <div className="flex flex-wrap gap-2 justify-end">
           <Button variant="outline" onClick={novo}><RotateCcw className="h-4 w-4" /> Novo</Button>
           <Button onClick={handleSave} disabled={loading}>
             <Save className="h-4 w-4" /> {id ? "Atualizar Contrato" : "Salvar Contrato"}
           </Button>
+          <Button variant="default" onClick={handleGenerateDoc} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <FileDown className="h-4 w-4" /> {loading ? "Gerando..." : "Gerar Contrato (Word)"}
+          </Button>
         </div>
+
       </div>
 
       {/* Saved list */}
