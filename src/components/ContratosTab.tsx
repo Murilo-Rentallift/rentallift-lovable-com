@@ -525,6 +525,22 @@ export function ContratosTab() {
         </Card>
 
         {/* Cláusulas */}
+        <div className="flex justify-end">
+          {editandoClausulas ? (
+            <Button
+              size="sm"
+              onClick={() => { setEditandoClausulas(false); toast.success("Alterações nas cláusulas salvas"); }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Check className="h-4 w-4" /> Salvar alterações
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setEditandoClausulas(true)}>
+              <Pencil className="h-4 w-4" /> Editar Cláusulas
+            </Button>
+          )}
+        </div>
+
         {form.clausulas.map((c) => (
           <Card key={c.id}>
             <CardHeader className="flex flex-row items-center justify-between">
