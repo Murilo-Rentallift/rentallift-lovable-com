@@ -452,24 +452,45 @@ export function ContratosTab() {
         <Card>
           <CardHeader><CardTitle>Quadro de Resumo</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>A) Contratante — Nome / Razão Social</Label>
-              <Input value={form.contratanteNome} onChange={(e) => setForm({ ...form, contratanteNome: e.target.value })} placeholder="Ex: INDUSTRIA BRASILEIRA DE CASAS E ESQUADRIAS DE MADEIRA LTDA" />
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Endereço</Label>
-                <Textarea rows={2} value={form.contratanteEndereco} onChange={(e) => setForm({ ...form, contratanteEndereco: e.target.value })} placeholder="Rua, número - bairro - cidade - UF" />
+              {/* CONTRATANTE */}
+              <div className="border-2 rounded-md p-4 space-y-3 bg-card">
+                <p className="font-bold text-sm text-primary border-b pb-2">A) CONTRATANTE</p>
+                <div className="space-y-2">
+                  <Label className="text-xs">Nome / Razão Social</Label>
+                  <Input value={form.contratanteNome} onChange={(e) => setForm({ ...form, contratanteNome: e.target.value })} placeholder="Ex: INDUSTRIA BRASILEIRA LTDA" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Endereço</Label>
+                  <Textarea rows={2} value={form.contratanteEndereco} onChange={(e) => setForm({ ...form, contratanteEndereco: e.target.value })} placeholder="Rua, número - bairro - cidade - UF" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">CNPJ</Label>
+                  <Input value={form.contratanteCnpj} onChange={(e) => setForm({ ...form, contratanteCnpj: e.target.value })} placeholder="00.000.000/0000-00" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Inscrição Estadual</Label>
+                  <Input value={form.contratanteIE} onChange={(e) => setForm({ ...form, contratanteIE: e.target.value })} />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>CNPJ</Label>
-                <Input value={form.contratanteCnpj} onChange={(e) => setForm({ ...form, contratanteCnpj: e.target.value })} placeholder="00.000.000/0000-00" />
-              </div>
-              <div className="space-y-2">
-                <Label>Inscrição Estadual</Label>
-                <Input value={form.contratanteIE} onChange={(e) => setForm({ ...form, contratanteIE: e.target.value })} />
+              {/* CONTRATADA */}
+              <div className="border-2 rounded-md p-4 space-y-2 bg-muted/30">
+                <p className="font-bold text-sm text-primary border-b pb-2">CONTRATADA</p>
+                <div className="space-y-1">
+                  <Label className="text-xs">Razão Social</Label>
+                  <p className="text-sm font-medium">RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">CNPJ</Label>
+                  <p className="text-sm">04.705.697/0001-57</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Endereço</Label>
+                  <p className="text-sm">AV. DOM BOSCO, 835 — SANTO ANDRÉ — SP</p>
+                </div>
               </div>
             </div>
+
             <div className="space-y-2">
               <Label>B.1) Descrição de Serviços</Label>
               <Textarea rows={2} value={form.descricaoServicos} onChange={(e) => setForm({ ...form, descricaoServicos: e.target.value })} />
