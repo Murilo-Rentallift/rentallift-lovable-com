@@ -686,13 +686,27 @@ export function ContratosTab() {
 
 
             <div className="border rounded p-3 space-y-3">
-              <p className="font-semibold text-sm">CONTRATANTE</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Nome</Label><Input value={form.contratanteAssinNome} onChange={(e) => setForm({ ...form, contratanteAssinNome: e.target.value })} /></div>
-                <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={form.contratanteAssinRg} onChange={(e) => setForm({ ...form, contratanteAssinRg: e.target.value })} /></div>
-                <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={form.contratanteAssinCpf} onChange={(e) => setForm({ ...form, contratanteAssinCpf: e.target.value })} /></div>
+              <p className="font-semibold text-sm">CONTRATANTE (Pessoa Jurídica)</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Razão Social (do quadro)</Label>
+                  <Input value={form.contratanteNome} readOnly className="bg-muted" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">CNPJ (do quadro)</Label>
+                  <Input value={form.contratanteCnpj} readOnly className="bg-muted" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Representante Legal</Label>
+                  <Input value={form.contratanteRepresentante ?? ""} onChange={(e) => setForm({ ...form, contratanteRepresentante: e.target.value })} placeholder="Nome do representante" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Cargo / Função</Label>
+                  <Input value={form.contratanteCargo ?? ""} onChange={(e) => setForm({ ...form, contratanteCargo: e.target.value })} placeholder="Ex: Diretor, Sócio-Administrador" />
+                </div>
               </div>
             </div>
+
 
             <div className="border rounded p-3 space-y-1 bg-muted/30">
               <p className="font-semibold text-sm">CONTRATADA</p>
