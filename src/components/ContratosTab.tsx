@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
 
 const MESES_PT = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
@@ -59,6 +60,8 @@ type ContratoData = {
   contratanteAssinNome: string;
   contratanteAssinRg: string;
   contratanteAssinCpf: string;
+  contratanteRepresentante?: string;
+  contratanteCargo?: string;
   testemunha1Nome: string;
   testemunha1Rg: string;
   testemunha2Nome: string;
@@ -67,6 +70,7 @@ type ContratoData = {
   cidadeAssinatura?: string;
   dataAssinaturaIso?: string; // YYYY-MM-DD
 };
+
 
 const SUB32 = "3.2) O reajuste da parcela correspondente à locação dos equipamentos será automático e baseado no índice dos últimos 12 (doze) meses do IGP-M, ou outro índice que venha á substitui-lo, considerando como base o mês de {{MES}} / {{ANO}}, e será aplicado a cada 12 meses de contrato.";
 
@@ -177,6 +181,8 @@ const blank = (): ContratoData => ({
   contratanteAssinNome: "",
   contratanteAssinRg: "",
   contratanteAssinCpf: "",
+  contratanteRepresentante: "",
+  contratanteCargo: "",
   testemunha1Nome: "",
   testemunha1Rg: "",
   testemunha2Nome: "",
@@ -185,6 +191,7 @@ const blank = (): ContratoData => ({
   cidadeAssinatura: "Santo André",
   dataAssinaturaIso: "",
 });
+
 
 function nextSubNumber(c: Clause): string {
   const used = [
@@ -206,6 +213,8 @@ export function ContratosTab() {
   const [form, setForm] = useState<ContratoData>(blank());
   const [salvos, setSalvos] = useState<Array<{ id: string; contractor_name: string; created_at: string }>>([]);
   const [loading, setLoading] = useState(false);
+  const [editandoClausulas, setEditandoClausulas] = useState(false);
+
 
   const refresh = async () => {
     try {
@@ -350,6 +359,21 @@ export function ContratosTab() {
       }),
     }));
 
+  const updateFixSubTexto = (cid: string, subNumero: string, texto: string) =>
+    setForm((f) => ({
+      ...f,
+      clausulas: f.clausulas.map((c) => {
+        if (c.id !== cid || !c.subclausulasFixas) return c;
+        return {
+          ...c,
+          subclausulasFixas: c.subclausulasFixas.map((s) =>
+            s.numero !== subNumero ? s : { ...s, texto },
+          ),
+        };
+      }),
+    }));
+
+
   const addClausula = () =>
     setForm((f) => {
       const extras = f.clausulas.filter((c) => !c.fixo);
@@ -374,8 +398,21 @@ export function ContratosTab() {
 
   // Render helper for fixed sub-clause with placeholder fields (3.2)
   const renderFixSub = (cid: string, s: { numero: string; texto: string; placeholders?: Record<string, string> }) => {
+    if (editandoClausulas) {
+      return (
+        <div key={s.numero} className="flex gap-2 items-start">
+          <span className="text-xs font-semibold pt-2 w-12 shrink-0">{s.numero}</span>
+          <Textarea
+            rows={Math.max(2, Math.ceil(s.texto.length / 90))}
+            value={s.texto}
+            onChange={(e) => updateFixSubTexto(cid, s.numero, e.target.value)}
+            className="flex-1 text-sm"
+          />
+        </div>
+      );
+    }
     if (!s.placeholders) {
-      return <p key={s.numero} className="text-sm leading-relaxed whitespace-pre-wrap">{s.texto}</p>;
+      return <p key={s.numero} className="text-sm leading-relaxed whitespace-pre-wrap"><span className="font-semibold">{s.numero}) </span>{s.texto.replace(new RegExp(`^${s.numero.replace(/\./g, "\\.")}\\)\\s*`), "")}</p>;
     }
     // Split by {{KEY}} tokens
     const parts: Array<{ type: "text" | "field"; value: string }> = [];
@@ -407,6 +444,7 @@ export function ContratosTab() {
     );
   };
 
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
       <div className="space-y-6">
@@ -414,24 +452,45 @@ export function ContratosTab() {
         <Card>
           <CardHeader><CardTitle>Quadro de Resumo</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>A) Contratante — Nome / Razão Social</Label>
-              <Input value={form.contratanteNome} onChange={(e) => setForm({ ...form, contratanteNome: e.target.value })} placeholder="Ex: INDUSTRIA BRASILEIRA DE CASAS E ESQUADRIAS DE MADEIRA LTDA" />
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Endereço</Label>
-                <Textarea rows={2} value={form.contratanteEndereco} onChange={(e) => setForm({ ...form, contratanteEndereco: e.target.value })} placeholder="Rua, número - bairro - cidade - UF" />
+              {/* CONTRATANTE */}
+              <div className="border-2 rounded-md p-4 space-y-3 bg-card">
+                <p className="font-bold text-sm text-primary border-b pb-2">A) CONTRATANTE</p>
+                <div className="space-y-2">
+                  <Label className="text-xs">Nome / Razão Social</Label>
+                  <Input value={form.contratanteNome} onChange={(e) => setForm({ ...form, contratanteNome: e.target.value })} placeholder="Ex: INDUSTRIA BRASILEIRA LTDA" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Endereço</Label>
+                  <Textarea rows={2} value={form.contratanteEndereco} onChange={(e) => setForm({ ...form, contratanteEndereco: e.target.value })} placeholder="Rua, número - bairro - cidade - UF" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">CNPJ</Label>
+                  <Input value={form.contratanteCnpj} onChange={(e) => setForm({ ...form, contratanteCnpj: e.target.value })} placeholder="00.000.000/0000-00" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Inscrição Estadual</Label>
+                  <Input value={form.contratanteIE} onChange={(e) => setForm({ ...form, contratanteIE: e.target.value })} />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>CNPJ</Label>
-                <Input value={form.contratanteCnpj} onChange={(e) => setForm({ ...form, contratanteCnpj: e.target.value })} placeholder="00.000.000/0000-00" />
-              </div>
-              <div className="space-y-2">
-                <Label>Inscrição Estadual</Label>
-                <Input value={form.contratanteIE} onChange={(e) => setForm({ ...form, contratanteIE: e.target.value })} />
+              {/* CONTRATADA */}
+              <div className="border-2 rounded-md p-4 space-y-2 bg-muted/30">
+                <p className="font-bold text-sm text-primary border-b pb-2">CONTRATADA</p>
+                <div className="space-y-1">
+                  <Label className="text-xs">Razão Social</Label>
+                  <p className="text-sm font-medium">RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">CNPJ</Label>
+                  <p className="text-sm">04.705.697/0001-57</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Endereço</Label>
+                  <p className="text-sm">AV. DOM BOSCO, 835 — SANTO ANDRÉ — SP</p>
+                </div>
               </div>
             </div>
+
             <div className="space-y-2">
               <Label>B.1) Descrição de Serviços</Label>
               <Textarea rows={2} value={form.descricaoServicos} onChange={(e) => setForm({ ...form, descricaoServicos: e.target.value })} />
@@ -466,6 +525,22 @@ export function ContratosTab() {
         </Card>
 
         {/* Cláusulas */}
+        <div className="flex justify-end">
+          {editandoClausulas ? (
+            <Button
+              size="sm"
+              onClick={() => { setEditandoClausulas(false); toast.success("Alterações nas cláusulas salvas"); }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Check className="h-4 w-4" /> Salvar alterações
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setEditandoClausulas(true)}>
+              <Pencil className="h-4 w-4" /> Editar Cláusulas
+            </Button>
+          )}
+        </div>
+
         {form.clausulas.map((c) => (
           <Card key={c.id}>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -627,13 +702,27 @@ export function ContratosTab() {
 
 
             <div className="border rounded p-3 space-y-3">
-              <p className="font-semibold text-sm">CONTRATANTE</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Nome</Label><Input value={form.contratanteAssinNome} onChange={(e) => setForm({ ...form, contratanteAssinNome: e.target.value })} /></div>
-                <div className="space-y-1"><Label className="text-xs">RG</Label><Input value={form.contratanteAssinRg} onChange={(e) => setForm({ ...form, contratanteAssinRg: e.target.value })} /></div>
-                <div className="space-y-1"><Label className="text-xs">CPF</Label><Input value={form.contratanteAssinCpf} onChange={(e) => setForm({ ...form, contratanteAssinCpf: e.target.value })} /></div>
+              <p className="font-semibold text-sm">CONTRATANTE (Pessoa Jurídica)</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Razão Social (do quadro)</Label>
+                  <Input value={form.contratanteNome} readOnly className="bg-muted" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">CNPJ (do quadro)</Label>
+                  <Input value={form.contratanteCnpj} readOnly className="bg-muted" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Representante Legal</Label>
+                  <Input value={form.contratanteRepresentante ?? ""} onChange={(e) => setForm({ ...form, contratanteRepresentante: e.target.value })} placeholder="Nome do representante" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Cargo / Função</Label>
+                  <Input value={form.contratanteCargo ?? ""} onChange={(e) => setForm({ ...form, contratanteCargo: e.target.value })} placeholder="Ex: Diretor, Sócio-Administrador" />
+                </div>
               </div>
             </div>
+
 
             <div className="border rounded p-3 space-y-1 bg-muted/30">
               <p className="font-semibold text-sm">CONTRATADA</p>
