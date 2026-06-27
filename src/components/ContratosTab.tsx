@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
 
 const MESES_PT = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
