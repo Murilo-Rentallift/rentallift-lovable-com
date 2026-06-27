@@ -175,8 +175,11 @@ export const generateContractDoc = createServerFn({ method: "POST" })
       p([t("_______________________________________________")]),
       p([t("CONTRATANTE", { bold: true })]),
       p([t(data.contratanteNome, { bold: true })]),
-      p([t(`Nome: ${data.contratanteAssinNome}`)]),
-      p([t(`RG: ${data.contratanteAssinRg}     CPF: ${data.contratanteAssinCpf}`)], { spacing: { after: 360 } }),
+      p([t(`Razão Social: ${data.contratanteNome}`)]),
+      p([t(`CNPJ: ${data.contratanteCnpj}`)]),
+      p([t(`Representante Legal: ${data.contratanteRepresentante ?? ""}`)]),
+      p([t(`Cargo/Função: ${data.contratanteCargo ?? ""}`)], { spacing: { after: 360 } }),
+
       p([t("_______________________________________________")]),
       p([t("CONTRATADA", { bold: true })]),
       p([t("RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA", { bold: true })]),
