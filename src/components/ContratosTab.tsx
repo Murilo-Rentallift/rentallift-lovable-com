@@ -359,6 +359,21 @@ export function ContratosTab() {
       }),
     }));
 
+  const updateFixSubTexto = (cid: string, subNumero: string, texto: string) =>
+    setForm((f) => ({
+      ...f,
+      clausulas: f.clausulas.map((c) => {
+        if (c.id !== cid || !c.subclausulasFixas) return c;
+        return {
+          ...c,
+          subclausulasFixas: c.subclausulasFixas.map((s) =>
+            s.numero !== subNumero ? s : { ...s, texto },
+          ),
+        };
+      }),
+    }));
+
+
   const addClausula = () =>
     setForm((f) => {
       const extras = f.clausulas.filter((c) => !c.fixo);
