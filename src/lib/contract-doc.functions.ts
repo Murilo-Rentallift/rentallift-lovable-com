@@ -30,8 +30,13 @@ export type ContratoDocInput = {
   contratanteAssinNome: string;
   contratanteAssinRg: string;
   contratanteAssinCpf: string;
+  contratanteRepresentante?: string;
+  contratanteCargo?: string;
   testemunha1Nome: string;
   testemunha1Rg: string;
+  testemunha2Nome: string;
+  testemunha2Rg: string;
+
   testemunha2Nome: string;
   testemunha2Rg: string;
   dataAssinatura: string;
