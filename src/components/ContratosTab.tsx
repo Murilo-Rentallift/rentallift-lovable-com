@@ -213,6 +213,8 @@ export function ContratosTab() {
   const [form, setForm] = useState<ContratoData>(blank());
   const [salvos, setSalvos] = useState<Array<{ id: string; contractor_name: string; created_at: string }>>([]);
   const [loading, setLoading] = useState(false);
+  const [editandoClausulas, setEditandoClausulas] = useState(false);
+
 
   const refresh = async () => {
     try {
