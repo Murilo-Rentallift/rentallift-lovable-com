@@ -398,8 +398,21 @@ export function ContratosTab() {
 
   // Render helper for fixed sub-clause with placeholder fields (3.2)
   const renderFixSub = (cid: string, s: { numero: string; texto: string; placeholders?: Record<string, string> }) => {
+    if (editandoClausulas) {
+      return (
+        <div key={s.numero} className="flex gap-2 items-start">
+          <span className="text-xs font-semibold pt-2 w-12 shrink-0">{s.numero}</span>
+          <Textarea
+            rows={Math.max(2, Math.ceil(s.texto.length / 90))}
+            value={s.texto}
+            onChange={(e) => updateFixSubTexto(cid, s.numero, e.target.value)}
+            className="flex-1 text-sm"
+          />
+        </div>
+      );
+    }
     if (!s.placeholders) {
-      return <p key={s.numero} className="text-sm leading-relaxed whitespace-pre-wrap">{s.texto}</p>;
+      return <p key={s.numero} className="text-sm leading-relaxed whitespace-pre-wrap"><span className="font-semibold">{s.numero}) </span>{s.texto.replace(new RegExp(`^${s.numero.replace(/\./g, "\\.")}\\)\\s*`), "")}</p>;
     }
     // Split by {{KEY}} tokens
     const parts: Array<{ type: "text" | "field"; value: string }> = [];
@@ -430,6 +443,7 @@ export function ContratosTab() {
       </p>
     );
   };
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
