@@ -181,6 +181,8 @@ const blank = (): ContratoData => ({
   contratanteAssinNome: "",
   contratanteAssinRg: "",
   contratanteAssinCpf: "",
+  contratanteRepresentante: "",
+  contratanteCargo: "",
   testemunha1Nome: "",
   testemunha1Rg: "",
   testemunha2Nome: "",
@@ -189,6 +191,7 @@ const blank = (): ContratoData => ({
   cidadeAssinatura: "Santo André",
   dataAssinaturaIso: "",
 });
+
 
 function nextSubNumber(c: Clause): string {
   const used = [
