@@ -36,10 +36,8 @@ export type ContratoDocInput = {
   testemunha1Rg: string;
   testemunha2Nome: string;
   testemunha2Rg: string;
-
-  testemunha2Nome: string;
-  testemunha2Rg: string;
   dataAssinatura: string;
+
 };
 
 function applyPh(texto: string, ph?: Record<string, string>): string {
