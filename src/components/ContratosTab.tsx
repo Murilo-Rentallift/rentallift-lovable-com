@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { listContracts, getContract, saveContract, deleteContract } from "@/lib/contracts.functions";
 import { generateContractDoc } from "@/lib/contract-doc.functions";
 import { reaisPorExtenso, parseBR } from "@/lib/numberToWords";
+import { importContractFromDocx } from "@/lib/contract-import";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon, Pencil, Check } from "lucide-react";
+import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon, Pencil, Check, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -243,6 +244,67 @@ export function ContratosTab() {
   }, [form.cidadeAssinatura, form.dataAssinaturaIso]);
 
   const novo = () => { setId(null); setForm(blank()); };
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const handleImportDocx = async (file: File) => {
+    setLoading(true);
+    try {
+      const { data, filledCount } = await importContractFromDocx(file);
+      setId(null);
+      setForm((prev) => {
+        const base = blank();
+        const next: ContratoData = { ...base };
+        // Aplica campos simples
+        const simpleKeys: Array<keyof ContratoData> = [
+          "contratanteNome", "contratanteEndereco", "contratanteCnpj", "contratanteIE",
+          "descricaoServicos", "localPrestacao", "documentosAplicaveis", "vigencia",
+          "precoTotal", "precoExtenso", "formaPagamento", "dataAssinatura",
+          "contratanteRepresentante", "contratanteCargo",
+          "testemunha1Nome", "testemunha1Rg", "testemunha2Nome", "testemunha2Rg",
+        ];
+        for (const k of simpleKeys) {
+          const v = (data as any)[k];
+          if (typeof v === "string" && v.trim()) (next as any)[k] = v;
+        }
+        if (data.equipamentos && data.equipamentos.length) {
+          next.equipamentos = data.equipamentos;
+        }
+        // Cláusulas: mescla extras nas correspondentes; cláusulas com numero > 10 viram extras
+        if (data.clausulasExtras && data.clausulasExtras.length) {
+          const mapped = next.clausulas.map((c) => {
+            const found = data.clausulasExtras!.find((x) => x.numero === c.numero);
+            if (!found) return c;
+            return {
+              ...c,
+              titulo: c.fixo ? c.titulo : (found.titulo || c.titulo),
+              corpo: c.fixo ? c.corpo : found.corpo,
+              subclausulasExtras: found.subclausulasExtras,
+            };
+          });
+          const extrasNovas = data.clausulasExtras
+            .filter((x) => !next.clausulas.some((c) => c.numero === x.numero))
+            .map((x, i) => ({
+              id: `cx-imp-${Date.now()}-${i}`,
+              numero: x.numero,
+              titulo: x.titulo,
+              fixo: false,
+              corpo: x.corpo,
+              subclausulasExtras: x.subclausulasExtras,
+            }));
+          next.clausulas = [...mapped, ...extrasNovas];
+        }
+        return next;
+      });
+      toast.success(`Contrato importado com sucesso — ${filledCount} campos preenchidos`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Erro ao importar contrato");
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
 
   const genDoc = useServerFn(generateContractDoc);
   const handleGenerateDoc = async () => {
@@ -746,6 +808,19 @@ export function ContratosTab() {
         </Card>
 
         <div className="flex flex-wrap gap-2 justify-end">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleImportDocx(f);
+            }}
+          />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={loading}>
+            <Upload className="h-4 w-4" /> Importar Contrato (.docx)
+          </Button>
           <Button variant="outline" onClick={novo}><RotateCcw className="h-4 w-4" /> Novo</Button>
           <Button onClick={handleSave} disabled={loading}>
             <Save className="h-4 w-4" /> {id ? "Atualizar Contrato" : "Salvar Contrato"}
@@ -754,6 +829,7 @@ export function ContratosTab() {
             <FileDown className="h-4 w-4" /> {loading ? "Gerando..." : "Gerar Contrato (Word)"}
           </Button>
         </div>
+
 
       </div>
 
