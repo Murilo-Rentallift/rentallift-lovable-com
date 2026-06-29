@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { listContracts, getContract, saveContract, deleteContract } from "@/lib/contracts.functions";
 import { generateContractDoc } from "@/lib/contract-doc.functions";
 import { reaisPorExtenso, parseBR } from "@/lib/numberToWords";
+import { importContractFromDocx } from "@/lib/contract-import";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon, Pencil, Check } from "lucide-react";
+import { Plus, Trash2, Save, FileText, RotateCcw, FileDown, CalendarIcon, Pencil, Check, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
