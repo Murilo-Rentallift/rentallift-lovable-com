@@ -352,22 +352,25 @@ function RequisicaoTab({ pin }: { pin: string }) {
         ) : (
           <ul className="divide-y divide-border">
             {requests.map((r) => {
-              const dominantStatus = r.items[0]?.status ?? "pendente";
-              const st = STATUS_LABELS[dominantStatus] ?? STATUS_LABELS.pendente;
               return (
                 <li key={r.group_id} className="px-4 py-4 space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-medium">{r.requester_name}</div>
-                    <span className={`rounded border px-2 py-1 text-xs uppercase font-semibold ${st.cls}`}>{st.label}</span>
+                    <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("pt-BR")}</div>
                   </div>
-                  <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("pt-BR")}</div>
                   <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
-                    {r.items.map((item) => (
-                      <li key={item.id} className="text-sm">
-                        {item.part_name} <span className="text-muted-foreground">× {item.quantity}</span>
-                        {item.code ? <span className="text-muted-foreground ml-1">· cód. {item.code}</span> : null}
-                      </li>
-                    ))}
+                    {r.items.map((item) => {
+                      const st = STATUS_LABELS[item.status] ?? STATUS_LABELS.pendente;
+                      return (
+                        <li key={item.id} className="text-sm flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            {item.part_name} <span className="text-muted-foreground">× {item.quantity}</span>
+                            {item.code ? <span className="text-muted-foreground ml-1">· cód. {item.code}</span> : null}
+                          </div>
+                          <span className={`rounded border px-2 py-0.5 text-[10px] uppercase font-semibold ${st.cls}`}>{st.label}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </li>
               );
