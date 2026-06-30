@@ -81,7 +81,7 @@ function AlmoxarifadoPage() {
   const [reqsLoading, setReqsLoading] = useState(false);
 
   const fetchReqs = useServerFn(almoxListRequests);
-  const updateGroupStatus = useServerFn(almoxUpdateGroupStatus);
+  const updateItemStatus = useServerFn(almoxUpdateRequestItemStatus);
   const deleteGroup = useServerFn(almoxDeleteGroup);
 
   async function loadRequests(currentPin: string) {
@@ -96,16 +96,16 @@ function AlmoxarifadoPage() {
     }
   }
 
-  async function changeGroupStatus(groupId: string, status: PartStatus) {
+  async function changeItemStatus(groupId: string, itemId: string, status: PartStatus) {
     setRequests((rs) =>
       rs.map((r) =>
         r.group_id === groupId
-          ? { ...r, items: r.items.map((i) => ({ ...i, status })) }
+          ? { ...r, items: r.items.map((i) => i.id === itemId ? { ...i, status } : i) }
           : r,
       ),
     );
     try {
-      await updateGroupStatus({ data: { pin, groupId, status } });
+      await updateItemStatus({ data: { pin, itemId, status } });
     } catch (e: any) {
       toast.error(e.message || "Falha ao atualizar");
       loadRequests(pin);
