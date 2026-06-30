@@ -651,8 +651,6 @@ function AlmoxarifadoPage() {
               ) : (
                 <ul className="divide-y divide-border">
                   {requests.map((r) => {
-                    const dominantStatus = r.items[0]?.status ?? "pendente";
-                    const opt = STATUS_OPTIONS.find((s) => s.value === dominantStatus) ?? STATUS_OPTIONS[0];
                     return (
                       <li key={r.group_id} className="px-4 py-4 space-y-2">
                         <div className="flex items-center justify-between gap-3">
@@ -664,40 +662,44 @@ function AlmoxarifadoPage() {
                               {new Date(r.created_at).toLocaleString("pt-BR")} · {r.items.length} {r.items.length === 1 ? "peça" : "peças"}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={dominantStatus}
-                              onChange={(e) => changeGroupStatus(r.group_id, e.target.value as PartStatus)}
-                              className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
-                            >
-                              {STATUS_OPTIONS.map((s) => (
-                                <option key={s.value} value={s.value} className="bg-background text-foreground">
-                                  {s.label}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => removeGroup(r.group_id)}
-                              className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                              title="Remover requisição"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeGroup(r.group_id)}
+                            className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                            title="Remover requisição"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                         <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
-                          {r.items.map((item) => (
-                            <li key={item.id} className="text-sm flex items-center gap-2">
-                              <span className={`h-2 w-2 rounded-full shrink-0 ${
-                                item.status === "entregue" ? "bg-green-500" :
-                                item.status === "separado" ? "bg-blue-500" :
-                                item.status === "em_falta" ? "bg-red-500" : "bg-accent"
-                              }`} />
-                              {item.part_name} <span className="text-muted-foreground">× {item.quantity}</span>
-                              {item.code ? <span className="text-muted-foreground ml-1">· cód. <span className="font-mono">{item.code}</span></span> : null}
-                            </li>
-                          ))}
+                          {r.items.map((item) => {
+                            const iopt = STATUS_OPTIONS.find((s) => s.value === item.status) ?? STATUS_OPTIONS[0];
+                            return (
+                              <li key={item.id} className="text-sm flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className={`h-2 w-2 rounded-full shrink-0 ${
+                                    item.status === "entregue" ? "bg-green-500" :
+                                    item.status === "separado" ? "bg-blue-500" :
+                                    item.status === "em_falta" ? "bg-red-500" : "bg-accent"
+                                  }`} />
+                                  <span className="truncate">{item.part_name}</span>
+                                  <span className="text-muted-foreground">× {item.quantity}</span>
+                                  {item.code ? <span className="text-muted-foreground ml-1">· cód. <span className="font-mono">{item.code}</span></span> : null}
+                                </div>
+                                <select
+                                  value={item.status}
+                                  onChange={(e) => changeItemStatus(r.group_id, item.id, e.target.value as PartStatus)}
+                                  className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${iopt.className}`}
+                                >
+                                  {STATUS_OPTIONS.map((s) => (
+                                    <option key={s.value} value={s.value} className="bg-background text-foreground">
+                                      {s.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </li>
                     );
@@ -708,29 +710,47 @@ function AlmoxarifadoPage() {
           </>
         ) : (
           <>
+            {upcomingDates.length > 0 && (
+              <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+                <strong className="font-semibold">Atenção:</strong>{" "}
+                {upcomingDates.length === 1
+                  ? `Você possui requisições para o dia ${formatDateBR(upcomingDates[0])}`
+                  : `Você possui requisições para os dias: ${upcomingDates.map(formatDateBR).join(", ")}`}
+              </div>
+            )}
             <section className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 flex flex-wrap items-end gap-3">
               <div className="flex-1 min-w-[200px]">
                 <h2 className="font-display text-sm font-bold uppercase tracking-wider text-red-400 mb-1">
-                  Relatório semanal — Peças em falta
+                  Relatório — Peças em falta
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Gera um PDF com todas as peças marcadas como "Em falta" na semana selecionada (segunda a domingo).
+                  Gera um PDF com todas as peças marcadas como "Em falta" no intervalo selecionado.
                 </p>
               </div>
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-2 flex-wrap">
                 <div>
-                  <Label htmlFor="weekStart" className="text-xs">Semana de</Label>
+                  <Label htmlFor="weekStartDate" className="text-xs">Data início</Label>
                   <Input
-                    id="weekStart"
+                    id="weekStartDate"
                     type="date"
-                    value={weekStart}
-                    onChange={(e) => setWeekStart(e.target.value)}
+                    value={weekStartDate}
+                    onChange={(e) => setWeekStartDate(e.target.value)}
+                    className="w-auto"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="weekEndDate" className="text-xs">Data fim</Label>
+                  <Input
+                    id="weekEndDate"
+                    type="date"
+                    value={weekEndDate}
+                    onChange={(e) => setWeekEndDate(e.target.value)}
                     className="w-auto"
                   />
                 </div>
                 <Button
                   onClick={generateWeeklyPDF}
-                  disabled={weeklyLoading || !weekStart}
+                  disabled={weeklyLoading || !weekStartDate || !weekEndDate}
                   variant="destructive"
                 >
                   <FileDown className="h-4 w-4 mr-2" />
