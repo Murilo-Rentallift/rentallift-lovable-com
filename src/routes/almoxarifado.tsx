@@ -290,12 +290,14 @@ function AlmoxarifadoPage() {
   }
 
   const fetchWeeklyReq = useServerFn(almoxWeeklyMissingRequests);
-  const [reqWeekStart, setReqWeekStart] = useState(() => mondayOf(todayISO()));
+  const [reqStartDate, setReqStartDate] = useState(todayISO());
+  const [reqEndDate, setReqEndDate] = useState(todayISO());
   const [reqWeeklyLoading, setReqWeeklyLoading] = useState(false);
 
   async function generateWeeklyRequestsPDF() {
-    const startDate = mondayOf(reqWeekStart);
-    const endDate = addDays(startDate, 6);
+    const startDate = reqStartDate;
+    const endDate = reqEndDate;
+    if (startDate > endDate) { toast.error("Data início deve ser anterior à data fim"); return; }
     setReqWeeklyLoading(true);
     try {
       const res = await fetchWeeklyReq({ data: { pin, startDate, endDate } });
