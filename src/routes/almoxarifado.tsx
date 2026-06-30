@@ -603,20 +603,30 @@ function AlmoxarifadoPage() {
                   Gera um PDF com todas as requisições marcadas como "Em falta" na semana selecionada.
                 </p>
               </div>
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-2 flex-wrap">
                 <div>
-                  <Label htmlFor="reqWeekStart" className="text-xs">Semana de</Label>
+                  <Label htmlFor="reqStartDate" className="text-xs">Data início</Label>
                   <Input
-                    id="reqWeekStart"
+                    id="reqStartDate"
                     type="date"
-                    value={reqWeekStart}
-                    onChange={(e) => setReqWeekStart(e.target.value)}
+                    value={reqStartDate}
+                    onChange={(e) => setReqStartDate(e.target.value)}
+                    className="w-auto"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="reqEndDate" className="text-xs">Data fim</Label>
+                  <Input
+                    id="reqEndDate"
+                    type="date"
+                    value={reqEndDate}
+                    onChange={(e) => setReqEndDate(e.target.value)}
                     className="w-auto"
                   />
                 </div>
                 <Button
                   onClick={generateWeeklyRequestsPDF}
-                  disabled={reqWeeklyLoading || !reqWeekStart}
+                  disabled={reqWeeklyLoading || !reqStartDate || !reqEndDate}
                   variant="destructive"
                 >
                   <FileDown className="h-4 w-4 mr-2" />
