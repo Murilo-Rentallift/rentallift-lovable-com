@@ -95,7 +95,7 @@ function Index() {
             className="inline-flex items-center gap-2 rounded-md border border-accent/40 bg-accent/10 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-accent hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <Shield className="h-4 w-4" />
-            Acesso do Administrador
+            PCM
           </Link>
         </div>
 

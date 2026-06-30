@@ -250,6 +250,46 @@ export const almoxUpdateGroupStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Almoxarifado: update a single request item status ----------
+export const almoxUpdateRequestItemStatus = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; itemId: string; status: string }) =>
+    z.object({
+      pin: pinSchema,
+      itemId: z.string().uuid(),
+      status: z.enum(["pendente", "separado", "em_falta", "entregue"]),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { error } = await supabaseAdmin
+      .from("part_requests" as any).update({ status: data.status }).eq("id", data.itemId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Almoxarifado: list upcoming schedule dates that have parts ----------
+export const almoxUpcomingDates = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; fromDate: string }) =>
+    z.object({ pin: pinSchema, fromDate: dateSchema }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: schedules } = await supabaseAdmin
+      .from("schedules")
+      .select("id, work_date")
+      .gt("work_date", data.fromDate)
+      .order("work_date", { ascending: true });
+    const ids = (schedules ?? []).map((s) => s.id);
+    if (!ids.length) return { dates: [] as string[] };
+    const { data: parts } = await supabaseAdmin
+      .from("parts").select("schedule_id").in("schedule_id", ids);
+    const withParts = new Set((parts ?? []).map((p: any) => p.schedule_id));
+    const dates = Array.from(
+      new Set((schedules ?? []).filter((s) => withParts.has(s.id)).map((s) => s.work_date as string)),
+    ).sort();
+    return { dates };
+  });
+
 // ---------- Almoxarifado: weekly report of missing part requests from oficina ----------
 export const almoxWeeklyMissingRequests = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; startDate: string; endDate: string }) =>
