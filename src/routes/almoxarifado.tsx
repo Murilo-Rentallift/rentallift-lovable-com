@@ -132,6 +132,7 @@ function AlmoxarifadoPage() {
       setGroups(res.groups as Group[]);
       setAuthed(true);
       loadRequests(currentPin);
+      loadUpcoming(currentPin, currentDate);
     } catch (e: any) {
       toast.error(e.message || "Falha ao carregar");
       setAuthed(false);
