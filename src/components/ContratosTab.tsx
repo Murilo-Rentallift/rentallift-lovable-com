@@ -305,6 +305,10 @@ export function ContratosTab() {
         if (data.equipamentos && data.equipamentos.length) {
           next.equipamentos = data.equipamentos;
         }
+        const contratadaMatch = (Object.keys(CONTRATADAS) as Array<keyof typeof CONTRATADAS>).find(
+          (k) => data.contratadaCnpj && CONTRATADAS[k].cnpj === data.contratadaCnpj,
+        );
+        if (contratadaMatch) next.contratadaKey = contratadaMatch;
         // Cláusulas: mescla extras nas correspondentes; cláusulas com numero > 10 viram extras
         if (data.clausulasExtras && data.clausulasExtras.length) {
           const mapped = next.clausulas.map((c) => {
