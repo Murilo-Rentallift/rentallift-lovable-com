@@ -269,6 +269,7 @@ export function ContratosTab() {
 
   // Auto data assinatura: "Cidade, DD de mês de AAAA"
   useEffect(() => {
+    if (!form.dataAssinaturaIso) return;
     const cidade = (form.cidadeAssinatura ?? "").trim();
     const dataExt = formatDataExtenso(form.dataAssinaturaIso ?? "");
     const composta = cidade && dataExt ? `${cidade}, ${dataExt}` : cidade ? `${cidade}, ___ de ___________ de ____` : "";
