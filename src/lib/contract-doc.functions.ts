@@ -185,8 +185,8 @@ export const generateContractDoc = createServerFn({ method: "POST" })
 
       p([t("_______________________________________________")]),
       p([t("CONTRATADA", { bold: true })]),
-      p([t("RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA", { bold: true })]),
-      p([t("CNPJ 04.705.697/0001-57 — AV. DOM BOSCO 835, SANTO ANDRÉ-SP")], { spacing: { after: 480 } }),
+      p([t(data.contratadaNome || "RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA", { bold: true })]),
+      p([t(`CNPJ ${data.contratadaCnpj || "04.705.697/0001-57"} — ${data.contratadaEndereco || "AV. DOM BOSCO 835, SANTO ANDRÉ-SP"}`)], { spacing: { after: 480 } }),
       p([t("TESTEMUNHAS:", { bold: true })], { spacing: { after: 240 } }),
       p([t("1) _______________________________________")]),
       p([t(`Nome: ${data.testemunha1Nome}`)]),
