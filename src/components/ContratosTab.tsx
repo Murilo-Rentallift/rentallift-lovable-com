@@ -837,8 +837,8 @@ export function ContratosTab() {
 
             <div className="border rounded p-3 space-y-1 bg-muted/30">
               <p className="font-semibold text-sm">CONTRATADA</p>
-              <p className="text-sm">RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA</p>
-              <p className="text-xs text-muted-foreground">CNPJ 04.705.697/0001-57 — AV. DOM BOSCO 835, SANTO ANDRÉ-SP</p>
+              <p className="text-sm">{form.contratadaNome}</p>
+              <p className="text-xs text-muted-foreground">CNPJ {form.contratadaCnpj} — {form.contratadaEndereco}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
