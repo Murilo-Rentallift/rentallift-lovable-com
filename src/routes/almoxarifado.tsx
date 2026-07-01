@@ -134,6 +134,42 @@ function AlmoxarifadoPage() {
     }
   }
 
+  function startEdit(r: ReqGroup) {
+    setEditing({
+      groupId: r.group_id,
+      requesterName: r.requester_name,
+      items: r.items.map((i) => ({ partName: i.part_name, quantity: i.quantity, code: i.code })),
+    });
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    const items = editing.items
+      .map((i) => ({ partName: i.partName.trim(), quantity: Math.max(1, Math.floor(Number(i.quantity) || 0)), code: (i.code ?? "").trim() }))
+      .filter((i) => i.partName);
+    if (items.length === 0) {
+      toast.error("Adicione ao menos uma peça válida");
+      return;
+    }
+    try {
+      await editReq({ data: { pin, groupId: editing.groupId, requesterName: editing.requesterName.trim() || "—", items } });
+      setEditing(null);
+      toast.success("Requisição editada");
+      loadRequests(pin);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao editar");
+    }
+  }
+
+  async function viewOriginal(originalGroupId: string) {
+    try {
+      const r = await getOriginal({ data: { pin, originalGroupId } });
+      setViewingOriginal({ requester_name: r.requester_name, created_at: r.created_at, items: r.items as ReqItem[] });
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao buscar original");
+    }
+  }
+
   async function load(currentPin: string, currentDate: string) {
     setLoading(true);
     try {
