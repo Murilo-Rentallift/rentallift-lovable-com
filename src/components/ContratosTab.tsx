@@ -42,6 +42,7 @@ type Equipamento = { descricao: string; valorUnitario: string };
 
 type ContratoData = {
   // Quadro de resumo
+  numeroContrato?: string;
   contratanteNome: string;
   contratanteEndereco: string;
   contratanteCnpj: string;
@@ -192,6 +193,7 @@ const defaultClausulas = (): Clause[] => [
 ];
 
 const blank = (): ContratoData => ({
+  numeroContrato: "",
   contratanteNome: "",
   contratanteEndereco: "",
   contratanteCnpj: "",
@@ -267,6 +269,7 @@ export function ContratosTab() {
 
   // Auto data assinatura: "Cidade, DD de mês de AAAA"
   useEffect(() => {
+    if (!form.dataAssinaturaIso) return;
     const cidade = (form.cidadeAssinatura ?? "").trim();
     const dataExt = formatDataExtenso(form.dataAssinaturaIso ?? "");
     const composta = cidade && dataExt ? `${cidade}, ${dataExt}` : cidade ? `${cidade}, ___ de ___________ de ____` : "";
@@ -286,10 +289,13 @@ export function ContratosTab() {
         const next: ContratoData = { ...base };
         // Aplica campos simples
         const simpleKeys: Array<keyof ContratoData> = [
+          "numeroContrato",
           "contratanteNome", "contratanteEndereco", "contratanteCnpj", "contratanteIE",
           "descricaoServicos", "localPrestacao", "documentosAplicaveis", "vigencia",
           "precoTotal", "precoExtenso", "formaPagamento", "dataAssinatura",
-          "contratanteRepresentante", "contratanteCargo",
+          "cidadeAssinatura", "dataAssinaturaIso", "contratanteRepresentante", "contratanteCargo",
+          "contratanteAssinNome", "contratanteAssinRg", "contratanteAssinCpf",
+          "contratadaNome", "contratadaCnpj", "contratadaEndereco",
           "testemunha1Nome", "testemunha1Rg", "testemunha2Nome", "testemunha2Rg",
         ];
         for (const k of simpleKeys) {
@@ -299,6 +305,10 @@ export function ContratosTab() {
         if (data.equipamentos && data.equipamentos.length) {
           next.equipamentos = data.equipamentos;
         }
+        const contratadaMatch = (Object.keys(CONTRATADAS) as Array<keyof typeof CONTRATADAS>).find(
+          (k) => data.contratadaCnpj && CONTRATADAS[k].cnpj === data.contratadaCnpj,
+        );
+        if (contratadaMatch) next.contratadaKey = contratadaMatch;
         // Cláusulas: mescla extras nas correspondentes; cláusulas com numero > 10 viram extras
         if (data.clausulasExtras && data.clausulasExtras.length) {
           const mapped = next.clausulas.map((c) => {
@@ -314,6 +324,7 @@ export function ContratosTab() {
                 return s;
               });
               const sobras = found.subclausulasExtras.filter((x) => !fixasByNum.has(x.numero) && !usados.has(x.numero));
+              if (found.corpo.trim()) sobras.unshift({ numero: `${c.numero}.1`, texto: found.corpo.trim() });
               return { ...c, subclausulasFixas: novasFixas, subclausulasExtras: sobras };
             }
             return {
@@ -573,6 +584,10 @@ export function ContratosTab() {
         <Card>
           <CardHeader><CardTitle>Quadro de Resumo</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Número do Contrato</Label>
+              <Input value={form.numeroContrato ?? ""} onChange={(e) => setForm({ ...form, numeroContrato: e.target.value })} placeholder="Ex: 001/2026" />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* CONTRATANTE */}
               <div className="border-2 rounded-md p-4 space-y-3 bg-card">

@@ -1,4 +1,5 @@
 import mammoth from "mammoth";
+import JSZip from "jszip";
 
 type Equipamento = { descricao: string; valorUnitario: string };
 type ExtraSub = { numero: string; texto: string };
@@ -10,6 +11,7 @@ type ImportedClause = {
 };
 
 export type ImportedContract = {
+  numeroContrato?: string;
   contratanteNome?: string;
   contratanteEndereco?: string;
   contratanteCnpj?: string;
@@ -22,226 +24,530 @@ export type ImportedContract = {
   precoExtenso?: string;
   formaPagamento?: string;
   dataAssinatura?: string;
+  cidadeAssinatura?: string;
+  dataAssinaturaIso?: string;
   contratanteRepresentante?: string;
   contratanteCargo?: string;
+  contratanteAssinNome?: string;
+  contratanteAssinRg?: string;
+  contratanteAssinCpf?: string;
   testemunha1Nome?: string;
   testemunha1Rg?: string;
   testemunha2Nome?: string;
   testemunha2Rg?: string;
+  contratadaNome?: string;
+  contratadaCnpj?: string;
+  contratadaEndereco?: string;
   equipamentos?: Equipamento[];
   clausulasExtras?: ImportedClause[];
 };
 
-const norm = (s: string) => s.replace(/\s+/g, " ").trim();
+type GridRow = string[];
+
+const MONTHS: Record<string, string> = {
+  janeiro: "01",
+  fevereiro: "02",
+  março: "03",
+  marco: "03",
+  abril: "04",
+  maio: "05",
+  junho: "06",
+  julho: "07",
+  agosto: "08",
+  setembro: "09",
+  outubro: "10",
+  novembro: "11",
+  dezembro: "12",
+};
+
+const CONTRATADA_HINTS = [
+  {
+    nome: "RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA",
+    cnpj: "04.705.697/0001-57",
+    endereco: "AV. DOM BOSCO, 835, SANTO ANDRÉ, SÃO PAULO",
+  },
+  {
+    nome: "RLE LOCACAO E TRANSPORTE DE EQUIPAMENTOS LTDA",
+    cnpj: "14.989.985/0001-34",
+    endereco: "AV DOM BOSCO, 1050, VILA LUCINDA, SANTO ANDRÉ, SÃO PAULO",
+  },
+  {
+    nome: "EMPISA EMPILHADEIRAS SANTO ANDRE LOCACAO E MOVIMENTACAO DE CARGAS LTDA",
+    cnpj: "09.449.084/0001-10",
+    endereco: "AV DOM BOSCO, 84, VILA LUCINDA, SANTO ANDRÉ, SÃO PAULO",
+  },
+];
+
+const norm = (s: string): string =>
+  s
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\s*\n\s*/g, "\n")
+    .trim();
+
+const oneLine = (s: string): string => norm(s).replace(/\s+/g, " ").trim();
+
+const stripLabel = (s: string): string =>
+  oneLine(s)
+    .replace(/^(?:[A-Z](?:\.\d)?\)|[A-Z]\.\d\)|D\)|E\)|C\))\s*/i, "")
+    .replace(/^(?:CONTRATANTE|CONTRATADA|DESCRI[ÇC][ÃA]O DOS SERVI[ÇC]OS|LOCAL DA PRESTA[ÇC][ÃA]O|DOCUMENTOS APLIC[ÁA]VEIS|VIG[ÊE]NCIA|PRE[ÇC]O TOTAL|FORMA DE PAGAMENTO)\s*:?\s*/i, "")
+    .trim();
+
+const keyOf = (s: string): string =>
+  oneLine(s)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+
+const cleanFieldValue = (value: string): string =>
+  norm(value)
+    .replace(/^[:\-–—]+\s*/, "")
+    .replace(/^(?:NOME|RAZ[ÃA]O SOCIAL|ENDERE[ÇC]O|CNPJ|I\.?E\.?|INSCRI[ÇC][ÃA]O ESTADUAL|REPRESENTANTE LEGAL|CARGO\/?FUN[ÇC][ÃA]O|CARGO|FUN[ÇC][ÃA]O|RG|CPF)\s*:?\s*/i, "")
+    .trim();
 
 const afterColon = (s: string, label: string | RegExp): string | null => {
   const re = typeof label === "string"
     ? new RegExp("^\\s*" + label + "\\s*:?\\s*(.+)$", "i")
     : label;
   const m = s.match(re);
-  return m ? norm(m[1]) : null;
+  return m ? cleanFieldValue(m[1]) : null;
 };
 
-function parseHtml(html: string, result: ImportedContract): void {
-  const doc = new DOMParser().parseFromString(html, "text/html");
+function splitTextLines(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((l) => oneLine(l))
+    .filter(Boolean);
+}
 
-  // === Tables ===
-  const tables = Array.from(doc.querySelectorAll("table"));
-  for (const table of tables) {
-    const rows = Array.from(table.querySelectorAll("tr"));
-    const firstRowText = norm(rows[0]?.textContent ?? "").toUpperCase();
-    if (firstRowText.includes("DESCRIÇÃO") && firstRowText.includes("VALOR")) {
-      const equipamentos: Equipamento[] = [];
-      for (let i = 1; i < rows.length; i++) {
-        const cells = Array.from(rows[i].querySelectorAll("td,th"));
-        if (cells.length < 2) continue;
-        const descricao = norm(cells[0].textContent ?? "");
-        const valorUnitario = norm(cells[1].textContent ?? "");
-        if (descricao || valorUnitario) equipamentos.push({ descricao, valorUnitario });
-      }
-      if (equipamentos.length && !result.equipamentos) result.equipamentos = equipamentos;
-      continue;
+function uniqueLines(lines: string[]): string[] {
+  const out: string[] = [];
+  for (const line of lines) {
+    if (!out.length || out[out.length - 1] !== line) out.push(line);
+  }
+  return out;
+}
+
+function paragraphTextFromXml(p: Element): string {
+  const parts: string[] = [];
+  Array.from(p.getElementsByTagNameNS("*", "t")).forEach((node) => parts.push(node.textContent ?? ""));
+  Array.from(p.getElementsByTagNameNS("*", "delText")).forEach((node) => parts.push(node.textContent ?? ""));
+  return oneLine(parts.join(""));
+}
+
+function cellTextFromXml(cell: Element): string {
+  const parts: string[] = [];
+  Array.from(cell.getElementsByTagNameNS("*", "p")).forEach((p) => {
+    const t = paragraphTextFromXml(p);
+    if (t) parts.push(t);
+  });
+  if (!parts.length) {
+    Array.from(cell.getElementsByTagNameNS("*", "t")).forEach((node) => parts.push(node.textContent ?? ""));
+    Array.from(cell.getElementsByTagNameNS("*", "delText")).forEach((node) => parts.push(node.textContent ?? ""));
+  }
+  return norm(parts.filter(Boolean).join("\n"));
+}
+
+function parseWordXml(xml: string): { lines: string[]; tables: GridRow[][] } {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, "application/xml");
+  const lines: string[] = [];
+  const tables: GridRow[][] = [];
+
+  Array.from(doc.getElementsByTagNameNS("*", "p")).forEach((p) => {
+    const text = paragraphTextFromXml(p);
+    if (text) lines.push(text);
+  });
+
+  Array.from(doc.getElementsByTagNameNS("*", "tbl")).forEach((table) => {
+    const rows: GridRow[] = [];
+    Array.from(table.childNodes)
+      .filter((node): node is Element => node.nodeType === Node.ELEMENT_NODE && (node as Element).localName === "tr")
+      .forEach((row) => {
+      const cells = Array.from(row.childNodes)
+        .filter((node): node is Element => node.nodeType === Node.ELEMENT_NODE && (node as Element).localName === "tc")
+        .map(cellTextFromXml);
+      if (cells.some(Boolean)) rows.push(cells);
+    });
+    if (rows.length) tables.push(rows);
+  });
+
+  return { lines: uniqueLines(lines), tables };
+}
+
+async function extractDocxStructure(buf: ArrayBuffer): Promise<{ lines: string[]; tables: GridRow[][] }> {
+  const zip = await JSZip.loadAsync(buf);
+  const files = Object.keys(zip.files)
+    .filter((name) => /^word\/(document|header\d+|footer\d+)\.xml$/.test(name))
+    .sort((a, b) => (a.includes("document.xml") ? -1 : b.includes("document.xml") ? 1 : a.localeCompare(b)));
+
+  const allLines: string[] = [];
+  const allTables: GridRow[][] = [];
+  for (const name of files) {
+    const xml = await zip.files[name].async("string");
+    const parsed = parseWordXml(xml);
+    allLines.push(...parsed.lines);
+    allTables.push(...parsed.tables);
+  }
+  return { lines: uniqueLines(allLines), tables: allTables };
+}
+
+function setIf(result: ImportedContract, key: keyof ImportedContract, value?: string | null): void {
+  if (!value || Array.isArray(result[key])) return;
+  const cleaned = cleanFieldValue(value);
+  if (cleaned && !result[key]) (result as Record<string, unknown>)[key] = cleaned;
+}
+
+function findCnpj(text: string): string | undefined {
+  return text.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/)?.[0];
+}
+
+function findCpf(text: string): string | undefined {
+  return text.match(/\d{3}\.\d{3}\.\d{3}-\d{2}/)?.[0];
+}
+
+function parseDateExtenso(line: string): { dataAssinatura: string; cidadeAssinatura?: string; dataAssinaturaIso?: string } | null {
+  const m = oneLine(line).match(/^(.+?),\s*(\d{1,2})\s+de\s+([a-zçãé]+)\s+de\s+(\d{4})$/i);
+  if (!m) return null;
+  const month = MONTHS[m[3].normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()] ?? MONTHS[m[3].toLowerCase()];
+  return {
+    dataAssinatura: oneLine(line),
+    cidadeAssinatura: oneLine(m[1]),
+    dataAssinaturaIso: month ? `${m[4]}-${month}-${m[2].padStart(2, "0")}` : undefined,
+  };
+}
+
+function mergeMultilineValue(lines: string[], start: number, stop: RegExp, max = 8): string {
+  const out: string[] = [];
+  for (let i = start; i < lines.length && out.length < max; i++) {
+    if (i !== start && stop.test(lines[i])) break;
+    out.push(stripLabel(lines[i]));
+  }
+  return norm(out.filter(Boolean).join("\n"));
+}
+
+function parseLabelValueLines(lines: string[], result: ImportedContract): void {
+  const stop = /^(QUADRO RESUMO|A\)|B\.?\s*[123]\)|C\)|D\)|E\)|CL[ÁA]USULA|ANEXO|TESTEMUNHAS?:?|CONTRATANTE$|CONTRATADA$|_+$|DESCRI[ÇC][ÃA]O\b|VALOR\b)/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const k = keyOf(line);
+    const sameLineValue = (label: RegExp) => {
+      const m = line.match(label);
+      return m?.[1] ? cleanFieldValue(m[1]) : "";
+    };
+
+    setIf(result, "numeroContrato", sameLineValue(/(?:CONTRATO|INSTRUMENTO)\s*(?:N[º°O.]|NUMERO|NÚMERO)?\s*[:\-–—]\s*(.+)$/i));
+    setIf(result, "contratanteNome", sameLineValue(/(?:RAZ[ÃA]O SOCIAL|NOME\s*\/\s*RAZ[ÃA]O SOCIAL|CLIENTE)\s*:?\s*(.+)$/i));
+    setIf(result, "contratanteEndereco", sameLineValue(/ENDERE[ÇC]O\s*:?\s*(.+)$/i));
+    setIf(result, "contratanteCnpj", sameLineValue(/CNPJ\s*:?\s*([\d./-]+)/i));
+    setIf(result, "contratanteIE", sameLineValue(/(?:I\.?E\.?|INSCRI[ÇC][ÃA]O ESTADUAL)\s*:?\s*(.+)$/i));
+    setIf(result, "contratanteRepresentante", sameLineValue(/REPRESENTANTE LEGAL\s*:?\s*(.+)$/i));
+    setIf(result, "contratanteCargo", sameLineValue(/(?:CARGO\s*\/\s*FUN[ÇC][ÃA]O|CARGO|FUN[ÇC][ÃA]O)\s*:?\s*(.+)$/i));
+    setIf(result, "contratanteAssinRg", sameLineValue(/RG\s*:?\s*([\w.\/-]+)/i));
+    setIf(result, "contratanteAssinCpf", sameLineValue(/CPF\s*:?\s*([\d.-]+)/i));
+
+    if (/^A\)\s*CONTRATANTE/i.test(line) || /^CONTRATANTE$/i.test(line)) {
+      const block = mergeMultilineValue(lines, i + 1, stop, 7);
+      applyPartyBlock(block, result, "contratante");
+    } else if (/^CONTRATADA$/i.test(line) || /^B\)?\s*CONTRATADA/i.test(line)) {
+      const block = mergeMultilineValue(lines, i + 1, stop, 5);
+      applyPartyBlock(block, result, "contratada");
+    } else if (/^B\.?\s*1\)/i.test(line) || k === "B.1) DESCRICAO DOS SERVICOS") {
+      setIf(result, "descricaoServicos", sameLineValue(/^B\.?\s*1\)?\s*(?:DESCRI[ÇC][ÃA]O DOS SERVI[ÇC]OS)?\s*:?\s*(.+)$/i) || mergeMultilineValue(lines, i + 1, stop, 6));
+    } else if (/^B\.?\s*2\)/i.test(line) || k === "B.2) LOCAL DA PRESTACAO") {
+      setIf(result, "localPrestacao", sameLineValue(/^B\.?\s*2\)?\s*(?:LOCAL DA PRESTA[ÇC][ÃA]O)?\s*:?\s*(.+)$/i) || mergeMultilineValue(lines, i + 1, stop, 5));
+    } else if (/^B\.?\s*3\)/i.test(line) || k === "B.3) DOCUMENTOS APLICAVEIS") {
+      setIf(result, "documentosAplicaveis", sameLineValue(/^B\.?\s*3\)?\s*(?:DOCUMENTOS APLIC[ÁA]VEIS)?\s*:?\s*(.+)$/i) || mergeMultilineValue(lines, i + 1, stop, 5));
+    } else if (/^C\)\s*VIG/i.test(line)) {
+      setIf(result, "vigencia", sameLineValue(/^C\)?\s*VIG[ÊE]NCIA\s*:?\s*(.+)$/i) || mergeMultilineValue(lines, i + 1, stop, 4));
+    } else if (/^D\)\s*PRE/i.test(line)) {
+      const value = sameLineValue(/^D\)?\s*PRE[ÇC]O TOTAL\s*:?\s*(.+)$/i) || mergeMultilineValue(lines, i + 1, stop, 4);
+      applyPriceBlock(value, result);
+    } else if (/^E\)\s*FORMA/i.test(line)) {
+      setIf(result, "formaPagamento", sameLineValue(/^E\)?\s*FORMA DE PAGAMENTO\s*:?\s*(.+)$/i) || mergeMultilineValue(lines, i + 1, stop, 6));
+    }
+
+    const date = parseDateExtenso(line);
+    if (date) {
+      setIf(result, "dataAssinatura", date.dataAssinatura);
+      setIf(result, "cidadeAssinatura", date.cidadeAssinatura);
+      setIf(result, "dataAssinaturaIso", date.dataAssinaturaIso);
+    }
+  }
+}
+
+function applyPartyBlock(block: string, result: ImportedContract, party: "contratante" | "contratada"): void {
+  const lines = splitTextLines(block);
+  if (!lines.length) return;
+  const text = oneLine(block);
+  const cnpj = findCnpj(text);
+  const addressLine = lines.find((l) => /(?:RUA|AV\.?|AVENIDA|RODOVIA|ESTRADA|ALAMEDA|PRA[ÇC]A|TRAVESSA|N[º°]|BAIRRO|CEP)/i.test(l) && !/CNPJ/i.test(l));
+  const ieLine = lines.find((l) => /(?:I\.?E\.?|INSCRI[ÇC][ÃA]O ESTADUAL)/i.test(l));
+  const repLine = lines.find((l) => /REPRESENTANTE LEGAL/i.test(l));
+  const cargoLine = lines.find((l) => /(?:CARGO|FUN[ÇC][ÃA]O)/i.test(l));
+  const nameLine = lines.find((l) => !/^(CNPJ|I\.?E\.?|INSCRI[ÇC][ÃA]O|ENDERE[ÇC]O|REPRESENTANTE|CARGO|FUN[ÇC][ÃA]O|RG|CPF)/i.test(l) && !findCnpj(l) && l !== addressLine);
+
+  if (party === "contratante") {
+    setIf(result, "contratanteNome", nameLine);
+    setIf(result, "contratanteEndereco", addressLine);
+    setIf(result, "contratanteCnpj", cnpj);
+    setIf(result, "contratanteIE", ieLine ? afterColon(ieLine, /(?:I\.?E\.?|INSCRI[ÇC][ÃA]O ESTADUAL)\s*:?\s*(.+)$/i) : undefined);
+    setIf(result, "contratanteRepresentante", repLine ? afterColon(repLine, "Representante Legal") : undefined);
+    setIf(result, "contratanteCargo", cargoLine ? afterColon(cargoLine, /(?:Cargo\s*\/?\s*Fun[çc][ãa]o|Cargo|Fun[çc][ãa]o)\s*:?\s*(.+)$/i) : undefined);
+  } else {
+    setIf(result, "contratadaNome", nameLine);
+    setIf(result, "contratadaEndereco", addressLine);
+    setIf(result, "contratadaCnpj", cnpj);
+  }
+}
+
+function applyPriceBlock(block: string, result: ImportedContract): void {
+  const text = oneLine(block);
+  const price = text.match(/R\$\s*([\d.]+,\d{2}|[\d.,]+)/i)?.[1];
+  if (price) setIf(result, "precoTotal", price);
+  const extenso = text.match(/\(([^()]+(?:reais|centavos)[^()]*)\)/i)?.[1];
+  if (extenso) setIf(result, "precoExtenso", extenso);
+  if (!price && text) setIf(result, "precoTotal", text);
+}
+
+function parseHtml(html: string, result: ImportedContract): { lines: string[]; tables: GridRow[][] } {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const lines = splitTextLines(doc.body?.innerText ?? doc.body?.textContent ?? "");
+  const tables: GridRow[][] = [];
+
+  Array.from(doc.querySelectorAll("table")).forEach((table) => {
+    const rows = Array.from(table.querySelectorAll("tr")).map((row) =>
+      Array.from(row.querySelectorAll("td,th")).map((cell) => norm(cell.textContent ?? "")),
+    ).filter((row) => row.some(Boolean));
+    if (rows.length) tables.push(rows);
+  });
+
+  parseTables(tables, result);
+  parseLabelValueLines(lines, result);
+  return { lines, tables };
+}
+
+function parseTables(tables: GridRow[][], result: ImportedContract): void {
+  for (const rows of tables) {
+    const tableText = keyOf(rows.flat().join(" "));
+    if (tableText.includes("DESCRICAO") && tableText.includes("VALOR")) {
+      const equipamentos = parseEquipmentRows(rows);
+      if (equipamentos.length) result.equipamentos = equipamentos;
     }
 
     for (const row of rows) {
-      const cells = Array.from(row.querySelectorAll("td,th"));
+      const cells = row.map(norm).filter((_, idx) => row[idx] != null);
       if (cells.length < 2) continue;
-      const label = norm(cells[0].textContent ?? "").toUpperCase();
-      const valueParas = Array.from(cells[1].querySelectorAll("p"));
-      const valueLines = (valueParas.length
-        ? valueParas.map((p) => norm(p.textContent ?? ""))
-        : norm(cells[1].textContent ?? "").split(/\n/).map(norm)
-      ).filter(Boolean);
-      const valueText = valueLines.join("\n");
+      const label = keyOf(cells[0]);
+      const value = norm(cells.slice(1).join("\n"));
 
-      if (/^A\)\s*CONTRATANTE/.test(label)) {
-        if (valueLines[0]) result.contratanteNome ||= valueLines[0];
-        if (valueLines[1]) result.contratanteEndereco ||= valueLines[1];
-        const cnpjLine = valueLines.find((l) => /CNPJ/i.test(l));
-        if (cnpjLine) {
-          const cm = cnpjLine.match(/CNPJ\s*:?\s*([\d./-]+)/i);
-          if (cm) result.contratanteCnpj ||= cm[1];
-          const im = cnpjLine.match(/I\.?\s*E\.?\s*:?\s*(\S.*?)\s*$/i);
-          if (im) result.contratanteIE ||= im[1];
-        }
-      } else if (/^B\.?\s*1/.test(label)) {
-        result.descricaoServicos ||= valueText;
-      } else if (/^B\.?\s*2/.test(label)) {
-        result.localPrestacao ||= valueText;
-      } else if (/^B\.?\s*3/.test(label)) {
-        result.documentosAplicaveis ||= valueText;
-      } else if (/^C\)/.test(label)) {
-        result.vigencia ||= valueText;
-      } else if (/^D\)/.test(label)) {
-        const rsLine = valueLines.find((l) => /R\$/.test(l));
-        if (rsLine) {
-          const m = rsLine.match(/R\$\s*([\d.,]+)/);
-          if (m) result.precoTotal ||= m[1];
-        }
-        const extLine = valueLines.find((l) => /^\(.*\)$/.test(l));
-        if (extLine) result.precoExtenso ||= extLine.replace(/^\(|\)$/g, "").trim();
-      } else if (/^E\)/.test(label)) {
-        result.formaPagamento ||= valueText;
+      if (/CONTRATANTE/.test(label) && !/CONTRATADA/.test(label)) applyPartyBlock(value, result, "contratante");
+      else if (/CONTRATADA/.test(label)) applyPartyBlock(value, result, "contratada");
+      else if (/B\.?\s*1|DESCRICAO DOS SERVICOS/.test(label)) setIf(result, "descricaoServicos", value);
+      else if (/B\.?\s*2|LOCAL DA PRESTACAO/.test(label)) setIf(result, "localPrestacao", value);
+      else if (/B\.?\s*3|DOCUMENTOS APLICAVEIS/.test(label)) setIf(result, "documentosAplicaveis", value);
+      else if (/^C\)?|VIGENCIA/.test(label)) setIf(result, "vigencia", value);
+      else if (/^D\)?|PRECO TOTAL|VALOR TOTAL/.test(label)) applyPriceBlock(value, result);
+      else if (/^E\)?|FORMA DE PAGAMENTO|PAGAMENTO/.test(label)) setIf(result, "formaPagamento", value);
+      else if (/NUMERO.*CONTRATO|CONTRATO.*NUMERO|N[ºO.]\s*CONTRATO/.test(label)) setIf(result, "numeroContrato", value);
+      else if (/RAZAO SOCIAL|CLIENTE|NOME/.test(label)) setIf(result, "contratanteNome", value);
+      else if (/ENDERECO/.test(label)) setIf(result, "contratanteEndereco", value);
+      else if (/CNPJ/.test(label)) setIf(result, "contratanteCnpj", findCnpj(value) ?? value);
+      else if (/INSCRICAO ESTADUAL|I\.?E/.test(label)) setIf(result, "contratanteIE", value);
+      else if (/REPRESENTANTE LEGAL/.test(label)) setIf(result, "contratanteRepresentante", value);
+      else if (/CARGO|FUNCAO/.test(label)) setIf(result, "contratanteCargo", value);
+    }
+  }
+}
+
+function parseEquipmentRows(rows: GridRow[]): Equipamento[] {
+  const equipamentos: Equipamento[] = [];
+  let headerIndex = rows.findIndex((row) => keyOf(row.join(" ")).includes("DESCRICAO") && keyOf(row.join(" ")).includes("VALOR"));
+  if (headerIndex < 0) headerIndex = 0;
+
+  for (let i = headerIndex + 1; i < rows.length; i++) {
+    const cells = rows[i].map(norm).filter(Boolean);
+    if (!cells.length) continue;
+    if (keyOf(cells.join(" ")).includes("DESCRICAO") && keyOf(cells.join(" ")).includes("VALOR")) continue;
+
+    const valueIndex = cells.findIndex((c) => /R\$|\d+[.,]\d{2}/.test(c));
+    if (valueIndex >= 0) {
+      const descricao = cells.filter((_, idx) => idx !== valueIndex).join("\n");
+      const valorUnitario = cells[valueIndex];
+      if (descricao || valorUnitario) equipamentos.push({ descricao, valorUnitario });
+    } else if (cells.length >= 2) {
+      equipamentos.push({ descricao: cells.slice(0, -1).join("\n"), valorUnitario: cells[cells.length - 1] });
+    } else if (cells[0] && !/^VALOR|^DESCRI/i.test(cells[0])) {
+      equipamentos.push({ descricao: cells[0], valorUnitario: "" });
+    }
+  }
+  return equipamentos.filter((e) => e.descricao || e.valorUnitario);
+}
+
+function parseEquipmentFromLines(lines: string[], result: ImportedContract): void {
+  if (result.equipamentos?.length) return;
+  const start = lines.findIndex((l) => /^ANEXO\s+I/i.test(l) || /DESCRI[ÇC][ÃA]O DOS EQUIPAMENTOS/i.test(l));
+  if (start < 0) return;
+  const equipamentos: Equipamento[] = [];
+  let pending = "";
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^CL[ÁA]USULA|^ASSINATURAS?|^CONTRATANTE$|^CONTRATADA$|^TESTEMUNHAS?/i.test(line)) break;
+    if (/^(DESCRI[ÇC][ÃA]O|VALOR DE MERCADO|VALOR UNIT)/i.test(line)) continue;
+    const combined = line.match(/^(.*?)(R\$\s*[\d.,]+.*)$/i);
+    if (combined) {
+      equipamentos.push({ descricao: norm([pending, combined[1]].filter(Boolean).join("\n")), valorUnitario: oneLine(combined[2]) });
+      pending = "";
+    } else if (/^R\$\s*[\d.,]+/i.test(line)) {
+      equipamentos.push({ descricao: pending, valorUnitario: line });
+      pending = "";
+    } else {
+      pending = pending ? `${pending}\n${line}` : line;
+    }
+  }
+  if (pending && /EMPILHADEIRA|EQUIPAMENTO|MODELO|CAPACIDADE|TORRE|GLP|EL[ÉE]TRICA|DIESEL/i.test(pending)) {
+    equipamentos.push({ descricao: pending, valorUnitario: "" });
+  }
+  if (equipamentos.length) result.equipamentos = equipamentos;
+}
+
+function parseClauses(lines: string[], result: ImportedContract): void {
+  const clauseRe = /^CL[ÁA]USULA\s+(\d+)\s*[—\-–:]\s*(.+)$/i;
+  const subRe = /^(\d+\.\d+(?:\.\d+)?)\)?\s*(.*)$/;
+  const stopRe = /^(ASSINATURAS?|CONTRATANTE$|CONTRATADA$|TESTEMUNHAS?:?|ANEXO\s+I|QUADRO RESUMO)/i;
+  const clauses: ImportedClause[] = [];
+  let current: ImportedClause | null = null;
+  let currentSub: ExtraSub | null = null;
+
+  const flushSub = () => {
+    if (current && currentSub) {
+      currentSub.texto = norm(currentSub.texto);
+      current.subclausulasExtras.push(currentSub);
+    }
+    currentSub = null;
+  };
+  const flushClause = () => {
+    if (current) {
+      flushSub();
+      current.corpo = norm(current.corpo);
+      clauses.push(current);
+    }
+    current = null;
+  };
+
+  for (const line of lines) {
+    const cm = line.match(clauseRe);
+    if (cm) {
+      flushClause();
+      current = { numero: cm[1], titulo: oneLine(cm[2]), corpo: "", subclausulasExtras: [] };
+      continue;
+    }
+    if (!current) continue;
+    if (stopRe.test(line)) {
+      flushClause();
+      continue;
+    }
+    const sm = line.match(subRe);
+    if (sm) {
+      flushSub();
+      currentSub = { numero: sm[1], texto: oneLine(sm[2]) };
+    } else if (currentSub) {
+      currentSub.texto = norm(`${currentSub.texto}\n${line}`);
+    } else {
+      current.corpo = norm(`${current.corpo}\n${line}`);
+    }
+  }
+  flushClause();
+
+  if (clauses.length) result.clausulasExtras = clauses;
+}
+
+function parseSignatures(lines: string[], result: ImportedContract): void {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const date = parseDateExtenso(line);
+    if (date) {
+      setIf(result, "dataAssinatura", date.dataAssinatura);
+      setIf(result, "cidadeAssinatura", date.cidadeAssinatura);
+      setIf(result, "dataAssinaturaIso", date.dataAssinaturaIso);
+    }
+
+    const rep = afterColon(line, "Representante Legal");
+    if (rep) {
+      setIf(result, "contratanteRepresentante", rep);
+      setIf(result, "contratanteAssinNome", rep);
+    }
+    const cargo = afterColon(line, /(?:Cargo\s*\/?\s*Fun[çc][ãa]o|Cargo|Fun[çc][ãa]o)\s*:?\s*(.+)$/i);
+    if (cargo) setIf(result, "contratanteCargo", cargo);
+    const cpf = afterColon(line, /CPF\s*:?\s*([\d.-]+)$/i) ?? findCpf(line);
+    if (cpf) setIf(result, "contratanteAssinCpf", cpf);
+  }
+
+  const contratanteIdx = lines.findIndex((l) => /^CONTRATANTE$/i.test(l));
+  if (contratanteIdx >= 0) {
+    const block = lines.slice(contratanteIdx + 1, contratanteIdx + 10);
+    const name = block.find((l) => !/^Raz[ãa]o Social|^CNPJ|^Representante|^Cargo|^RG|^CPF|^_+/i.test(l) && !findCnpj(l));
+    setIf(result, "contratanteAssinNome", name);
+    for (const l of block) {
+      setIf(result, "contratanteNome", afterColon(l, /Raz[ãa]o Social\s*:?\s*(.+)$/i));
+      setIf(result, "contratanteCnpj", findCnpj(l));
+      setIf(result, "contratanteRepresentante", afterColon(l, "Representante Legal"));
+      setIf(result, "contratanteCargo", afterColon(l, /(?:Cargo\s*\/?\s*Fun[çc][ãa]o|Cargo|Fun[çc][ãa]o)\s*:?\s*(.+)$/i));
+      setIf(result, "contratanteAssinRg", afterColon(l, /RG\s*:?\s*(.+)$/i));
+      setIf(result, "contratanteAssinCpf", afterColon(l, /CPF\s*:?\s*(.+)$/i) ?? findCpf(l));
+    }
+  }
+
+  const contratadaIdx = lines.findIndex((l) => /^CONTRATADA$/i.test(l));
+  if (contratadaIdx >= 0) {
+    const block = lines.slice(contratadaIdx + 1, contratadaIdx + 6);
+    setIf(result, "contratadaNome", block.find((l) => !/^CNPJ|^_+/i.test(l) && !findCnpj(l)));
+    for (const l of block) {
+      setIf(result, "contratadaCnpj", findCnpj(l));
+      if (/CNPJ/i.test(l) && /[—-]/.test(l)) setIf(result, "contratadaEndereco", l.split(/[—-]/).slice(1).join("-").trim());
+    }
+  }
+
+  const tIdx = lines.findIndex((l) => /^TESTEMUNHAS?:?$/i.test(l));
+  if (tIdx >= 0) {
+    let bloco = 0;
+    for (let i = tIdx + 1; i < lines.length; i++) {
+      const l = lines[i];
+      if (/^1\)/.test(l)) bloco = 1;
+      else if (/^2\)/.test(l)) bloco = 2;
+      else if (/^CL[ÁA]USULA|^ANEXO/i.test(l)) break;
+      const nome = afterColon(l, "Nome");
+      const rg = afterColon(l, "RG");
+      if (bloco === 1) {
+        setIf(result, "testemunha1Nome", nome);
+        setIf(result, "testemunha1Rg", rg);
+      } else if (bloco === 2) {
+        setIf(result, "testemunha2Nome", nome);
+        setIf(result, "testemunha2Rg", rg);
       }
     }
   }
 }
 
-function parseText(rawText: string, result: ImportedContract): void {
-  const rawLines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-
-  // --- Quadro Resumo via labels ---
-  const findAfter = (labelRe: RegExp, stopRe: RegExp, max = 6): string[] => {
-    const i = rawLines.findIndex((l) => labelRe.test(l));
-    if (i < 0) return [];
-    const out: string[] = [];
-    for (let k = i + 1; k < rawLines.length && out.length < max; k++) {
-      if (stopRe.test(rawLines[k])) break;
-      out.push(rawLines[k]);
-    }
-    return out;
-  };
-
-  const labelStop = /^(QUADRO RESUMO|A\)|B\.?\s*[123]\)|C\)|D\)|E\)|CL[ÁA]USULA|ANEXO|TESTEMUNHAS?:?|CONTRATANTE$|CONTRATADA$|_+$)/i;
-
-  const contratanteBlock = findAfter(/^A\)\s*CONTRATANTE/i, labelStop, 6);
-  if (contratanteBlock.length) {
-    if (!result.contratanteNome) result.contratanteNome = contratanteBlock[0];
-    if (!result.contratanteEndereco && contratanteBlock[1] && !/CNPJ/i.test(contratanteBlock[1])) {
-      result.contratanteEndereco = contratanteBlock[1];
-    }
-    const cnpjLine = contratanteBlock.find((l) => /CNPJ/i.test(l));
-    if (cnpjLine) {
-      const cm = cnpjLine.match(/CNPJ\s*:?\s*([\d./-]+)/i);
-      if (cm && !result.contratanteCnpj) result.contratanteCnpj = cm[1];
-      const im = cnpjLine.match(/I\.?\s*E\.?\s*:?\s*(\S.*?)\s*$/i);
-      if (im && !result.contratanteIE) result.contratanteIE = im[1];
+function detectContratada(lines: string[], result: ImportedContract): void {
+  const full = keyOf(lines.join(" "));
+  for (const c of CONTRATADA_HINTS) {
+    if (full.includes(keyOf(c.cnpj)) || full.includes(keyOf(c.nome).slice(0, 24))) {
+      setIf(result, "contratadaNome", c.nome);
+      setIf(result, "contratadaCnpj", c.cnpj);
+      setIf(result, "contratadaEndereco", c.endereco);
+      return;
     }
   }
+}
 
-  const grab1 = (labelRe: RegExp): string | undefined => {
-    const block = findAfter(labelRe, labelStop, 4);
-    return block.length ? block.join("\n") : undefined;
-  };
-
-  result.descricaoServicos ||= grab1(/^B\.?\s*1\)/i);
-  result.localPrestacao ||= grab1(/^B\.?\s*2\)/i);
-  result.documentosAplicaveis ||= grab1(/^B\.?\s*3\)/i);
-  result.vigencia ||= grab1(/^C\)\s*VIG/i);
-  const dBlock = findAfter(/^D\)\s*PRE/i, labelStop, 4);
-  if (dBlock.length) {
-    const rsLine = dBlock.find((l) => /R\$/.test(l));
-    if (rsLine) {
-      const m = rsLine.match(/R\$\s*([\d.,]+)/);
-      if (m && !result.precoTotal) result.precoTotal = m[1];
-    }
-    const extLine = dBlock.find((l) => /^\(.+\)$/.test(l));
-    if (extLine && !result.precoExtenso) result.precoExtenso = extLine.replace(/^\(|\)$/g, "").trim();
-  }
-  result.formaPagamento ||= grab1(/^E\)\s*FORMA/i);
-
-  // --- Cláusulas ---
-  const clauseRe = /^CL[ÁA]USULA\s+(\d+)\s*[—\-–]\s*(.+)$/i;
-  const subRe = /^(\d+\.\d+)\)\s*(.*)$/;
-  const clausulas: ImportedClause[] = [];
-  let current: ImportedClause | null = null;
-  for (const line of rawLines) {
-    const cm = line.match(clauseRe);
-    if (cm) {
-      if (current) clausulas.push(current);
-      current = { numero: cm[1], titulo: cm[2].trim(), corpo: "", subclausulasExtras: [] };
-      continue;
-    }
-    if (!current) continue;
-    const sm = line.match(subRe);
-    if (sm) {
-      current.subclausulasExtras.push({ numero: sm[1], texto: sm[2].trim() });
-    } else if (/^(CONTRATANTE|CONTRATADA|TESTEMUNHAS?|ANEXO|RENTAL LIFT|_+)/i.test(line)) {
-      clausulas.push(current);
-      current = null;
-    } else {
-      current.corpo = current.corpo ? `${current.corpo}\n${line}` : line;
-    }
-  }
-  if (current) clausulas.push(current);
-  if (clausulas.length && !result.clausulasExtras) result.clausulasExtras = clausulas;
-
-  // --- Assinaturas ---
-  const dateRe = /^([A-Za-zÀ-ÿ\s.]+,\s*\d{1,2}\s+de\s+[a-zç]+\s+de\s+\d{4})$/i;
-  for (const l of rawLines) {
-    const dm = l.match(dateRe);
-    if (dm && !result.dataAssinatura) { result.dataAssinatura = dm[1]; break; }
-  }
-  for (const line of rawLines) {
-    const rep = afterColon(line, "Representante Legal");
-    if (rep && !result.contratanteRepresentante) result.contratanteRepresentante = rep;
-    const cargo = afterColon(line, "Cargo\\s*/?\\s*Fun[çc][ãa]o");
-    if (cargo && !result.contratanteCargo) result.contratanteCargo = cargo;
-  }
-  const tIdx = rawLines.findIndex((l) => /^TESTEMUNHAS?:?$/i.test(l));
-  if (tIdx >= 0) {
-    let bloco = 0;
-    for (let i = tIdx + 1; i < rawLines.length; i++) {
-      const l = rawLines[i];
-      if (/^1\)/.test(l)) bloco = 1;
-      else if (/^2\)/.test(l)) bloco = 2;
-      const nome = afterColon(l, "Nome");
-      const rg = afterColon(l, "RG");
-      if (bloco === 1) {
-        if (nome && !result.testemunha1Nome) result.testemunha1Nome = nome;
-        if (rg && !result.testemunha1Rg) result.testemunha1Rg = rg;
-      } else if (bloco === 2) {
-        if (nome && !result.testemunha2Nome) result.testemunha2Nome = nome;
-        if (rg && !result.testemunha2Rg) result.testemunha2Rg = rg;
-      }
-    }
-  }
-
-  // --- Equipamentos (fallback): busca linhas após "ANEXO I" com "R$" ---
-  if (!result.equipamentos) {
-    const aIdx = rawLines.findIndex((l) => /^ANEXO\s+I/i.test(l));
-    if (aIdx >= 0) {
-      const equipamentos: Equipamento[] = [];
-      let pending: string | null = null;
-      for (let i = aIdx + 1; i < rawLines.length; i++) {
-        const l = rawLines[i];
-        if (/^(DESCRI[ÇC][ÃA]O|VALOR)/i.test(l)) continue;
-        if (/R\$/.test(l) && !/^R\$/.test(l) === false) {
-          // linha só com valor
-          if (pending) {
-            equipamentos.push({ descricao: pending, valorUnitario: l });
-            pending = null;
-          }
-        } else if (/R\$/.test(l)) {
-          // "descrição ... R$ 100,00 (extenso)"
-          const m = l.match(/^(.*?)(R\$.*)$/);
-          if (m) equipamentos.push({ descricao: m[1].trim(), valorUnitario: m[2].trim() });
-        } else {
-          pending = l;
-        }
-      }
-      if (equipamentos.length) result.equipamentos = equipamentos;
-    }
+function finalizeCrossFields(result: ImportedContract): void {
+  if (!result.contratanteAssinNome && result.contratanteRepresentante) result.contratanteAssinNome = result.contratanteRepresentante;
+  if (!result.contratanteRepresentante && result.contratanteAssinNome) result.contratanteRepresentante = result.contratanteAssinNome;
+  if (!result.precoTotal && result.equipamentos?.length === 1) {
+    const price = result.equipamentos[0].valorUnitario.match(/R\$\s*([\d.]+,\d{2}|[\d.,]+)/)?.[1];
+    if (price) result.precoTotal = price;
   }
 }
 
@@ -251,20 +557,43 @@ export async function importContractFromDocx(file: File): Promise<{
 }> {
   const buf = await file.arrayBuffer();
   const result: ImportedContract = {};
+  const allLines: string[] = [];
+  const allTables: GridRow[][] = [];
+
+  try {
+    const structure = await extractDocxStructure(buf);
+    allLines.push(...structure.lines);
+    allTables.push(...structure.tables);
+    parseTables(structure.tables, result);
+    parseLabelValueLines(structure.lines, result);
+  } catch (e) {
+    console.warn("docx XML parse failed:", e);
+  }
 
   try {
     const { value: html } = await mammoth.convertToHtml({ arrayBuffer: buf });
-    parseHtml(html, result);
+    const parsed = parseHtml(html, result);
+    allLines.push(...parsed.lines);
+    allTables.push(...parsed.tables);
   } catch (e) {
     console.warn("mammoth HTML parse failed:", e);
   }
 
   try {
     const { value: rawText } = await mammoth.extractRawText({ arrayBuffer: buf });
-    parseText(rawText, result);
+    allLines.push(...splitTextLines(rawText));
   } catch (e) {
     console.warn("mammoth rawText parse failed:", e);
   }
+
+  const lines = uniqueLines(allLines.filter(Boolean));
+  parseTables(allTables, result);
+  parseLabelValueLines(lines, result);
+  parseEquipmentFromLines(lines, result);
+  parseClauses(lines, result);
+  parseSignatures(lines, result);
+  detectContratada(lines, result);
+  finalizeCrossFields(result);
 
   const filledCount = Object.values(result).filter((v) => {
     if (v == null) return false;
@@ -272,7 +601,7 @@ export async function importContractFromDocx(file: File): Promise<{
     return String(v).trim().length > 0;
   }).length;
 
-  console.log("[importContract] parsed", { filledCount, keys: Object.keys(result) });
+  console.log("[importContract] parsed", { filledCount, keys: Object.keys(result), lines: lines.length });
 
   return { data: result, filledCount };
 }

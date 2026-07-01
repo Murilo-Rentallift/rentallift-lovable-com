@@ -14,6 +14,7 @@ type Clause = {
 type Equipamento = { descricao: string; valorUnitario: string };
 
 export type ContratoDocInput = {
+  numeroContrato?: string;
   contratanteNome: string;
   contratanteEndereco: string;
   contratanteCnpj: string;
@@ -83,6 +84,12 @@ export const generateContractDoc = createServerFn({ method: "POST" })
           cell(["QUADRO RESUMO"], labelW + valueW, { bold: true, shade: "D9D9D9" }),
         ],
       }),
+      ...(data.numeroContrato ? [new TableRow({
+        children: [
+          cell(["Nº CONTRATO"], labelW, { bold: true }),
+          cell([data.numeroContrato], valueW),
+        ],
+      })] : []),
       new TableRow({
         children: [
           cell(["A) CONTRATANTE"], labelW, { bold: true }),
