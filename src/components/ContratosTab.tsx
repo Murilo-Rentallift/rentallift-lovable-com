@@ -70,6 +70,32 @@ type ContratoData = {
   dataAssinatura: string; // ex: "Santo André, 24 de junho de 2026" (composto)
   cidadeAssinatura?: string;
   dataAssinaturaIso?: string; // YYYY-MM-DD
+  // Contratada selecionada
+  contratadaKey?: "rental" | "rle" | "empisa";
+  contratadaNome?: string;
+  contratadaCnpj?: string;
+  contratadaEndereco?: string;
+};
+
+const CONTRATADAS: Record<"rental" | "rle" | "empisa", { label: string; nome: string; cnpj: string; endereco: string }> = {
+  rental: {
+    label: "Rental Lift",
+    nome: "RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA",
+    cnpj: "04.705.697/0001-57",
+    endereco: "AV. DOM BOSCO, 835, SANTO ANDRÉ, SÃO PAULO",
+  },
+  rle: {
+    label: "RLE",
+    nome: "RLE LOCACAO E TRANSPORTE DE EQUIPAMENTOS LTDA",
+    cnpj: "14.989.985/0001-34",
+    endereco: "AV DOM BOSCO, 1050, VILA LUCINDA, SANTO ANDRÉ, SÃO PAULO",
+  },
+  empisa: {
+    label: "Empisa",
+    nome: "EMPISA EMPILHADEIRAS SANTO ANDRE LOCACAO E MOVIMENTACAO DE CARGAS LTDA",
+    cnpj: "09.449.084/0001-10",
+    endereco: "AV DOM BOSCO, 84, VILA LUCINDA, SANTO ANDRÉ, SÃO PAULO",
+  },
 };
 
 
