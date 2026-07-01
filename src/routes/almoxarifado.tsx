@@ -76,7 +76,7 @@ function AlmoxarifadoPage() {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"pecas" | "requisicoes">("pecas");
   type ReqItem = { id: string; part_name: string; quantity: number; code: string; status: PartStatus };
-  type ReqGroup = { group_id: string; requester_name: string; created_at: string; items: ReqItem[] };
+  type ReqGroup = { group_id: string; requester_name: string; created_at: string; items: ReqItem[]; original_group_id?: string | null; edited_at?: string | null };
 
   const [requests, setRequests] = useState<ReqGroup[]>([]);
   const [reqsLoading, setReqsLoading] = useState(false);
@@ -84,6 +84,14 @@ function AlmoxarifadoPage() {
   const fetchReqs = useServerFn(almoxListRequests);
   const updateItemStatus = useServerFn(almoxUpdateRequestItemStatus);
   const deleteGroup = useServerFn(almoxDeleteGroup);
+  const editReq = useServerFn(almoxEditRequest);
+  const getOriginal = useServerFn(almoxGetOriginalRequest);
+
+  type EditDraft = { partName: string; quantity: number; code: string };
+  const [editing, setEditing] = useState<{ groupId: string; requesterName: string; items: EditDraft[] } | null>(null);
+  const [viewingOriginal, setViewingOriginal] = useState<{
+    requester_name: string; created_at: string; items: ReqItem[];
+  } | null>(null);
 
   async function loadRequests(currentPin: string) {
     setReqsLoading(true);
