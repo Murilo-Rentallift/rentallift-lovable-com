@@ -912,6 +912,117 @@ function AlmoxarifadoPage() {
           </>
         )}
       </main>
+
+      {/* Modal editar requisição */}
+      <Dialog open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar requisição</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">Solicitante</Label>
+                <Input
+                  value={editing.requesterName}
+                  onChange={(e) => setEditing({ ...editing, requesterName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Peças</Label>
+                {editing.items.map((it, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                    <Input
+                      className="col-span-6"
+                      placeholder="Nome da peça"
+                      value={it.partName}
+                      onChange={(e) => {
+                        const items = editing.items.slice();
+                        items[i] = { ...it, partName: e.target.value };
+                        setEditing({ ...editing, items });
+                      }}
+                    />
+                    <Input
+                      className="col-span-2"
+                      type="number"
+                      min={1}
+                      value={it.quantity}
+                      onChange={(e) => {
+                        const items = editing.items.slice();
+                        items[i] = { ...it, quantity: Number(e.target.value) };
+                        setEditing({ ...editing, items });
+                      }}
+                    />
+                    <Input
+                      className="col-span-3"
+                      placeholder="Código"
+                      value={it.code}
+                      onChange={(e) => {
+                        const items = editing.items.slice();
+                        items[i] = { ...it, code: e.target.value };
+                        setEditing({ ...editing, items });
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="col-span-1 text-red-400 hover:text-red-500"
+                      onClick={() => {
+                        const items = editing.items.filter((_, idx) => idx !== i);
+                        setEditing({ ...editing, items });
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mx-auto" />
+                    </button>
+                  </div>
+                ))}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  onClick={() => setEditing({ ...editing, items: [...editing.items, { partName: "", quantity: 1, code: "" }] })}
+                >
+                  <Plus className="h-4 w-4" /> Adicionar peça
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A versão original será preservada e ficará disponível para consulta.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancelar</Button>
+            <Button onClick={saveEdit}>Salvar edição</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal ver original */}
+      <Dialog open={!!viewingOriginal} onOpenChange={(o) => { if (!o) setViewingOriginal(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Versão original da requisição</DialogTitle></DialogHeader>
+          {viewingOriginal && (
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-muted-foreground">Solicitante:</span> {viewingOriginal.requester_name}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {new Date(viewingOriginal.created_at).toLocaleString("pt-BR")}
+              </div>
+              <ul className="mt-2 divide-y divide-border border rounded">
+                {viewingOriginal.items.map((it) => (
+                  <li key={it.id} className="px-3 py-2 flex justify-between gap-2">
+                    <span>{it.part_name}</span>
+                    <span className="text-muted-foreground">
+                      × {it.quantity}{it.code ? ` · cód. ${it.code}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewingOriginal(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
