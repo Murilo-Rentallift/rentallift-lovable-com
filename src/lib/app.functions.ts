@@ -207,7 +207,8 @@ export const almoxListRequests = createServerFn({ method: "POST" })
     await verifyAlmox(data.pin);
     const { data: rows, error } = await supabaseAdmin
       .from("part_requests" as any)
-      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at")
+      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at, original_group_id, edited_at, superseded")
+      .eq("superseded", false)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
@@ -222,6 +223,8 @@ export const almoxListRequests = createServerFn({ method: "POST" })
       group_id: groupId,
       requester_name: items[0].requester_name,
       created_at: items[0].created_at,
+      original_group_id: items[0].original_group_id ?? null,
+      edited_at: items[0].edited_at ?? null,
       items: items.map((i: any) => ({
         id: i.id,
         part_name: i.part_name,
@@ -233,6 +236,76 @@ export const almoxListRequests = createServerFn({ method: "POST" })
 
     return { requests };
   });
+
+// ---------- Almoxarifado: edit a request group (keeps original as history) ----------
+export const almoxEditRequest = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; groupId: string; requesterName: string; items: Array<{ partName: string; quantity: number; code: string }> }) =>
+    z.object({
+      pin: pinSchema,
+      groupId: z.string().uuid(),
+      requesterName: z.string().trim().min(1).max(100),
+      items: z.array(partItemSchema).min(1).max(50),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: origRows, error: origErr } = await supabaseAdmin
+      .from("part_requests" as any)
+      .select("id, group_id, original_group_id, created_at")
+      .eq("group_id", data.groupId);
+    if (origErr) throw new Error(origErr.message);
+    if (!origRows || origRows.length === 0) throw new Error("Requisição não encontrada");
+
+    const rootGroupId: string = (origRows[0] as any).original_group_id ?? data.groupId;
+    const originalCreatedAt: string = (origRows[0] as any).created_at;
+
+    const { error: supErr } = await supabaseAdmin
+      .from("part_requests" as any)
+      .update({ superseded: true })
+      .eq("group_id", data.groupId);
+    if (supErr) throw new Error(supErr.message);
+
+    const newGroupId = crypto.randomUUID();
+    const nowIso = new Date().toISOString();
+    const inserts = data.items.map((item) => ({
+      group_id: newGroupId,
+      requester_name: data.requesterName,
+      part_name: item.partName,
+      quantity: item.quantity,
+      code: item.code,
+      original_group_id: rootGroupId,
+      edited_at: nowIso,
+      created_at: originalCreatedAt,
+    }));
+    const { error } = await supabaseAdmin.from("part_requests" as any).insert(inserts);
+    if (error) throw new Error(error.message);
+    return { ok: true, newGroupId };
+  });
+
+// ---------- Almoxarifado: fetch original (pre-edit) version of a request ----------
+export const almoxGetOriginalRequest = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; originalGroupId: string }) =>
+    z.object({ pin: pinSchema, originalGroupId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: rows, error } = await supabaseAdmin
+      .from("part_requests" as any)
+      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at")
+      .eq("group_id", data.originalGroupId);
+    if (error) throw new Error(error.message);
+    if (!rows || rows.length === 0) throw new Error("Versão original não encontrada");
+    const items = (rows as any[]).map((i) => ({
+      id: i.id, part_name: i.part_name, quantity: i.quantity, code: i.code, status: i.status,
+    }));
+    return {
+      group_id: data.originalGroupId,
+      requester_name: (rows[0] as any).requester_name,
+      created_at: (rows[0] as any).created_at,
+      items,
+    };
+  });
+
 
 export const almoxUpdateGroupStatus = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; groupId: string; status: string }) =>
