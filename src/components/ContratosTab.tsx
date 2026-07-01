@@ -217,6 +217,10 @@ const blank = (): ContratoData => ({
   dataAssinatura: "",
   cidadeAssinatura: "Santo André",
   dataAssinaturaIso: "",
+  contratadaKey: "rental",
+  contratadaNome: CONTRATADAS.rental.nome,
+  contratadaCnpj: CONTRATADAS.rental.cnpj,
+  contratadaEndereco: CONTRATADAS.rental.endereco,
 });
 
 
