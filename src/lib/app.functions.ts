@@ -312,7 +312,7 @@ export const almoxUpdateGroupStatus = createServerFn({ method: "POST" })
     z.object({
       pin: pinSchema,
       groupId: z.string().uuid(),
-      status: z.enum(["pendente", "separado", "em_falta", "entregue"]),
+      status: z.enum(["pendente", "separado", "em_falta", "entregue", "tecnico_possui"]),
     }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -329,7 +329,7 @@ export const almoxUpdateRequestItemStatus = createServerFn({ method: "POST" })
     z.object({
       pin: pinSchema,
       itemId: z.string().uuid(),
-      status: z.enum(["pendente", "separado", "em_falta", "entregue"]),
+      status: z.enum(["pendente", "separado", "em_falta", "entregue", "tecnico_possui"]),
     }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -515,7 +515,7 @@ export const almoxUpdatePartStatus = createServerFn({ method: "POST" })
     z.object({
       pin: pinSchema,
       partId: z.string().uuid(),
-      status: z.enum(["pendente", "separado", "em_falta", "entregue"]),
+      status: z.enum(["pendente", "separado", "em_falta", "entregue", "tecnico_possui"]),
     }).parse(d),
   )
   .handler(async ({ data }) => {
