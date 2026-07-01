@@ -540,6 +540,23 @@ export function ContratosTab() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
       <div className="space-y-6">
+        {/* Importar contrato — sempre no topo */}
+        <div className="flex justify-end">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleImportDocx(f);
+            }}
+          />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={loading}>
+            <Upload className="h-4 w-4" /> Importar Contrato (.docx)
+          </Button>
+        </div>
+
         {/* Quadro de Resumo */}
         <Card>
           <CardHeader><CardTitle>Quadro de Resumo</CardTitle></CardHeader>
