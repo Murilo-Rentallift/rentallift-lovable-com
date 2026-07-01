@@ -566,19 +566,38 @@ export function ContratosTab() {
                 </div>
               </div>
               {/* CONTRATADA */}
-              <div className="border-2 rounded-md p-4 space-y-2 bg-muted/30">
+              <div className="border-2 rounded-md p-4 space-y-3 bg-muted/30">
                 <p className="font-bold text-sm text-primary border-b pb-2">CONTRATADA</p>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(CONTRATADAS) as Array<keyof typeof CONTRATADAS>).map((k) => (
+                    <Button
+                      key={k}
+                      size="sm"
+                      type="button"
+                      variant={form.contratadaKey === k ? "default" : "outline"}
+                      onClick={() => setForm({
+                        ...form,
+                        contratadaKey: k,
+                        contratadaNome: CONTRATADAS[k].nome,
+                        contratadaCnpj: CONTRATADAS[k].cnpj,
+                        contratadaEndereco: CONTRATADAS[k].endereco,
+                      })}
+                    >
+                      {CONTRATADAS[k].label}
+                    </Button>
+                  ))}
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Razão Social</Label>
-                  <p className="text-sm font-medium">RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA</p>
+                  <p className="text-sm font-medium">{form.contratadaNome}</p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">CNPJ</Label>
-                  <p className="text-sm">04.705.697/0001-57</p>
+                  <p className="text-sm">{form.contratadaCnpj}</p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Endereço</Label>
-                  <p className="text-sm">AV. DOM BOSCO, 835 — SANTO ANDRÉ — SP</p>
+                  <p className="text-sm">{form.contratadaEndereco}</p>
                 </div>
               </div>
             </div>
