@@ -701,21 +701,49 @@ function AlmoxarifadoPage() {
                       <li key={r.group_id} className="px-4 py-4 space-y-2">
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="font-medium text-sm">
-                              Solicitante: <span className="text-foreground">{r.requester_name}</span>
+                            <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
+                              <span>Solicitante: <span className="text-foreground">{r.requester_name}</span></span>
+                              {r.original_group_id && (
+                                <span className="rounded border border-amber-500/40 bg-amber-500/15 text-amber-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                                  Editada
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {new Date(r.created_at).toLocaleString("pt-BR")} · {r.items.length} {r.items.length === 1 ? "peça" : "peças"}
+                              {r.edited_at && (
+                                <> · editada em {new Date(r.edited_at).toLocaleString("pt-BR")}</>
+                              )}
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeGroup(r.group_id)}
-                            className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                            title="Remover requisição"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {r.original_group_id && (
+                              <button
+                                type="button"
+                                onClick={() => viewOriginal(r.original_group_id!)}
+                                className="rounded border border-border bg-muted/40 p-1.5 text-muted-foreground hover:bg-muted transition"
+                                title="Ver versão original"
+                              >
+                                <History className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => startEdit(r)}
+                              className="rounded border border-blue-500/40 bg-blue-500/10 p-1.5 text-blue-400 hover:bg-blue-500/20 transition"
+                              title="Editar requisição"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeGroup(r.group_id)}
+                              className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                              title="Remover requisição"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                         <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
                           {r.items.map((item) => {
