@@ -1,0 +1,2 @@
+ALTER TABLE public.parts DROP CONSTRAINT IF EXISTS parts_status_check;
+ALTER TABLE public.parts ADD CONSTRAINT parts_status_check CHECK (status = ANY (ARRAY['pendente'::text, 'separado'::text, 'em_falta'::text, 'entregue'::text, 'tecnico_possui'::text]));
