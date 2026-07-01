@@ -375,6 +375,7 @@ export const almoxWeeklyMissingRequests = createServerFn({ method: "POST" })
       .from("part_requests" as any)
       .select("id, group_id, requester_name, part_name, quantity, code, status, created_at")
       .eq("status", "em_falta")
+      .eq("superseded", false)
       .gte("created_at", `${data.startDate}T00:00:00Z`)
       .lte("created_at", `${data.endDate}T23:59:59Z`)
       .order("created_at", { ascending: true });
