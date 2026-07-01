@@ -70,6 +70,32 @@ type ContratoData = {
   dataAssinatura: string; // ex: "Santo André, 24 de junho de 2026" (composto)
   cidadeAssinatura?: string;
   dataAssinaturaIso?: string; // YYYY-MM-DD
+  // Contratada selecionada
+  contratadaKey?: "rental" | "rle" | "empisa";
+  contratadaNome?: string;
+  contratadaCnpj?: string;
+  contratadaEndereco?: string;
+};
+
+const CONTRATADAS: Record<"rental" | "rle" | "empisa", { label: string; nome: string; cnpj: string; endereco: string }> = {
+  rental: {
+    label: "Rental Lift",
+    nome: "RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA",
+    cnpj: "04.705.697/0001-57",
+    endereco: "AV. DOM BOSCO, 835, SANTO ANDRÉ, SÃO PAULO",
+  },
+  rle: {
+    label: "RLE",
+    nome: "RLE LOCACAO E TRANSPORTE DE EQUIPAMENTOS LTDA",
+    cnpj: "14.989.985/0001-34",
+    endereco: "AV DOM BOSCO, 1050, VILA LUCINDA, SANTO ANDRÉ, SÃO PAULO",
+  },
+  empisa: {
+    label: "Empisa",
+    nome: "EMPISA EMPILHADEIRAS SANTO ANDRE LOCACAO E MOVIMENTACAO DE CARGAS LTDA",
+    cnpj: "09.449.084/0001-10",
+    endereco: "AV DOM BOSCO, 84, VILA LUCINDA, SANTO ANDRÉ, SÃO PAULO",
+  },
 };
 
 
@@ -191,6 +217,10 @@ const blank = (): ContratoData => ({
   dataAssinatura: "",
   cidadeAssinatura: "Santo André",
   dataAssinaturaIso: "",
+  contratadaKey: "rental",
+  contratadaNome: CONTRATADAS.rental.nome,
+  contratadaCnpj: CONTRATADAS.rental.cnpj,
+  contratadaEndereco: CONTRATADAS.rental.endereco,
 });
 
 
@@ -510,6 +540,23 @@ export function ContratosTab() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
       <div className="space-y-6">
+        {/* Importar contrato — sempre no topo */}
+        <div className="flex justify-end">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleImportDocx(f);
+            }}
+          />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={loading}>
+            <Upload className="h-4 w-4" /> Importar Contrato (.docx)
+          </Button>
+        </div>
+
         {/* Quadro de Resumo */}
         <Card>
           <CardHeader><CardTitle>Quadro de Resumo</CardTitle></CardHeader>
@@ -536,19 +583,38 @@ export function ContratosTab() {
                 </div>
               </div>
               {/* CONTRATADA */}
-              <div className="border-2 rounded-md p-4 space-y-2 bg-muted/30">
+              <div className="border-2 rounded-md p-4 space-y-3 bg-muted/30">
                 <p className="font-bold text-sm text-primary border-b pb-2">CONTRATADA</p>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(CONTRATADAS) as Array<keyof typeof CONTRATADAS>).map((k) => (
+                    <Button
+                      key={k}
+                      size="sm"
+                      type="button"
+                      variant={form.contratadaKey === k ? "default" : "outline"}
+                      onClick={() => setForm({
+                        ...form,
+                        contratadaKey: k,
+                        contratadaNome: CONTRATADAS[k].nome,
+                        contratadaCnpj: CONTRATADAS[k].cnpj,
+                        contratadaEndereco: CONTRATADAS[k].endereco,
+                      })}
+                    >
+                      {CONTRATADAS[k].label}
+                    </Button>
+                  ))}
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Razão Social</Label>
-                  <p className="text-sm font-medium">RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA</p>
+                  <p className="text-sm font-medium">{form.contratadaNome}</p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">CNPJ</Label>
-                  <p className="text-sm">04.705.697/0001-57</p>
+                  <p className="text-sm">{form.contratadaCnpj}</p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Endereço</Label>
-                  <p className="text-sm">AV. DOM BOSCO, 835 — SANTO ANDRÉ — SP</p>
+                  <p className="text-sm">{form.contratadaEndereco}</p>
                 </div>
               </div>
             </div>
@@ -788,8 +854,8 @@ export function ContratosTab() {
 
             <div className="border rounded p-3 space-y-1 bg-muted/30">
               <p className="font-semibold text-sm">CONTRATADA</p>
-              <p className="text-sm">RENTAL LIFT LOCAÇÃO, MANUTENÇÃO E MOVIMENTAÇÃO DE CARGAS LTDA</p>
-              <p className="text-xs text-muted-foreground">CNPJ 04.705.697/0001-57 — AV. DOM BOSCO 835, SANTO ANDRÉ-SP</p>
+              <p className="text-sm">{form.contratadaNome}</p>
+              <p className="text-xs text-muted-foreground">CNPJ {form.contratadaCnpj} — {form.contratadaEndereco}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -808,19 +874,6 @@ export function ContratosTab() {
         </Card>
 
         <div className="flex flex-wrap gap-2 justify-end">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleImportDocx(f);
-            }}
-          />
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={loading}>
-            <Upload className="h-4 w-4" /> Importar Contrato (.docx)
-          </Button>
           <Button variant="outline" onClick={novo}><RotateCcw className="h-4 w-4" /> Novo</Button>
           <Button onClick={handleSave} disabled={loading}>
             <Save className="h-4 w-4" /> {id ? "Atualizar Contrato" : "Salvar Contrato"}

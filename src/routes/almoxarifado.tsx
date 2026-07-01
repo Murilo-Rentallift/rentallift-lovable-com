@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates, almoxEditRequest, almoxGetOriginalRequest } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileDown, Package, Lock, Trash2, ListChecks, Wrench } from "lucide-react";
+import { ArrowLeft, FileDown, Package, Lock, Trash2, ListChecks, Wrench, Pencil, History, Plus } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -75,7 +76,7 @@ function AlmoxarifadoPage() {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"pecas" | "requisicoes">("pecas");
   type ReqItem = { id: string; part_name: string; quantity: number; code: string; status: PartStatus };
-  type ReqGroup = { group_id: string; requester_name: string; created_at: string; items: ReqItem[] };
+  type ReqGroup = { group_id: string; requester_name: string; created_at: string; items: ReqItem[]; original_group_id?: string | null; edited_at?: string | null };
 
   const [requests, setRequests] = useState<ReqGroup[]>([]);
   const [reqsLoading, setReqsLoading] = useState(false);
@@ -83,6 +84,14 @@ function AlmoxarifadoPage() {
   const fetchReqs = useServerFn(almoxListRequests);
   const updateItemStatus = useServerFn(almoxUpdateRequestItemStatus);
   const deleteGroup = useServerFn(almoxDeleteGroup);
+  const editReq = useServerFn(almoxEditRequest);
+  const getOriginal = useServerFn(almoxGetOriginalRequest);
+
+  type EditDraft = { partName: string; quantity: number; code: string };
+  const [editing, setEditing] = useState<{ groupId: string; requesterName: string; items: EditDraft[] } | null>(null);
+  const [viewingOriginal, setViewingOriginal] = useState<{
+    requester_name: string; created_at: string; items: ReqItem[];
+  } | null>(null);
 
   async function loadRequests(currentPin: string) {
     setReqsLoading(true);
@@ -122,6 +131,42 @@ function AlmoxarifadoPage() {
     } catch (e: any) {
       toast.error(e.message || "Falha ao remover");
       setRequests(snap);
+    }
+  }
+
+  function startEdit(r: ReqGroup) {
+    setEditing({
+      groupId: r.group_id,
+      requesterName: r.requester_name,
+      items: r.items.map((i) => ({ partName: i.part_name, quantity: i.quantity, code: i.code })),
+    });
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    const items = editing.items
+      .map((i) => ({ partName: i.partName.trim(), quantity: Math.max(1, Math.floor(Number(i.quantity) || 0)), code: (i.code ?? "").trim() }))
+      .filter((i) => i.partName);
+    if (items.length === 0) {
+      toast.error("Adicione ao menos uma peça válida");
+      return;
+    }
+    try {
+      await editReq({ data: { pin, groupId: editing.groupId, requesterName: editing.requesterName.trim() || "—", items } });
+      setEditing(null);
+      toast.success("Requisição editada");
+      loadRequests(pin);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao editar");
+    }
+  }
+
+  async function viewOriginal(originalGroupId: string) {
+    try {
+      const r = await getOriginal({ data: { pin, originalGroupId } });
+      setViewingOriginal({ requester_name: r.requester_name, created_at: r.created_at, items: r.items as ReqItem[] });
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao buscar original");
     }
   }
 
@@ -656,21 +701,49 @@ function AlmoxarifadoPage() {
                       <li key={r.group_id} className="px-4 py-4 space-y-2">
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="font-medium text-sm">
-                              Solicitante: <span className="text-foreground">{r.requester_name}</span>
+                            <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
+                              <span>Solicitante: <span className="text-foreground">{r.requester_name}</span></span>
+                              {r.original_group_id && (
+                                <span className="rounded border border-amber-500/40 bg-amber-500/15 text-amber-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                                  Editada
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {new Date(r.created_at).toLocaleString("pt-BR")} · {r.items.length} {r.items.length === 1 ? "peça" : "peças"}
+                              {r.edited_at && (
+                                <> · editada em {new Date(r.edited_at).toLocaleString("pt-BR")}</>
+                              )}
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeGroup(r.group_id)}
-                            className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                            title="Remover requisição"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {r.original_group_id && (
+                              <button
+                                type="button"
+                                onClick={() => viewOriginal(r.original_group_id!)}
+                                className="rounded border border-border bg-muted/40 p-1.5 text-muted-foreground hover:bg-muted transition"
+                                title="Ver versão original"
+                              >
+                                <History className="h-4 w-4" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => startEdit(r)}
+                              className="rounded border border-blue-500/40 bg-blue-500/10 p-1.5 text-blue-400 hover:bg-blue-500/20 transition"
+                              title="Editar requisição"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeGroup(r.group_id)}
+                              className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                              title="Remover requisição"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                         <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
                           {r.items.map((item) => {
@@ -839,6 +912,117 @@ function AlmoxarifadoPage() {
           </>
         )}
       </main>
+
+      {/* Modal editar requisição */}
+      <Dialog open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar requisição</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">Solicitante</Label>
+                <Input
+                  value={editing.requesterName}
+                  onChange={(e) => setEditing({ ...editing, requesterName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Peças</Label>
+                {editing.items.map((it, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                    <Input
+                      className="col-span-6"
+                      placeholder="Nome da peça"
+                      value={it.partName}
+                      onChange={(e) => {
+                        const items = editing.items.slice();
+                        items[i] = { ...it, partName: e.target.value };
+                        setEditing({ ...editing, items });
+                      }}
+                    />
+                    <Input
+                      className="col-span-2"
+                      type="number"
+                      min={1}
+                      value={it.quantity}
+                      onChange={(e) => {
+                        const items = editing.items.slice();
+                        items[i] = { ...it, quantity: Number(e.target.value) };
+                        setEditing({ ...editing, items });
+                      }}
+                    />
+                    <Input
+                      className="col-span-3"
+                      placeholder="Código"
+                      value={it.code}
+                      onChange={(e) => {
+                        const items = editing.items.slice();
+                        items[i] = { ...it, code: e.target.value };
+                        setEditing({ ...editing, items });
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="col-span-1 text-red-400 hover:text-red-500"
+                      onClick={() => {
+                        const items = editing.items.filter((_, idx) => idx !== i);
+                        setEditing({ ...editing, items });
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mx-auto" />
+                    </button>
+                  </div>
+                ))}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  onClick={() => setEditing({ ...editing, items: [...editing.items, { partName: "", quantity: 1, code: "" }] })}
+                >
+                  <Plus className="h-4 w-4" /> Adicionar peça
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A versão original será preservada e ficará disponível para consulta.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancelar</Button>
+            <Button onClick={saveEdit}>Salvar edição</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal ver original */}
+      <Dialog open={!!viewingOriginal} onOpenChange={(o) => { if (!o) setViewingOriginal(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Versão original da requisição</DialogTitle></DialogHeader>
+          {viewingOriginal && (
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-muted-foreground">Solicitante:</span> {viewingOriginal.requester_name}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {new Date(viewingOriginal.created_at).toLocaleString("pt-BR")}
+              </div>
+              <ul className="mt-2 divide-y divide-border border rounded">
+                {viewingOriginal.items.map((it) => (
+                  <li key={it.id} className="px-3 py-2 flex justify-between gap-2">
+                    <span>{it.part_name}</span>
+                    <span className="text-muted-foreground">
+                      × {it.quantity}{it.code ? ` · cód. ${it.code}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewingOriginal(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

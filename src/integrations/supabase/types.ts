@@ -144,34 +144,43 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          edited_at: string | null
           group_id: string
           id: string
+          original_group_id: string | null
           part_name: string
           quantity: number
           requester_name: string
           status: string
+          superseded: boolean
           updated_at: string
         }
         Insert: {
           code?: string
           created_at?: string
+          edited_at?: string | null
           group_id?: string
           id?: string
+          original_group_id?: string | null
           part_name: string
           quantity?: number
           requester_name: string
           status?: string
+          superseded?: boolean
           updated_at?: string
         }
         Update: {
           code?: string
           created_at?: string
+          edited_at?: string | null
           group_id?: string
           id?: string
+          original_group_id?: string | null
           part_name?: string
           quantity?: number
           requester_name?: string
           status?: string
+          superseded?: boolean
           updated_at?: string
         }
         Relationships: []
