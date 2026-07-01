@@ -162,10 +162,10 @@ function parseWordXml(xml: string): { lines: string[]; tables: GridRow[][] } {
   Array.from(doc.getElementsByTagNameNS("*", "tbl")).forEach((table) => {
     const rows: GridRow[] = [];
     Array.from(table.childNodes)
-      .filter((node): node is Element => node.nodeType === Node.ELEMENT_NODE && node.localName === "tr")
+      .filter((node): node is Element => node.nodeType === Node.ELEMENT_NODE && (node as Element).localName === "tr")
       .forEach((row) => {
       const cells = Array.from(row.childNodes)
-        .filter((node): node is Element => node.nodeType === Node.ELEMENT_NODE && node.localName === "tc")
+        .filter((node): node is Element => node.nodeType === Node.ELEMENT_NODE && (node as Element).localName === "tc")
         .map(cellTextFromXml);
       if (cells.some(Boolean)) rows.push(cells);
     });
