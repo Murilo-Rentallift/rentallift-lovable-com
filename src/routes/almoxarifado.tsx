@@ -17,13 +17,14 @@ export const Route = createFileRoute("/almoxarifado")({
   component: AlmoxarifadoPage,
 });
 
-type PartStatus = "pendente" | "separado" | "em_falta" | "entregue";
+type PartStatus = "pendente" | "separado" | "em_falta" | "entregue" | "tecnico_possui";
 
 const STATUS_OPTIONS: { value: PartStatus; label: string; className: string }[] = [
   { value: "pendente", label: "Pendente", className: "bg-accent/20 text-accent border-accent/40" },
   { value: "separado", label: "Separado", className: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
   { value: "em_falta", label: "Em falta", className: "bg-red-500/20 text-red-400 border-red-500/40" },
   { value: "entregue", label: "Entregue", className: "bg-green-500/20 text-green-500 border-green-500/40" },
+  { value: "tecnico_possui", label: "Técnico já possui", className: "bg-purple-500/20 text-purple-400 border-purple-500/40" },
 ];
 
 

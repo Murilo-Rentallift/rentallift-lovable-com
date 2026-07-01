@@ -304,10 +304,22 @@ export function ContratosTab() {
           const mapped = next.clausulas.map((c) => {
             const found = data.clausulasExtras!.find((x) => x.numero === c.numero);
             if (!found) return c;
+            if (c.fixo) {
+              // Atualiza textos das subcláusulas fixas por numero; sobras vão para extras
+              const fixasByNum = new Map((c.subclausulasFixas ?? []).map((s) => [s.numero, s]));
+              const usados = new Set<string>();
+              const novasFixas = (c.subclausulasFixas ?? []).map((s) => {
+                const imp = found.subclausulasExtras.find((x) => x.numero === s.numero);
+                if (imp) { usados.add(imp.numero); return { ...s, texto: imp.texto }; }
+                return s;
+              });
+              const sobras = found.subclausulasExtras.filter((x) => !fixasByNum.has(x.numero) && !usados.has(x.numero));
+              return { ...c, subclausulasFixas: novasFixas, subclausulasExtras: sobras };
+            }
             return {
               ...c,
-              titulo: c.fixo ? c.titulo : (found.titulo || c.titulo),
-              corpo: c.fixo ? c.corpo : found.corpo,
+              titulo: found.titulo || c.titulo,
+              corpo: found.corpo,
               subclausulasExtras: found.subclausulasExtras,
             };
           });
@@ -553,7 +565,7 @@ export function ContratosTab() {
             }}
           />
           <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={loading}>
-            <Upload className="h-4 w-4" /> Importar Contrato (.docx)
+            <Upload className="h-4 w-4" /> Editar Contrato Existente
           </Button>
         </div>
 
