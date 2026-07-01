@@ -874,19 +874,6 @@ export function ContratosTab() {
         </Card>
 
         <div className="flex flex-wrap gap-2 justify-end">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleImportDocx(f);
-            }}
-          />
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={loading}>
-            <Upload className="h-4 w-4" /> Importar Contrato (.docx)
-          </Button>
           <Button variant="outline" onClick={novo}><RotateCcw className="h-4 w-4" /> Novo</Button>
           <Button onClick={handleSave} disabled={loading}>
             <Save className="h-4 w-4" /> {id ? "Atualizar Contrato" : "Salvar Contrato"}
