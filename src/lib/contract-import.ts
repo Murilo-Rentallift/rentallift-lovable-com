@@ -130,18 +130,20 @@ function uniqueLines(lines: string[]): string[] {
 
 function paragraphTextFromXml(p: Element): string {
   const parts: string[] = [];
-  p.querySelectorAll("t, delText").forEach((node) => parts.push(node.textContent ?? ""));
+  Array.from(p.getElementsByTagNameNS("*", "t")).forEach((node) => parts.push(node.textContent ?? ""));
+  Array.from(p.getElementsByTagNameNS("*", "delText")).forEach((node) => parts.push(node.textContent ?? ""));
   return oneLine(parts.join(""));
 }
 
 function cellTextFromXml(cell: Element): string {
   const parts: string[] = [];
-  cell.querySelectorAll("p").forEach((p) => {
+  Array.from(cell.getElementsByTagNameNS("*", "p")).forEach((p) => {
     const t = paragraphTextFromXml(p);
     if (t) parts.push(t);
   });
   if (!parts.length) {
-    cell.querySelectorAll("t, delText").forEach((node) => parts.push(node.textContent ?? ""));
+    Array.from(cell.getElementsByTagNameNS("*", "t")).forEach((node) => parts.push(node.textContent ?? ""));
+    Array.from(cell.getElementsByTagNameNS("*", "delText")).forEach((node) => parts.push(node.textContent ?? ""));
   }
   return norm(parts.filter(Boolean).join("\n"));
 }
@@ -152,15 +154,19 @@ function parseWordXml(xml: string): { lines: string[]; tables: GridRow[][] } {
   const lines: string[] = [];
   const tables: GridRow[][] = [];
 
-  doc.querySelectorAll("p").forEach((p) => {
+  Array.from(doc.getElementsByTagNameNS("*", "p")).forEach((p) => {
     const text = paragraphTextFromXml(p);
     if (text) lines.push(text);
   });
 
-  doc.querySelectorAll("tbl").forEach((table) => {
+  Array.from(doc.getElementsByTagNameNS("*", "tbl")).forEach((table) => {
     const rows: GridRow[] = [];
-    table.querySelectorAll(":scope > tr").forEach((row) => {
-      const cells = Array.from(row.querySelectorAll(":scope > tc")).map(cellTextFromXml);
+    Array.from(table.childNodes)
+      .filter((node): node is Element => node.nodeType === Node.ELEMENT_NODE && node.localName === "tr")
+      .forEach((row) => {
+      const cells = Array.from(row.childNodes)
+        .filter((node): node is Element => node.nodeType === Node.ELEMENT_NODE && node.localName === "tc")
+        .map(cellTextFromXml);
       if (cells.some(Boolean)) rows.push(cells);
     });
     if (rows.length) tables.push(rows);
