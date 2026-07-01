@@ -553,7 +553,7 @@ export function ContratosTab() {
             }}
           />
           <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={loading}>
-            <Upload className="h-4 w-4" /> Importar Contrato (.docx)
+            <Upload className="h-4 w-4" /> Editar Contrato Existente
           </Button>
         </div>
 
