@@ -777,15 +777,6 @@ function AlmoxarifadoPage() {
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
-                            <button
-                              type="button"
-                              onClick={() => removeGroup(r.group_id)}
-                              className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                              title="Remover requisição"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
                         </div>
                         <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
                           {r.items.map((item) => {
@@ -800,7 +791,13 @@ function AlmoxarifadoPage() {
                                   }`} />
                                   <span className="truncate">{item.part_name}</span>
                                   <span className="text-muted-foreground">× {item.quantity}</span>
+                                  {item.is_extra && (
+                                    <span className="rounded border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                                      Extra
+                                    </span>
+                                  )}
                                   {item.code ? <span className="text-muted-foreground ml-1">· cód. <span className="font-mono">{item.code}</span></span> : null}
+                                  {item.note ? <span className="text-muted-foreground ml-1 italic truncate">— {item.note}</span> : null}
                                 </div>
                                 <select
                                   value={item.status}
