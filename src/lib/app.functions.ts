@@ -459,16 +459,6 @@ export const almoxAddExtraItem = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-  .inputValidator((d: { pin: string; groupId: string }) =>
-    z.object({ pin: pinSchema, groupId: z.string().uuid() }).parse(d),
-  )
-  .handler(async ({ data }) => {
-    await verifyAlmox(data.pin);
-    const { error } = await supabaseAdmin
-      .from("part_requests" as any).delete().eq("group_id", data.groupId);
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
 
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
