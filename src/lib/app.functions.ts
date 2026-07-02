@@ -496,7 +496,8 @@ export const almoxAddPart = createServerFn({ method: "POST" })
       name: data.name,
       quantity: data.quantity,
       position: nextPos,
-    });
+      source: "almoxarifado",
+    } as any);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
