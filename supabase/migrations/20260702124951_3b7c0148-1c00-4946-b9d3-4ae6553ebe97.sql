@@ -1,0 +1,1 @@
+ALTER TABLE public.parts ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'pcm';

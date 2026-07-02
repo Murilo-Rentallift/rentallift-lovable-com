@@ -200,6 +200,7 @@ export type Database = {
           position: number
           quantity: number
           schedule_id: string
+          source: string
           status: string
         }
         Insert: {
@@ -210,6 +211,7 @@ export type Database = {
           position?: number
           quantity?: number
           schedule_id: string
+          source?: string
           status?: string
         }
         Update: {
@@ -220,6 +222,7 @@ export type Database = {
           position?: number
           quantity?: number
           schedule_id?: string
+          source?: string
           status?: string
         }
         Relationships: [
