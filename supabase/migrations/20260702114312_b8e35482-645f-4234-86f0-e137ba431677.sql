@@ -1,0 +1,1 @@
+ALTER TABLE public.part_requests ADD COLUMN IF NOT EXISTS is_extra boolean NOT NULL DEFAULT false; ALTER TABLE public.part_requests ADD COLUMN IF NOT EXISTS note text;

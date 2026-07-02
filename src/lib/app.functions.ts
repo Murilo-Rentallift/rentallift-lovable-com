@@ -207,7 +207,7 @@ export const almoxListRequests = createServerFn({ method: "POST" })
     await verifyAlmox(data.pin);
     const { data: rows, error } = await supabaseAdmin
       .from("part_requests" as any)
-      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at, original_group_id, edited_at, superseded")
+      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at, original_group_id, edited_at, superseded, is_extra, note")
       .eq("superseded", false)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -219,20 +219,26 @@ export const almoxListRequests = createServerFn({ method: "POST" })
       groups.set(row.group_id, list);
     }
 
-    const requests = Array.from(groups.entries()).map(([groupId, items]) => ({
-      group_id: groupId,
-      requester_name: items[0].requester_name,
-      created_at: items[0].created_at,
-      original_group_id: items[0].original_group_id ?? null,
-      edited_at: items[0].edited_at ?? null,
-      items: items.map((i: any) => ({
-        id: i.id,
-        part_name: i.part_name,
-        quantity: i.quantity,
-        code: i.code,
-        status: i.status,
-      })),
-    }));
+    const requests = Array.from(groups.entries()).map(([groupId, items]) => {
+      items.sort((a: any, b: any) => Number(!!a.is_extra) - Number(!!b.is_extra));
+      const base = items.find((i: any) => !i.is_extra) ?? items[0];
+      return {
+        group_id: groupId,
+        requester_name: base.requester_name,
+        created_at: base.created_at,
+        original_group_id: base.original_group_id ?? null,
+        edited_at: base.edited_at ?? null,
+        items: items.map((i: any) => ({
+          id: i.id,
+          part_name: i.part_name,
+          quantity: i.quantity,
+          code: i.code,
+          status: i.status,
+          is_extra: !!i.is_extra,
+          note: i.note ?? null,
+        })),
+      };
+    });
 
     return { requests };
   });
@@ -373,7 +379,7 @@ export const almoxWeeklyMissingRequests = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("part_requests" as any)
-      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at")
+      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at, is_extra")
       .eq("status", "em_falta")
       .eq("superseded", false)
       .gte("created_at", `${data.startDate}T00:00:00Z`)
@@ -399,6 +405,7 @@ export const almoxWeeklyMissingRequests = createServerFn({ method: "POST" })
         quantity: i.quantity,
         code: i.code,
         status: i.status,
+        is_extra: !!i.is_extra,
       })),
     }));
 
@@ -413,6 +420,43 @@ export const almoxDeleteGroup = createServerFn({ method: "POST" })
     await verifyAlmox(data.pin);
     const { error } = await supabaseAdmin
       .from("part_requests" as any).delete().eq("group_id", data.groupId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Almoxarifado: add an extra (post-hoc) part item to a request group ----------
+export const almoxAddExtraItem = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; groupId: string; partName: string; quantity: number; note?: string }) =>
+    z.object({
+      pin: pinSchema,
+      groupId: z.string().uuid(),
+      partName: z.string().trim().min(1).max(200),
+      quantity: z.number().int().min(1).max(9999),
+      note: z.string().trim().max(500).optional().default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: rows, error: rErr } = await supabaseAdmin
+      .from("part_requests" as any)
+      .select("requester_name, created_at, original_group_id")
+      .eq("group_id", data.groupId)
+      .limit(1);
+    if (rErr) throw new Error(rErr.message);
+    if (!rows || rows.length === 0) throw new Error("Requisição não encontrada");
+    const base: any = rows[0];
+    const { error } = await supabaseAdmin.from("part_requests" as any).insert({
+      group_id: data.groupId,
+      requester_name: base.requester_name,
+      part_name: data.partName,
+      quantity: data.quantity,
+      code: "",
+      status: "entregue",
+      is_extra: true,
+      note: data.note || null,
+      original_group_id: base.original_group_id ?? null,
+      created_at: base.created_at,
+    });
     if (error) throw new Error(error.message);
     return { ok: true };
   });

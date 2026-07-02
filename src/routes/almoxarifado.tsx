@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates, almoxEditRequest, almoxGetOriginalRequest } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates, almoxEditRequest, almoxGetOriginalRequest, almoxAddExtraItem } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,7 +76,7 @@ function AlmoxarifadoPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"pecas" | "requisicoes">("pecas");
-  type ReqItem = { id: string; part_name: string; quantity: number; code: string; status: PartStatus };
+  type ReqItem = { id: string; part_name: string; quantity: number; code: string; status: PartStatus; is_extra?: boolean; note?: string | null };
   type ReqGroup = { group_id: string; requester_name: string; created_at: string; items: ReqItem[]; original_group_id?: string | null; edited_at?: string | null };
 
   const [requests, setRequests] = useState<ReqGroup[]>([]);
@@ -87,6 +87,30 @@ function AlmoxarifadoPage() {
   const deleteGroup = useServerFn(almoxDeleteGroup);
   const editReq = useServerFn(almoxEditRequest);
   const getOriginal = useServerFn(almoxGetOriginalRequest);
+  const addExtra = useServerFn(almoxAddExtraItem);
+
+  const [extraFor, setExtraFor] = useState<{ groupId: string; requesterName: string } | null>(null);
+  const [extraDraft, setExtraDraft] = useState<{ partName: string; quantity: number; note: string }>({ partName: "", quantity: 1, note: "" });
+  const [extraSaving, setExtraSaving] = useState(false);
+
+  async function saveExtra() {
+    if (!extraFor) return;
+    const partName = extraDraft.partName.trim();
+    const quantity = Math.max(1, Math.floor(Number(extraDraft.quantity) || 0));
+    if (!partName) { toast.error("Informe o nome da peça"); return; }
+    setExtraSaving(true);
+    try {
+      await addExtra({ data: { pin, groupId: extraFor.groupId, partName, quantity, note: extraDraft.note.trim() } });
+      setExtraFor(null);
+      setExtraDraft({ partName: "", quantity: 1, note: "" });
+      toast.success("Peça extra adicionada");
+      loadRequests(pin);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao adicionar peça extra");
+    } finally {
+      setExtraSaving(false);
+    }
+  }
 
   type EditDraft = { partName: string; quantity: number; code: string };
   const [editing, setEditing] = useState<{ groupId: string; requesterName: string; items: EditDraft[] } | null>(null);
@@ -374,7 +398,7 @@ function AlmoxarifadoPage() {
             rows.push([
               formatDateBR(req.created_at.slice(0, 10)),
               req.requester_name,
-              item.part_name,
+              item.is_extra ? `${item.part_name}  [EXTRA]` : item.part_name,
               String(item.quantity),
               item.code || "—",
             ]);
@@ -730,6 +754,14 @@ function AlmoxarifadoPage() {
                             )}
                             <button
                               type="button"
+                              onClick={() => { setExtraFor({ groupId: r.group_id, requesterName: r.requester_name }); setExtraDraft({ partName: "", quantity: 1, note: "" }); }}
+                              className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-emerald-400 hover:bg-emerald-500/20 transition inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider"
+                              title="Adicionar peça extra"
+                            >
+                              <Plus className="h-3.5 w-3.5" /> Peça extra
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => startEdit(r)}
                               className="rounded border border-blue-500/40 bg-blue-500/10 p-1.5 text-blue-400 hover:bg-blue-500/20 transition"
                               title="Editar requisição"
@@ -759,7 +791,13 @@ function AlmoxarifadoPage() {
                                   }`} />
                                   <span className="truncate">{item.part_name}</span>
                                   <span className="text-muted-foreground">× {item.quantity}</span>
+                                  {item.is_extra && (
+                                    <span className="rounded border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                                      Extra
+                                    </span>
+                                  )}
                                   {item.code ? <span className="text-muted-foreground ml-1">· cód. <span className="font-mono">{item.code}</span></span> : null}
+                                  {item.note ? <span className="text-muted-foreground ml-1 italic truncate">— {item.note}</span> : null}
                                 </div>
                                 <select
                                   value={item.status}
@@ -1021,6 +1059,53 @@ function AlmoxarifadoPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewingOriginal(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal adicionar peça extra */}
+      <Dialog open={!!extraFor} onOpenChange={(o) => { if (!o && !extraSaving) setExtraFor(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar peça extra</DialogTitle>
+          </DialogHeader>
+          {extraFor && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Técnico: <span className="text-foreground font-medium">{extraFor.requesterName}</span>
+              </p>
+              <div>
+                <Label className="text-xs">Nome da peça</Label>
+                <Input
+                  value={extraDraft.partName}
+                  onChange={(e) => setExtraDraft((d) => ({ ...d, partName: e.target.value }))}
+                  placeholder="Ex: Filtro hidráulico"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Quantidade</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={extraDraft.quantity}
+                  onChange={(e) => setExtraDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Observação (opcional)</Label>
+                <Input
+                  value={extraDraft.note}
+                  onChange={(e) => setExtraDraft((d) => ({ ...d, note: e.target.value }))}
+                  placeholder="Ex: peça retirada após visita"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExtraFor(null)} disabled={extraSaving}>Cancelar</Button>
+            <Button onClick={saveExtra} disabled={extraSaving}>
+              {extraSaving ? "Salvando..." : "Adicionar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
