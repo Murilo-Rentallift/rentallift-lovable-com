@@ -897,56 +897,71 @@ function AlmoxarifadoPage() {
                         </span>
                       </div>
                     </div>
-                    <ul className="divide-y divide-border">
-                      {g.parts.map((p) => {
-                        const opt = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
-                        return (
-                          <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <span className={`h-2 w-2 rounded-full shrink-0 ${
-                                p.status === "entregue" ? "bg-green-500" :
-                                p.status === "separado" ? "bg-blue-500" :
-                                p.status === "em_falta" ? "bg-red-500" : "bg-accent"
-                              }`} />
-                              <span className="font-medium truncate">{p.name}</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                              <input
-                                type="number"
-                                min={1}
-                                max={9999}
-                                value={p.quantity}
-                                onChange={(e) => {
-                                  const v = parseInt(e.target.value, 10);
-                                  if (Number.isFinite(v)) changeQty(p.id, Math.max(1, Math.min(9999, v)));
-                                }}
-                                className="w-16 rounded border border-input bg-background px-2 py-1 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-ring"
-                                title="Quantidade"
-                              />
-                              <select
-                                value={p.status}
-                                onChange={(e) => changeStatus(p.id, e.target.value as PartStatus)}
-                                className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
-                              >
-                                {STATUS_OPTIONS.map((s) => (
-                                  <option key={s.value} value={s.value} className="bg-background text-foreground">
-                                    {s.label}
-                                  </option>
-                                ))}
-                              </select>
-                              <button
-                                type="button"
-                                onClick={() => removePart(p.id, p.name)}
-                                className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
-                                title="Remover peça"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    {g.parts.length === 0 ? (
+                      <p className="px-4 py-6 text-center text-sm text-muted-foreground italic">Nenhuma peça lançada</p>
+                    ) : (
+                      <ul className="divide-y divide-border">
+                        {g.parts.map((p) => {
+                          const opt = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
+                          const isAlmox = p.source === "almoxarifado";
+                          return (
+                            <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <span className={`h-2 w-2 rounded-full shrink-0 ${
+                                  p.status === "entregue" ? "bg-green-500" :
+                                  p.status === "separado" ? "bg-blue-500" :
+                                  p.status === "em_falta" ? "bg-red-500" : "bg-accent"
+                                }`} />
+                                <span className="font-medium truncate">{p.name}</span>
+                                <span
+                                  className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider shrink-0 ${
+                                    isAlmox
+                                      ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
+                                      : "border-sky-500/40 bg-sky-500/15 text-sky-400"
+                                  }`}
+                                  title={isAlmox ? "Lançada pelo Almoxarifado" : "Lançada pelo técnico (PCM)"}
+                                >
+                                  {isAlmox ? "Almoxarifado" : "PCM"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-sm">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={9999}
+                                  value={p.quantity}
+                                  onChange={(e) => {
+                                    const v = parseInt(e.target.value, 10);
+                                    if (Number.isFinite(v)) changeQty(p.id, Math.max(1, Math.min(9999, v)));
+                                  }}
+                                  className="w-16 rounded border border-input bg-background px-2 py-1 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-ring"
+                                  title="Quantidade"
+                                />
+                                <select
+                                  value={p.status}
+                                  onChange={(e) => changeStatus(p.id, e.target.value as PartStatus)}
+                                  className={`rounded border px-2 py-1 text-xs uppercase font-semibold focus:outline-none focus:ring-2 focus:ring-ring ${opt.className}`}
+                                >
+                                  {STATUS_OPTIONS.map((s) => (
+                                    <option key={s.value} value={s.value} className="bg-background text-foreground">
+                                      {s.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => removePart(p.id, p.name)}
+                                  className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
+                                  title="Remover peça"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                   </div>
                 ))
             )}
