@@ -405,6 +405,7 @@ export const almoxWeeklyMissingRequests = createServerFn({ method: "POST" })
         quantity: i.quantity,
         code: i.code,
         status: i.status,
+        is_extra: !!i.is_extra,
       })),
     }));
 
