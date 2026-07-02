@@ -572,11 +572,11 @@ export const almoxarifadoGetDay = createServerFn({ method: "POST" })
       .eq("work_date", data.date);
 
     const scheduleIds = (schedules ?? []).map((s) => s.id);
-    let parts: Array<{ id: string; schedule_id: string; name: string; quantity: number; checked: boolean; status: string }> = [];
+    let parts: Array<{ id: string; schedule_id: string; name: string; quantity: number; checked: boolean; status: string; source: string }> = [];
     if (scheduleIds.length) {
       const { data: p } = await supabaseAdmin
         .from("parts")
-        .select("id, schedule_id, name, quantity, checked, position, status")
+        .select("id, schedule_id, name, quantity, checked, position, status, source")
         .in("schedule_id", scheduleIds)
         .order("position", { ascending: true })
         .order("created_at", { ascending: true });
@@ -588,7 +588,7 @@ export const almoxarifadoGetDay = createServerFn({ method: "POST" })
       operator: op,
       parts: parts
         .filter((p) => scheduleToOperator.get(p.schedule_id) === op.id)
-        .map(({ id, name, quantity, checked, status }) => ({ id, name, quantity, checked, status })),
+        .map(({ id, name, quantity, checked, status, source }) => ({ id, name, quantity, checked, status, source })),
     }));
 
     return { date: data.date, groups: grouped };
