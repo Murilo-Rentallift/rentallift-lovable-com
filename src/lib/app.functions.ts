@@ -207,7 +207,7 @@ export const almoxListRequests = createServerFn({ method: "POST" })
     await verifyAlmox(data.pin);
     const { data: rows, error } = await supabaseAdmin
       .from("part_requests" as any)
-      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at, original_group_id, edited_at, superseded")
+      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at, original_group_id, edited_at, superseded, is_extra, note")
       .eq("superseded", false)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -219,20 +219,26 @@ export const almoxListRequests = createServerFn({ method: "POST" })
       groups.set(row.group_id, list);
     }
 
-    const requests = Array.from(groups.entries()).map(([groupId, items]) => ({
-      group_id: groupId,
-      requester_name: items[0].requester_name,
-      created_at: items[0].created_at,
-      original_group_id: items[0].original_group_id ?? null,
-      edited_at: items[0].edited_at ?? null,
-      items: items.map((i: any) => ({
-        id: i.id,
-        part_name: i.part_name,
-        quantity: i.quantity,
-        code: i.code,
-        status: i.status,
-      })),
-    }));
+    const requests = Array.from(groups.entries()).map(([groupId, items]) => {
+      items.sort((a: any, b: any) => Number(!!a.is_extra) - Number(!!b.is_extra));
+      const base = items.find((i: any) => !i.is_extra) ?? items[0];
+      return {
+        group_id: groupId,
+        requester_name: base.requester_name,
+        created_at: base.created_at,
+        original_group_id: base.original_group_id ?? null,
+        edited_at: base.edited_at ?? null,
+        items: items.map((i: any) => ({
+          id: i.id,
+          part_name: i.part_name,
+          quantity: i.quantity,
+          code: i.code,
+          status: i.status,
+          is_extra: !!i.is_extra,
+          note: i.note ?? null,
+        })),
+      };
+    });
 
     return { requests };
   });
