@@ -867,14 +867,13 @@ function AlmoxarifadoPage() {
 
             {loading ? (
               <p className="text-muted-foreground">Carregando...</p>
-            ) : totalParts === 0 ? (
+            ) : groups.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border p-12 text-center">
                 <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">Nenhuma peça programada para {formatDateBR(date)}.</p>
+                <p className="text-muted-foreground">Nenhum técnico cadastrado.</p>
               </div>
             ) : (
               groups
-                .filter((g) => g.parts.length > 0)
                 .map((g) => (
                   <div key={g.operator.id} className="rounded-lg border border-border bg-card overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 gap-3">
