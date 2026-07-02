@@ -91,6 +91,13 @@ function Index() {
             Vendas
           </Link>
           <Link
+            to="/reunioes"
+            className="inline-flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+          >
+            <Mic className="h-4 w-4" />
+            Reuniões
+          </Link>
+          <Link
             to="/admin"
             className="inline-flex items-center gap-2 rounded-md border border-accent/40 bg-accent/10 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-accent hover:bg-accent hover:text-accent-foreground transition-colors"
           >
