@@ -1055,23 +1055,24 @@ function AlmoxarifadoPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal adicionar peça extra */}
-      <Dialog open={!!extraFor} onOpenChange={(o) => { if (!o && !extraSaving) setExtraFor(null); }}>
+      {/* Modal adicionar peça */}
+      <Dialog open={!!addPartFor} onOpenChange={(o) => { if (!o && !addPartSaving) setAddPartFor(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Adicionar peça extra</DialogTitle>
+            <DialogTitle>Adicionar peça</DialogTitle>
           </DialogHeader>
-          {extraFor && (
+          {addPartFor && (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Técnico: <span className="text-foreground font-medium">{extraFor.requesterName}</span>
+                Técnico: <span className="text-foreground font-medium">{addPartFor.operatorName}</span> · {formatDateBR(date)}
               </p>
               <div>
                 <Label className="text-xs">Nome da peça</Label>
                 <Input
-                  value={extraDraft.partName}
-                  onChange={(e) => setExtraDraft((d) => ({ ...d, partName: e.target.value }))}
+                  value={addPartDraft.name}
+                  onChange={(e) => setAddPartDraft((d) => ({ ...d, name: e.target.value }))}
                   placeholder="Ex: Filtro hidráulico"
+                  autoFocus
                 />
               </div>
               <div>
@@ -1079,24 +1080,16 @@ function AlmoxarifadoPage() {
                 <Input
                   type="number"
                   min={1}
-                  value={extraDraft.quantity}
-                  onChange={(e) => setExtraDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Observação (opcional)</Label>
-                <Input
-                  value={extraDraft.note}
-                  onChange={(e) => setExtraDraft((d) => ({ ...d, note: e.target.value }))}
-                  placeholder="Ex: peça retirada após visita"
+                  value={addPartDraft.quantity}
+                  onChange={(e) => setAddPartDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
                 />
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setExtraFor(null)} disabled={extraSaving}>Cancelar</Button>
-            <Button onClick={saveExtra} disabled={extraSaving}>
-              {extraSaving ? "Salvando..." : "Adicionar"}
+            <Button variant="outline" onClick={() => setAddPartFor(null)} disabled={addPartSaving}>Cancelar</Button>
+            <Button onClick={saveAddPart} disabled={addPartSaving}>
+              {addPartSaving ? "Salvando..." : "Adicionar"}
             </Button>
           </DialogFooter>
         </DialogContent>
