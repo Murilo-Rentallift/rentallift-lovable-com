@@ -754,14 +754,6 @@ function AlmoxarifadoPage() {
                             )}
                             <button
                               type="button"
-                              onClick={() => { setExtraFor({ groupId: r.group_id, requesterName: r.requester_name }); setExtraDraft({ partName: "", quantity: 1, note: "" }); }}
-                              className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-emerald-400 hover:bg-emerald-500/20 transition inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider"
-                              title="Adicionar peça extra"
-                            >
-                              <Plus className="h-3.5 w-3.5" /> Peça extra
-                            </button>
-                            <button
-                              type="button"
                               onClick={() => startEdit(r)}
                               className="rounded border border-blue-500/40 bg-blue-500/10 p-1.5 text-blue-400 hover:bg-blue-500/20 transition"
                               title="Editar requisição"
