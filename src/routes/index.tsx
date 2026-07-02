@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { listOperators } from "@/lib/app.functions";
-import { FileText, Shield, Warehouse, Wrench } from "lucide-react";
+import { FileText, Mic, Shield, Warehouse, Wrench } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/")({
