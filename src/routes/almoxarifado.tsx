@@ -76,7 +76,7 @@ function AlmoxarifadoPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"pecas" | "requisicoes">("pecas");
-  type ReqItem = { id: string; part_name: string; quantity: number; code: string; status: PartStatus };
+  type ReqItem = { id: string; part_name: string; quantity: number; code: string; status: PartStatus; is_extra?: boolean; note?: string | null };
   type ReqGroup = { group_id: string; requester_name: string; created_at: string; items: ReqItem[]; original_group_id?: string | null; edited_at?: string | null };
 
   const [requests, setRequests] = useState<ReqGroup[]>([]);
