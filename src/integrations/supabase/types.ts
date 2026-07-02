@@ -116,6 +116,42 @@ export type Database = {
         }
         Relationships: []
       }
+      meetings: {
+        Row: {
+          created_at: string
+          critical_points: Json
+          decisions: Json
+          id: string
+          summary: string | null
+          title: string
+          todos: Json
+          transcript: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          critical_points?: Json
+          decisions?: Json
+          id?: string
+          summary?: string | null
+          title?: string
+          todos?: Json
+          transcript?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          critical_points?: Json
+          decisions?: Json
+          id?: string
+          summary?: string | null
+          title?: string
+          todos?: Json
+          transcript?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       operators: {
         Row: {
           created_at: string
