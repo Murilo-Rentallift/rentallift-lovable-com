@@ -147,6 +147,8 @@ export type Database = {
           edited_at: string | null
           group_id: string
           id: string
+          is_extra: boolean
+          note: string | null
           original_group_id: string | null
           part_name: string
           quantity: number
@@ -161,6 +163,8 @@ export type Database = {
           edited_at?: string | null
           group_id?: string
           id?: string
+          is_extra?: boolean
+          note?: string | null
           original_group_id?: string | null
           part_name: string
           quantity?: number
@@ -175,6 +179,8 @@ export type Database = {
           edited_at?: string | null
           group_id?: string
           id?: string
+          is_extra?: boolean
+          note?: string | null
           original_group_id?: string | null
           part_name?: string
           quantity?: number
