@@ -379,7 +379,7 @@ export const almoxWeeklyMissingRequests = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("part_requests" as any)
-      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at")
+      .select("id, group_id, requester_name, part_name, quantity, code, status, created_at, is_extra")
       .eq("status", "em_falta")
       .eq("superseded", false)
       .gte("created_at", `${data.startDate}T00:00:00Z`)
