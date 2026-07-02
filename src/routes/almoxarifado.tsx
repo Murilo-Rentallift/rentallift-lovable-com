@@ -87,6 +87,30 @@ function AlmoxarifadoPage() {
   const deleteGroup = useServerFn(almoxDeleteGroup);
   const editReq = useServerFn(almoxEditRequest);
   const getOriginal = useServerFn(almoxGetOriginalRequest);
+  const addExtra = useServerFn(almoxAddExtraItem);
+
+  const [extraFor, setExtraFor] = useState<{ groupId: string; requesterName: string } | null>(null);
+  const [extraDraft, setExtraDraft] = useState<{ partName: string; quantity: number; note: string }>({ partName: "", quantity: 1, note: "" });
+  const [extraSaving, setExtraSaving] = useState(false);
+
+  async function saveExtra() {
+    if (!extraFor) return;
+    const partName = extraDraft.partName.trim();
+    const quantity = Math.max(1, Math.floor(Number(extraDraft.quantity) || 0));
+    if (!partName) { toast.error("Informe o nome da peça"); return; }
+    setExtraSaving(true);
+    try {
+      await addExtra({ data: { pin, groupId: extraFor.groupId, partName, quantity, note: extraDraft.note.trim() } });
+      setExtraFor(null);
+      setExtraDraft({ partName: "", quantity: 1, note: "" });
+      toast.success("Peça extra adicionada");
+      loadRequests(pin);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao adicionar peça extra");
+    } finally {
+      setExtraSaving(false);
+    }
+  }
 
   type EditDraft = { partName: string; quantity: number; code: string };
   const [editing, setEditing] = useState<{ groupId: string; requesterName: string; items: EditDraft[] } | null>(null);
