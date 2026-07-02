@@ -423,6 +423,53 @@ export const almoxDeleteGroup = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Almoxarifado: add an extra (post-hoc) part item to a request group ----------
+export const almoxAddExtraItem = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; groupId: string; partName: string; quantity: number; note?: string }) =>
+    z.object({
+      pin: pinSchema,
+      groupId: z.string().uuid(),
+      partName: z.string().trim().min(1).max(200),
+      quantity: z.number().int().min(1).max(9999),
+      note: z.string().trim().max(500).optional().default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: rows, error: rErr } = await supabaseAdmin
+      .from("part_requests" as any)
+      .select("requester_name, created_at, original_group_id")
+      .eq("group_id", data.groupId)
+      .limit(1);
+    if (rErr) throw new Error(rErr.message);
+    if (!rows || rows.length === 0) throw new Error("Requisição não encontrada");
+    const base: any = rows[0];
+    const { error } = await supabaseAdmin.from("part_requests" as any).insert({
+      group_id: data.groupId,
+      requester_name: base.requester_name,
+      part_name: data.partName,
+      quantity: data.quantity,
+      code: "",
+      status: "entregue",
+      is_extra: true,
+      note: data.note || null,
+      original_group_id: base.original_group_id ?? null,
+      created_at: base.created_at,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+  .inputValidator((d: { pin: string; groupId: string }) =>
+    z.object({ pin: pinSchema, groupId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { error } = await supabaseAdmin
+      .from("part_requests" as any).delete().eq("group_id", data.groupId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
   .handler(async ({ data }) => {
