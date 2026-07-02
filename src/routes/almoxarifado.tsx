@@ -876,16 +876,26 @@ function AlmoxarifadoPage() {
                 .filter((g) => g.parts.length > 0)
                 .map((g) => (
                   <div key={g.operator.id} className="rounded-lg border border-border bg-card overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <span className="font-mono text-xs text-muted-foreground">
                           #{String(g.operator.position).padStart(2, "0")}
                         </span>
-                        <h2 className="font-display text-lg font-bold uppercase">{g.operator.name}</h2>
+                        <h2 className="font-display text-lg font-bold uppercase truncate">{g.operator.name}</h2>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {g.parts.length} {g.parts.length === 1 ? "item" : "itens"}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => { setAddPartFor({ operatorId: g.operator.id, operatorName: g.operator.name }); setAddPartDraft({ name: "", quantity: 1 }); }}
+                          className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-emerald-400 hover:bg-emerald-500/20 transition inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider"
+                          title="Adicionar peça"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Adicionar peça
+                        </button>
+                        <span className="text-xs text-muted-foreground">
+                          {g.parts.length} {g.parts.length === 1 ? "item" : "itens"}
+                        </span>
+                      </div>
                     </div>
                     <ul className="divide-y divide-border">
                       {g.parts.map((p) => {
