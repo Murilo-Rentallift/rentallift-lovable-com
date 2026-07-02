@@ -87,28 +87,28 @@ function AlmoxarifadoPage() {
   const deleteGroup = useServerFn(almoxDeleteGroup);
   const editReq = useServerFn(almoxEditRequest);
   const getOriginal = useServerFn(almoxGetOriginalRequest);
-  const addExtra = useServerFn(almoxAddExtraItem);
+  const addPartFn = useServerFn(almoxAddPart);
 
-  const [extraFor, setExtraFor] = useState<{ groupId: string; requesterName: string } | null>(null);
-  const [extraDraft, setExtraDraft] = useState<{ partName: string; quantity: number; note: string }>({ partName: "", quantity: 1, note: "" });
-  const [extraSaving, setExtraSaving] = useState(false);
+  const [addPartFor, setAddPartFor] = useState<{ operatorId: string; operatorName: string } | null>(null);
+  const [addPartDraft, setAddPartDraft] = useState<{ name: string; quantity: number }>({ name: "", quantity: 1 });
+  const [addPartSaving, setAddPartSaving] = useState(false);
 
-  async function saveExtra() {
-    if (!extraFor) return;
-    const partName = extraDraft.partName.trim();
-    const quantity = Math.max(1, Math.floor(Number(extraDraft.quantity) || 0));
-    if (!partName) { toast.error("Informe o nome da peça"); return; }
-    setExtraSaving(true);
+  async function saveAddPart() {
+    if (!addPartFor) return;
+    const name = addPartDraft.name.trim();
+    const quantity = Math.max(1, Math.floor(Number(addPartDraft.quantity) || 0));
+    if (!name) { toast.error("Informe o nome da peça"); return; }
+    setAddPartSaving(true);
     try {
-      await addExtra({ data: { pin, groupId: extraFor.groupId, partName, quantity, note: extraDraft.note.trim() } });
-      setExtraFor(null);
-      setExtraDraft({ partName: "", quantity: 1, note: "" });
-      toast.success("Peça extra adicionada");
-      loadRequests(pin);
+      await addPartFn({ data: { pin, operatorId: addPartFor.operatorId, date, name, quantity } });
+      setAddPartFor(null);
+      setAddPartDraft({ name: "", quantity: 1 });
+      toast.success("Peça adicionada");
+      load(pin, date);
     } catch (e: any) {
-      toast.error(e.message || "Falha ao adicionar peça extra");
+      toast.error(e.message || "Falha ao adicionar peça");
     } finally {
-      setExtraSaving(false);
+      setAddPartSaving(false);
     }
   }
 
