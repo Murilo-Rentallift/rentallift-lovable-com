@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VendasRouteImport } from './routes/vendas'
+import { Route as ReunioesRouteImport } from './routes/reunioes'
 import { Route as OficinaRouteImport } from './routes/oficina'
 import { Route as AlmoxarifadoRouteImport } from './routes/almoxarifado'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -19,6 +20,11 @@ import { Route as OperadorIdRouteImport } from './routes/operador.$id'
 const VendasRoute = VendasRouteImport.update({
   id: '/vendas',
   path: '/vendas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReunioesRoute = ReunioesRouteImport.update({
+  id: '/reunioes',
+  path: '/reunioes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OficinaRoute = OficinaRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/almoxarifado': typeof AlmoxarifadoRoute
   '/oficina': typeof OficinaRoute
+  '/reunioes': typeof ReunioesRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/almoxarifado': typeof AlmoxarifadoRoute
   '/oficina': typeof OficinaRoute
+  '/reunioes': typeof ReunioesRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/almoxarifado': typeof AlmoxarifadoRoute
   '/oficina': typeof OficinaRoute
+  '/reunioes': typeof ReunioesRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/almoxarifado'
     | '/oficina'
+    | '/reunioes'
     | '/vendas'
     | '/operador/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/almoxarifado'
     | '/oficina'
+    | '/reunioes'
     | '/vendas'
     | '/operador/$id'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/almoxarifado'
     | '/oficina'
+    | '/reunioes'
     | '/vendas'
     | '/operador/$id'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AlmoxarifadoRoute: typeof AlmoxarifadoRoute
   OficinaRoute: typeof OficinaRoute
+  ReunioesRoute: typeof ReunioesRoute
   VendasRoute: typeof VendasRoute
   OperadorIdRoute: typeof OperadorIdRoute
 }
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/vendas'
       fullPath: '/vendas'
       preLoaderRoute: typeof VendasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reunioes': {
+      id: '/reunioes'
+      path: '/reunioes'
+      fullPath: '/reunioes'
+      preLoaderRoute: typeof ReunioesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oficina': {
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AlmoxarifadoRoute: AlmoxarifadoRoute,
   OficinaRoute: OficinaRoute,
+  ReunioesRoute: ReunioesRoute,
   VendasRoute: VendasRoute,
   OperadorIdRoute: OperadorIdRoute,
 }
