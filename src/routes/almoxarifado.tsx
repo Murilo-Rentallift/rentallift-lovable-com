@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates, almoxEditRequest, almoxGetOriginalRequest, almoxAddExtraItem } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates, almoxEditRequest, almoxGetOriginalRequest, almoxAddPart } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,28 +87,28 @@ function AlmoxarifadoPage() {
   const deleteGroup = useServerFn(almoxDeleteGroup);
   const editReq = useServerFn(almoxEditRequest);
   const getOriginal = useServerFn(almoxGetOriginalRequest);
-  const addExtra = useServerFn(almoxAddExtraItem);
+  const addPartFn = useServerFn(almoxAddPart);
 
-  const [extraFor, setExtraFor] = useState<{ groupId: string; requesterName: string } | null>(null);
-  const [extraDraft, setExtraDraft] = useState<{ partName: string; quantity: number; note: string }>({ partName: "", quantity: 1, note: "" });
-  const [extraSaving, setExtraSaving] = useState(false);
+  const [addPartFor, setAddPartFor] = useState<{ operatorId: string; operatorName: string } | null>(null);
+  const [addPartDraft, setAddPartDraft] = useState<{ name: string; quantity: number }>({ name: "", quantity: 1 });
+  const [addPartSaving, setAddPartSaving] = useState(false);
 
-  async function saveExtra() {
-    if (!extraFor) return;
-    const partName = extraDraft.partName.trim();
-    const quantity = Math.max(1, Math.floor(Number(extraDraft.quantity) || 0));
-    if (!partName) { toast.error("Informe o nome da peça"); return; }
-    setExtraSaving(true);
+  async function saveAddPart() {
+    if (!addPartFor) return;
+    const name = addPartDraft.name.trim();
+    const quantity = Math.max(1, Math.floor(Number(addPartDraft.quantity) || 0));
+    if (!name) { toast.error("Informe o nome da peça"); return; }
+    setAddPartSaving(true);
     try {
-      await addExtra({ data: { pin, groupId: extraFor.groupId, partName, quantity, note: extraDraft.note.trim() } });
-      setExtraFor(null);
-      setExtraDraft({ partName: "", quantity: 1, note: "" });
-      toast.success("Peça extra adicionada");
-      loadRequests(pin);
+      await addPartFn({ data: { pin, operatorId: addPartFor.operatorId, date, name, quantity } });
+      setAddPartFor(null);
+      setAddPartDraft({ name: "", quantity: 1 });
+      toast.success("Peça adicionada");
+      load(pin, date);
     } catch (e: any) {
-      toast.error(e.message || "Falha ao adicionar peça extra");
+      toast.error(e.message || "Falha ao adicionar peça");
     } finally {
-      setExtraSaving(false);
+      setAddPartSaving(false);
     }
   }
 
@@ -754,14 +754,6 @@ function AlmoxarifadoPage() {
                             )}
                             <button
                               type="button"
-                              onClick={() => { setExtraFor({ groupId: r.group_id, requesterName: r.requester_name }); setExtraDraft({ partName: "", quantity: 1, note: "" }); }}
-                              className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-emerald-400 hover:bg-emerald-500/20 transition inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider"
-                              title="Adicionar peça extra"
-                            >
-                              <Plus className="h-3.5 w-3.5" /> Peça extra
-                            </button>
-                            <button
-                              type="button"
                               onClick={() => startEdit(r)}
                               className="rounded border border-blue-500/40 bg-blue-500/10 p-1.5 text-blue-400 hover:bg-blue-500/20 transition"
                               title="Editar requisição"
@@ -884,16 +876,26 @@ function AlmoxarifadoPage() {
                 .filter((g) => g.parts.length > 0)
                 .map((g) => (
                   <div key={g.operator.id} className="rounded-lg border border-border bg-card overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <span className="font-mono text-xs text-muted-foreground">
                           #{String(g.operator.position).padStart(2, "0")}
                         </span>
-                        <h2 className="font-display text-lg font-bold uppercase">{g.operator.name}</h2>
+                        <h2 className="font-display text-lg font-bold uppercase truncate">{g.operator.name}</h2>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {g.parts.length} {g.parts.length === 1 ? "item" : "itens"}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => { setAddPartFor({ operatorId: g.operator.id, operatorName: g.operator.name }); setAddPartDraft({ name: "", quantity: 1 }); }}
+                          className="rounded border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-emerald-400 hover:bg-emerald-500/20 transition inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider"
+                          title="Adicionar peça"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Adicionar peça
+                        </button>
+                        <span className="text-xs text-muted-foreground">
+                          {g.parts.length} {g.parts.length === 1 ? "item" : "itens"}
+                        </span>
+                      </div>
                     </div>
                     <ul className="divide-y divide-border">
                       {g.parts.map((p) => {
@@ -1063,23 +1065,24 @@ function AlmoxarifadoPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal adicionar peça extra */}
-      <Dialog open={!!extraFor} onOpenChange={(o) => { if (!o && !extraSaving) setExtraFor(null); }}>
+      {/* Modal adicionar peça */}
+      <Dialog open={!!addPartFor} onOpenChange={(o) => { if (!o && !addPartSaving) setAddPartFor(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Adicionar peça extra</DialogTitle>
+            <DialogTitle>Adicionar peça</DialogTitle>
           </DialogHeader>
-          {extraFor && (
+          {addPartFor && (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Técnico: <span className="text-foreground font-medium">{extraFor.requesterName}</span>
+                Técnico: <span className="text-foreground font-medium">{addPartFor.operatorName}</span> · {formatDateBR(date)}
               </p>
               <div>
                 <Label className="text-xs">Nome da peça</Label>
                 <Input
-                  value={extraDraft.partName}
-                  onChange={(e) => setExtraDraft((d) => ({ ...d, partName: e.target.value }))}
+                  value={addPartDraft.name}
+                  onChange={(e) => setAddPartDraft((d) => ({ ...d, name: e.target.value }))}
                   placeholder="Ex: Filtro hidráulico"
+                  autoFocus
                 />
               </div>
               <div>
@@ -1087,24 +1090,16 @@ function AlmoxarifadoPage() {
                 <Input
                   type="number"
                   min={1}
-                  value={extraDraft.quantity}
-                  onChange={(e) => setExtraDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Observação (opcional)</Label>
-                <Input
-                  value={extraDraft.note}
-                  onChange={(e) => setExtraDraft((d) => ({ ...d, note: e.target.value }))}
-                  placeholder="Ex: peça retirada após visita"
+                  value={addPartDraft.quantity}
+                  onChange={(e) => setAddPartDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
                 />
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setExtraFor(null)} disabled={extraSaving}>Cancelar</Button>
-            <Button onClick={saveExtra} disabled={extraSaving}>
-              {extraSaving ? "Salvando..." : "Adicionar"}
+            <Button variant="outline" onClick={() => setAddPartFor(null)} disabled={addPartSaving}>Cancelar</Button>
+            <Button onClick={saveAddPart} disabled={addPartSaving}>
+              {addPartSaving ? "Salvando..." : "Adicionar"}
             </Button>
           </DialogFooter>
         </DialogContent>

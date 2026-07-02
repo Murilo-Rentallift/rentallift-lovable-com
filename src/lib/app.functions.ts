@@ -461,6 +461,46 @@ export const almoxAddExtraItem = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Almoxarifado: add part to an operator's schedule for a given date ----------
+export const almoxAddPart = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; operatorId: string; date: string; name: string; quantity: number }) =>
+    z.object({
+      pin: pinSchema,
+      operatorId: z.string().uuid(),
+      date: dateSchema,
+      name: z.string().trim().min(1).max(200),
+      quantity: z.number().int().min(1).max(9999),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    let scheduleId: string;
+    const { data: existing } = await supabaseAdmin
+      .from("schedules").select("id")
+      .eq("operator_id", data.operatorId).eq("work_date", data.date).maybeSingle();
+    if (existing) scheduleId = existing.id;
+    else {
+      const { data: ins, error } = await supabaseAdmin
+        .from("schedules")
+        .insert({ operator_id: data.operatorId, work_date: data.date, task: "" })
+        .select("id").single();
+      if (error) throw new Error(error.message);
+      scheduleId = ins.id;
+    }
+    const { data: max } = await supabaseAdmin
+      .from("parts").select("position").eq("schedule_id", scheduleId)
+      .order("position", { ascending: false }).limit(1).maybeSingle();
+    const nextPos = (max?.position ?? 0) + 1;
+    const { error } = await supabaseAdmin.from("parts").insert({
+      schedule_id: scheduleId,
+      name: data.name,
+      quantity: data.quantity,
+      position: nextPos,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
   .handler(async ({ data }) => {
