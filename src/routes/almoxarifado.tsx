@@ -1062,6 +1062,53 @@ function AlmoxarifadoPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal adicionar peça extra */}
+      <Dialog open={!!extraFor} onOpenChange={(o) => { if (!o && !extraSaving) setExtraFor(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar peça extra</DialogTitle>
+          </DialogHeader>
+          {extraFor && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Técnico: <span className="text-foreground font-medium">{extraFor.requesterName}</span>
+              </p>
+              <div>
+                <Label className="text-xs">Nome da peça</Label>
+                <Input
+                  value={extraDraft.partName}
+                  onChange={(e) => setExtraDraft((d) => ({ ...d, partName: e.target.value }))}
+                  placeholder="Ex: Filtro hidráulico"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Quantidade</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={extraDraft.quantity}
+                  onChange={(e) => setExtraDraft((d) => ({ ...d, quantity: Number(e.target.value) }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Observação (opcional)</Label>
+                <Input
+                  value={extraDraft.note}
+                  onChange={(e) => setExtraDraft((d) => ({ ...d, note: e.target.value }))}
+                  placeholder="Ex: peça retirada após visita"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExtraFor(null)} disabled={extraSaving}>Cancelar</Button>
+            <Button onClick={saveExtra} disabled={extraSaving}>
+              {extraSaving ? "Salvando..." : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
