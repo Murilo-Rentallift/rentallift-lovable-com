@@ -398,7 +398,7 @@ function AlmoxarifadoPage() {
             rows.push([
               formatDateBR(req.created_at.slice(0, 10)),
               req.requester_name,
-              item.part_name,
+              item.is_extra ? `${item.part_name}  [EXTRA]` : item.part_name,
               String(item.quantity),
               item.code || "—",
             ]);
