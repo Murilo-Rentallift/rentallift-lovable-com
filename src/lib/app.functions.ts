@@ -1415,27 +1415,45 @@ export const almoxChat = createServerFn({ method: "POST" })
         quantidade: r.quantity,
         data: (r.created_at ?? "").slice(0, 10),
         status: r.status ?? "pendente",
+        origem: "Requisições da Oficina",
         extra: !!r.is_extra,
       }));
 
+    const pecasDoDiaNormalized = pecasRows.map((p) => ({
+      tecnico: p.tecnico,
+      peca: p.peca,
+      quantidade: p.quantidade,
+      data: p.data,
+      status: p.status,
+      origem: `Peças do Dia (${p.origem})`,
+    }));
+
+    const dados = [...pecasDoDiaNormalized, ...reqRows];
+
     const todayISO = iso(today);
+
+    console.log("[almoxChat] pergunta:", data.question);
+    console.log("[almoxChat] janela:", { startISO, endISO, todayISO });
+    console.log("[almoxChat] pecas_do_dia count:", pecasDoDiaNormalized.length, "amostra:", pecasDoDiaNormalized.slice(0, 5));
+    console.log("[almoxChat] requisicoes_oficina count:", reqRows.length, "amostra:", reqRows.slice(0, 5));
+
     const system = `Você é um assistente do almoxarifado que responde perguntas em português sobre dados de peças.
-Hoje é ${todayISO}. Você recebe duas listas em JSON: "pecas_do_dia" (peças lançadas por dia para cada técnico) e "requisicoes_oficina" (requisições feitas pela oficina).
+Hoje é ${todayISO}.
+Responda APENAS com base nos dados fornecidos abaixo, em formato JSON. Não invente nomes, datas, peças ou quantidades que não estejam presentes nos dados. Se a pergunta não puder ser respondida com os dados disponíveis, diga claramente que não encontrou essa informação.
+Cada registro tem os campos: tecnico, peca, quantidade, data (YYYY-MM-DD), status e origem ("Peças do Dia (PCM)", "Peças do Dia (Almoxarifado)" ou "Requisições da Oficina").
 Responda de forma CURTA e DIRETA. Some, conte ou liste conforme necessário. Se não houver dados suficientes, responda exatamente: "Não encontrei dados suficientes pra essa pergunta."`;
 
     const userMsg = `Pergunta: ${data.question}
 
-DADOS — Peças do Dia (${pecasRows.length} registros):
-${JSON.stringify(pecasRows)}
-
-DADOS — Requisições da Oficina (${reqRows.length} registros):
-${JSON.stringify(reqRows)}`;
+DADOS (${dados.length} registros no total — ${pecasDoDiaNormalized.length} de Peças do Dia, ${reqRows.length} de Requisições da Oficina):
+${JSON.stringify(dados)}`;
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
+        temperature: 0,
         messages: [
           { role: "system", content: system },
           { role: "user", content: userMsg },
@@ -1448,6 +1466,7 @@ ${JSON.stringify(reqRows)}`;
       if (resp.status === 402) throw new Error("Créditos de IA esgotados.");
       throw new Error(`Falha no chat (${resp.status}): ${txt.slice(0, 200)}`);
     }
+
     const json = await resp.json();
     const answer: string = json?.choices?.[0]?.message?.content?.trim() ?? "Sem resposta.";
     return { answer };
