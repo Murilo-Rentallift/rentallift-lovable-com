@@ -91,6 +91,7 @@ export function ChecklistRetornoTab() {
   );
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [gerando, setGerando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewEmail, setPreviewEmail] = useState("");
