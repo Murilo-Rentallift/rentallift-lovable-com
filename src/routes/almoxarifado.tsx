@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates, almoxEditRequest, almoxGetOriginalRequest, almoxAddPart } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates, almoxEditRequest, almoxGetOriginalRequest, almoxAddPart, almoxChat } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileDown, Package, Lock, Trash2, ListChecks, Wrench, Pencil, History, Plus } from "lucide-react";
+import { ArrowLeft, FileDown, Package, Lock, Trash2, ListChecks, Wrench, Pencil, History, Plus, MessageSquare, Send } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -89,6 +89,28 @@ function AlmoxarifadoPage() {
   const editReq = useServerFn(almoxEditRequest);
   const getOriginal = useServerFn(almoxGetOriginalRequest);
   const addPartFn = useServerFn(almoxAddPart);
+  const chatFn = useServerFn(almoxChat);
+
+  type ChatMsg = { role: "user" | "assistant"; content: string };
+  const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+
+  async function sendChat() {
+    const q = chatInput.trim();
+    if (!q || chatLoading) return;
+    setChatMsgs((m) => [...m, { role: "user", content: q }]);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const res = await chatFn({ data: { pin, question: q } });
+      setChatMsgs((m) => [...m, { role: "assistant", content: res.answer }]);
+    } catch (e: any) {
+      setChatMsgs((m) => [...m, { role: "assistant", content: `Erro: ${e?.message ?? "falha"}` }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
 
   const [addPartFor, setAddPartFor] = useState<{ operatorId: string; operatorName: string } | null>(null);
   const [addPartDraft, setAddPartDraft] = useState<{ name: string; quantity: number }>({ name: "", quantity: 1 });
@@ -642,6 +664,45 @@ function AlmoxarifadoPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8 space-y-5">
+        <section className="rounded-lg border border-border bg-card">
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-accent" />
+            <h2 className="font-display text-sm uppercase tracking-wider">Assistente do Almoxarifado</h2>
+            <span className="text-[10px] text-muted-foreground ml-auto">Pergunte sobre peças, técnicos, datas...</span>
+          </div>
+          {chatMsgs.length > 0 && (
+            <div className="max-h-64 overflow-y-auto px-4 py-3 space-y-2">
+              {chatMsgs.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${m.role === "user" ? "bg-accent text-accent-foreground" : "bg-muted text-foreground"}`}>
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <div className="rounded-lg px-3 py-2 text-sm bg-muted text-muted-foreground">Pensando...</div>
+                </div>
+              )}
+            </div>
+          )}
+          <form
+            onSubmit={(e) => { e.preventDefault(); sendChat(); }}
+            className="flex items-center gap-2 p-3 border-t border-border"
+          >
+            <Input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder='Ex: "quantos óleos de motor liberei esse mês?"'
+              disabled={chatLoading}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={chatLoading || !chatInput.trim()} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </section>
+
         <div className="flex gap-2 border-b border-border">
           <button
             type="button"
