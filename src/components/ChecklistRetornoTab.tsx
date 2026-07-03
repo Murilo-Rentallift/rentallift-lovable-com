@@ -452,17 +452,25 @@ export function ChecklistRetornoTab() {
 
   async function gerarPDF(autoPrint = false) {
     setGerando(true);
+    const toastId = "gen-pdf-ret";
+    toast.loading("Gerando PDF...", { id: toastId });
     try {
       const doc = await buildPdf();
+      const blob = doc.output("blob") as Blob;
+      const size = blob.size;
+      if (!size) throw new Error("PDF gerado está vazio");
       if (autoPrint) {
         doc.autoPrint();
-        const url = doc.output("bloburl");
+        const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
       } else {
         doc.save(pdfFileName());
       }
+      toast.success(`PDF gerado (${formatBytes(size)})`, { id: toastId });
     } catch (e: any) {
-      toast.error(e?.message || "Erro ao gerar PDF");
+      const detail = e?.message || String(e);
+      toast.error(`Erro ao gerar PDF: ${detail}`, { id: toastId, duration: 8000 });
+      console.error("[ChecklistRetorno] gerarPDF falhou:", e);
     } finally {
       setGerando(false);
     }
