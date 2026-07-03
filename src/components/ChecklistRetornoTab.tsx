@@ -148,14 +148,29 @@ export function ChecklistRetornoTab() {
   async function handleFotos(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
+    const toastId = "compress-fotos-ret";
+    toast.loading(`Processando ${files.length} imagem(ns)...`, { id: toastId });
     try {
-      const novas = await Promise.all(
-        files.map(async (f) => ({ name: f.name, dataUrl: await fileToDataUrl(f) })),
-      );
+      const novas: Foto[] = [];
+      for (const f of files) {
+        try {
+          const dataUrl = await fileToCompressedJpegDataUrl(f, {
+            maxWidth: 1200,
+            maxHeight: 1600,
+            quality: 0.8,
+          });
+          novas.push({ name: f.name, dataUrl });
+        } catch (err: any) {
+          throw new Error(
+            `Falha ao processar "${f.name}" (${formatBytes(f.size)}): ${err?.message || err}`,
+          );
+        }
+      }
       setFotos((p) => [...p, ...novas]);
       e.target.value = "";
-    } catch {
-      toast.error("Falha ao ler imagem");
+      toast.success(`${novas.length} imagem(ns) adicionada(s)`, { id: toastId });
+    } catch (err: any) {
+      toast.error(err?.message || "Falha ao ler imagem", { id: toastId });
     }
   }
 
@@ -175,15 +190,32 @@ export function ChecklistRetornoTab() {
     };
   }
 
-  function salvarRascunho() {
-    const d = currentDraft();
-    const list = loadDrafts();
-    const idx = list.findIndex((x) => x.id === d.id);
-    if (idx >= 0) list[idx] = d;
-    else list.unshift(d);
-    saveDrafts(list);
-    setDrafts(list);
-    toast.success("Checklist salvo");
+  async function salvarRascunho() {
+    if (salvando) return;
+    setSalvando(true);
+    const toastId = "save-draft-ret";
+    toast.loading("Salvando checklist...", { id: toastId });
+    try {
+      const d = currentDraft();
+      const list = loadDrafts();
+      const idx = list.findIndex((x) => x.id === d.id);
+      if (idx >= 0) list[idx] = d;
+      else list.unshift(d);
+      try {
+        saveDrafts(list);
+      } catch (err: any) {
+        const payload = JSON.stringify(list);
+        throw new Error(
+          `Armazenamento local cheio ou indisponível (payload ~${formatBytes(payload.length)}). ${err?.message || ""}`.trim(),
+        );
+      }
+      setDrafts(list);
+      toast.success("Checklist salvo", { id: toastId });
+    } catch (err: any) {
+      toast.error(err?.message || "Falha ao salvar checklist", { id: toastId });
+    } finally {
+      setSalvando(false);
+    }
   }
 
   function novoChecklist() {
