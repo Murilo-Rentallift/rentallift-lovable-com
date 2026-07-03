@@ -10,6 +10,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { RENTAL_LIFT_LOGO_B64 } from "@/lib/assets/rental-lift-logo-b64";
 import { SignaturePad } from "@/components/SignaturePad";
+import { fileToCompressedJpegDataUrl, dataUrlByteSize, formatBytes } from "@/lib/imageCompress";
 
 const ITENS_PADRAO: { nome: string; desc: string }[] = [
   { nome: "ÓLEO DE MOTOR", desc: "Verificar nível" },
@@ -66,15 +67,6 @@ type Draft = {
   fotos: Foto[];
 };
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 function loadDrafts(): Draft[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -86,11 +78,8 @@ function loadDrafts(): Draft[] {
   }
 }
 function saveDrafts(list: Draft[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    toast.error("Falha ao salvar (armazenamento cheio?)");
-  }
+  // pode lançar QuotaExceededError — o caller deve tratar
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
 export function ChecklistSaidaTab() {
@@ -115,6 +104,7 @@ export function ChecklistSaidaTab() {
   );
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [gerando, setGerando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewEmail, setPreviewEmail] = useState("");
@@ -177,14 +167,30 @@ export function ChecklistSaidaTab() {
   async function handleFotos(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
+    const toastId = "compress-fotos";
+    toast.loading(`Processando ${files.length} imagem(ns)...`, { id: toastId });
     try {
-      const novas = await Promise.all(
-        files.map(async (f) => ({ name: f.name, dataUrl: await fileToDataUrl(f) })),
-      );
+      // Aguarda TODAS as imagens serem carregadas/comprimidas antes de prosseguir.
+      const novas: Foto[] = [];
+      for (const f of files) {
+        try {
+          const dataUrl = await fileToCompressedJpegDataUrl(f, {
+            maxWidth: 1200,
+            maxHeight: 1600,
+            quality: 0.8,
+          });
+          novas.push({ name: f.name, dataUrl });
+        } catch (err: any) {
+          throw new Error(
+            `Falha ao processar "${f.name}" (${formatBytes(f.size)}): ${err?.message || err}`,
+          );
+        }
+      }
       setFotos((p) => [...p, ...novas]);
       e.target.value = "";
-    } catch {
-      toast.error("Falha ao ler imagem");
+      toast.success(`${novas.length} imagem(ns) adicionada(s)`, { id: toastId });
+    } catch (err: any) {
+      toast.error(err?.message || "Falha ao ler imagem", { id: toastId });
     }
   }
 
@@ -204,15 +210,32 @@ export function ChecklistSaidaTab() {
     };
   }
 
-  function salvarRascunho() {
-    const d = currentDraft();
-    const list = loadDrafts();
-    const idx = list.findIndex((x) => x.id === d.id);
-    if (idx >= 0) list[idx] = d;
-    else list.unshift(d);
-    saveDrafts(list);
-    setDrafts(list);
-    toast.success("Checklist salvo");
+  async function salvarRascunho() {
+    if (salvando) return;
+    setSalvando(true);
+    const toastId = "save-draft";
+    toast.loading("Salvando checklist...", { id: toastId });
+    try {
+      const d = currentDraft();
+      const list = loadDrafts();
+      const idx = list.findIndex((x) => x.id === d.id);
+      if (idx >= 0) list[idx] = d;
+      else list.unshift(d);
+      try {
+        saveDrafts(list);
+      } catch (err: any) {
+        const payload = JSON.stringify(list);
+        throw new Error(
+          `Armazenamento local cheio ou indisponível (payload ~${formatBytes(payload.length)}). ${err?.message || ""}`.trim(),
+        );
+      }
+      setDrafts(list);
+      toast.success("Checklist salvo", { id: toastId });
+    } catch (err: any) {
+      toast.error(err?.message || "Falha ao salvar checklist", { id: toastId });
+    } finally {
+      setSalvando(false);
+    }
   }
 
   function novoChecklist() {
@@ -444,17 +467,26 @@ export function ChecklistSaidaTab() {
 
   async function gerarPDF(autoPrint = false) {
     setGerando(true);
+    const toastId = "gen-pdf";
+    toast.loading("Gerando PDF...", { id: toastId });
     try {
       const doc = await buildPdf();
+      // valida tamanho antes de dispatch
+      const blob = doc.output("blob") as Blob;
+      const size = blob.size;
+      if (!size) throw new Error("PDF gerado está vazio");
       if (autoPrint) {
         doc.autoPrint();
-        const url = doc.output("bloburl");
+        const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
       } else {
         doc.save(pdfFileName());
       }
+      toast.success(`PDF gerado (${formatBytes(size)})`, { id: toastId });
     } catch (e: any) {
-      toast.error(e?.message || "Erro ao gerar PDF");
+      const detail = e?.message || String(e);
+      toast.error(`Erro ao gerar PDF: ${detail}`, { id: toastId, duration: 8000 });
+      console.error("[ChecklistSaida] gerarPDF falhou:", e);
     } finally {
       setGerando(false);
     }
@@ -538,8 +570,8 @@ export function ChecklistSaidaTab() {
     <div className="space-y-6">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" onClick={salvarRascunho}>
-          <Save className="h-4 w-4 mr-1" /> Salvar
+        <Button variant="outline" size="sm" onClick={salvarRascunho} disabled={salvando}>
+          <Save className="h-4 w-4 mr-1" /> {salvando ? "Salvando..." : "Salvar"}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setShowDrafts((v) => !v)}>
           <FolderOpen className="h-4 w-4 mr-1" /> Salvos ({drafts.length})
@@ -764,8 +796,8 @@ export function ChecklistSaidaTab() {
       </section>
 
       <div className="flex flex-wrap gap-2 justify-end">
-        <Button variant="outline" onClick={salvarRascunho}>
-          <Save className="h-4 w-4 mr-2" /> Salvar
+        <Button variant="outline" onClick={salvarRascunho} disabled={salvando}>
+          <Save className="h-4 w-4 mr-2" /> {salvando ? "Salvando..." : "Salvar"}
         </Button>
         <Button variant="outline" onClick={() => gerarPDF(true)} disabled={gerando}>
           <FileDown className="h-4 w-4 mr-2" /> Imprimir
