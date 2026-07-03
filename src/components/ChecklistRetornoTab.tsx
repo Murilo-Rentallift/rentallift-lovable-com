@@ -777,8 +777,8 @@ export function ChecklistRetornoTab() {
       </section>
 
       <div className="flex flex-wrap gap-2 justify-end">
-        <Button variant="outline" onClick={salvarRascunho}>
-          <Save className="h-4 w-4 mr-2" /> Salvar
+        <Button variant="outline" onClick={salvarRascunho} disabled={salvando}>
+          <Save className="h-4 w-4 mr-2" /> {salvando ? "Salvando..." : "Salvar"}
         </Button>
         <Button variant="outline" onClick={() => gerarPDF(true)} disabled={gerando}>
           <FileDown className="h-4 w-4 mr-2" /> Imprimir
