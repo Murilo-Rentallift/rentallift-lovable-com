@@ -10,6 +10,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { RENTAL_LIFT_LOGO_B64 } from "@/lib/assets/rental-lift-logo-b64";
 import { SignaturePad } from "@/components/SignaturePad";
+import { fileToCompressedJpegDataUrl, dataUrlByteSize, formatBytes } from "@/lib/imageCompress";
 
 const ITENS_PADRAO: { nome: string; desc: string }[] = [
   { nome: "ÓLEO DE MOTOR", desc: "Verificar nível" },
