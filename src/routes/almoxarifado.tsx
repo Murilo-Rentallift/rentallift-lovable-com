@@ -664,6 +664,45 @@ function AlmoxarifadoPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8 space-y-5">
+        <section className="rounded-lg border border-border bg-card">
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-accent" />
+            <h2 className="font-display text-sm uppercase tracking-wider">Assistente do Almoxarifado</h2>
+            <span className="text-[10px] text-muted-foreground ml-auto">Pergunte sobre peças, técnicos, datas...</span>
+          </div>
+          {chatMsgs.length > 0 && (
+            <div className="max-h-64 overflow-y-auto px-4 py-3 space-y-2">
+              {chatMsgs.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${m.role === "user" ? "bg-accent text-accent-foreground" : "bg-muted text-foreground"}`}>
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <div className="rounded-lg px-3 py-2 text-sm bg-muted text-muted-foreground">Pensando...</div>
+                </div>
+              )}
+            </div>
+          )}
+          <form
+            onSubmit={(e) => { e.preventDefault(); sendChat(); }}
+            className="flex items-center gap-2 p-3 border-t border-border"
+          >
+            <Input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder='Ex: "quantos óleos de motor liberei esse mês?"'
+              disabled={chatLoading}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={chatLoading || !chatInput.trim()} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </section>
+
         <div className="flex gap-2 border-b border-border">
           <button
             type="button"
