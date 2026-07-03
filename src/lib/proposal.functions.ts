@@ -1,6 +1,31 @@
 import { createServerFn } from "@tanstack/react-start";
 import { PROPOSAL_LOGOS_B64 } from "./assets/proposal-logos";
 
+const MESES_EXTENSO = [
+  "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+  "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+// Extrai mês/ano da string de data do formulário (ex: "03 de julho de 2026").
+// Se não conseguir reconhecer o formato, usa a data atual do servidor como fallback.
+function extrairMesAnoParaArquivo(dataTexto: string): { mes: string; ano: string } {
+  const match = dataTexto.match(/de\s+(\p{L}+)\s+de\s+(\d{4})/iu);
+  if (match) {
+    const mesEncontrado = MESES_EXTENSO.find(
+      (m) => m.localeCompare(match[1], "pt", { sensitivity: "base" }) === 0,
+    );
+    if (mesEncontrado) return { mes: mesEncontrado.toUpperCase(), ano: match[2] };
+  }
+  const hoje = new Date();
+  return { mes: MESES_EXTENSO[hoje.getMonth()].toUpperCase(), ano: String(hoje.getFullYear()) };
+}
+
+// Remove apenas caracteres inválidos em nomes de arquivo, mantendo espaços,
+// parênteses e acentos.
+function sanitizarNomeArquivo(texto: string): string {
+  return texto.replace(/[\\/:*?"<>|]/g, "").trim();
+}
+
 export type EquipDesc = {
   tipo: string;
   combustivel: string;
@@ -318,8 +343,10 @@ export const generateProposal = createServerFn({ method: "POST" })
     });
 
     const buffer = await Packer.toBuffer(doc);
+    const { mes, ano } = extrairMesAnoParaArquivo(data.data);
+    const clienteFmt = sanitizarNomeArquivo(data.cliente.trim().toUpperCase());
     return {
-      filename: `Proposta_${data.cliente.replace(/[^a-zA-Z0-9]+/g, "_")}.docx`,
+      filename: `PROPOSTA DE LOCAÇÃO (${clienteFmt}) - (${mes}) ${ano}.docx`,
       base64: Buffer.from(buffer).toString("base64"),
     };
   });
