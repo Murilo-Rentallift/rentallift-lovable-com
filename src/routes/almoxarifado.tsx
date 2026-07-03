@@ -89,6 +89,28 @@ function AlmoxarifadoPage() {
   const editReq = useServerFn(almoxEditRequest);
   const getOriginal = useServerFn(almoxGetOriginalRequest);
   const addPartFn = useServerFn(almoxAddPart);
+  const chatFn = useServerFn(almoxChat);
+
+  type ChatMsg = { role: "user" | "assistant"; content: string };
+  const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+
+  async function sendChat() {
+    const q = chatInput.trim();
+    if (!q || chatLoading) return;
+    setChatMsgs((m) => [...m, { role: "user", content: q }]);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const res = await chatFn({ data: { pin, question: q } });
+      setChatMsgs((m) => [...m, { role: "assistant", content: res.answer }]);
+    } catch (e: any) {
+      setChatMsgs((m) => [...m, { role: "assistant", content: `Erro: ${e?.message ?? "falha"}` }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
 
   const [addPartFor, setAddPartFor] = useState<{ operatorId: string; operatorName: string } | null>(null);
   const [addPartDraft, setAddPartDraft] = useState<{ name: string; quantity: number }>({ name: "", quantity: 1 });
