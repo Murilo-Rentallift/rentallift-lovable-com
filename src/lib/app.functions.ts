@@ -1346,3 +1346,109 @@ export const adminDeleteMaintenanceReturn = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- Almoxarifado chat: natural-language Q&A over parts data ----------
+export const almoxChat = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; question: string }) =>
+    z.object({
+      pin: pinSchema,
+      question: z.string().trim().min(1).max(500),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("LOVABLE_API_KEY ausente");
+
+    const today = new Date();
+    const start = new Date(today); start.setDate(start.getDate() - 90);
+    const end = new Date(today); end.setDate(end.getDate() + 30);
+    const iso = (d: Date) => {
+      const tz = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - tz).toISOString().slice(0, 10);
+    };
+    const startISO = iso(start);
+    const endISO = iso(end);
+
+    // Peças do Dia: parts joined via schedules -> operators
+    const { data: schedules } = await supabaseAdmin
+      .from("schedules")
+      .select("id, work_date, operator_id, operators(name)")
+      .gte("work_date", startISO)
+      .lte("work_date", endISO);
+    const schedMap = new Map<string, { date: string; operator: string }>();
+    (schedules ?? []).forEach((s: any) => {
+      schedMap.set(s.id, { date: s.work_date, operator: s.operators?.name ?? "?" });
+    });
+    const ids = Array.from(schedMap.keys());
+    let pecasRows: Array<{ tecnico: string; peca: string; quantidade: number; data: string; status: string; origem: string }> = [];
+    if (ids.length) {
+      const { data: parts } = await supabaseAdmin
+        .from("parts")
+        .select("name, quantity, status, source, schedule_id")
+        .in("schedule_id", ids);
+      pecasRows = (parts ?? []).map((p: any) => {
+        const s = schedMap.get(p.schedule_id)!;
+        return {
+          tecnico: s.operator,
+          peca: p.name,
+          quantidade: p.quantity,
+          data: s.date,
+          status: p.status ?? "pendente",
+          origem: p.source === "almoxarifado" ? "Almoxarifado" : "PCM",
+        };
+      });
+    }
+
+    // Requisições da Oficina
+    const { data: reqs } = await supabaseAdmin
+      .from("part_requests" as any)
+      .select("requester_name, part_name, quantity, status, created_at, is_extra, superseded")
+      .gte("created_at", `${startISO}T00:00:00`)
+      .order("created_at", { ascending: false })
+      .limit(1000);
+    const reqRows = ((reqs ?? []) as any[])
+      .filter((r) => !r.superseded)
+      .map((r) => ({
+        tecnico: r.requester_name,
+        peca: r.part_name,
+        quantidade: r.quantity,
+        data: (r.created_at ?? "").slice(0, 10),
+        status: r.status ?? "pendente",
+        extra: !!r.is_extra,
+      }));
+
+    const todayISO = iso(today);
+    const system = `Você é um assistente do almoxarifado que responde perguntas em português sobre dados de peças.
+Hoje é ${todayISO}. Você recebe duas listas em JSON: "pecas_do_dia" (peças lançadas por dia para cada técnico) e "requisicoes_oficina" (requisições feitas pela oficina).
+Responda de forma CURTA e DIRETA. Some, conte ou liste conforme necessário. Se não houver dados suficientes, responda exatamente: "Não encontrei dados suficientes pra essa pergunta."`;
+
+    const userMsg = `Pergunta: ${data.question}
+
+DADOS — Peças do Dia (${pecasRows.length} registros):
+${JSON.stringify(pecasRows)}
+
+DADOS — Requisições da Oficina (${reqRows.length} registros):
+${JSON.stringify(reqRows)}`;
+
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: userMsg },
+        ],
+      }),
+    });
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => "");
+      if (resp.status === 429) throw new Error("Limite de requisições atingido. Tente novamente em instantes.");
+      if (resp.status === 402) throw new Error("Créditos de IA esgotados.");
+      throw new Error(`Falha no chat (${resp.status}): ${txt.slice(0, 200)}`);
+    }
+    const json = await resp.json();
+    const answer: string = json?.choices?.[0]?.message?.content?.trim() ?? "Sem resposta.";
+    return { answer };
+  });
