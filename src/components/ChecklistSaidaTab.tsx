@@ -570,8 +570,8 @@ export function ChecklistSaidaTab() {
     <div className="space-y-6">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" onClick={salvarRascunho}>
-          <Save className="h-4 w-4 mr-1" /> Salvar
+        <Button variant="outline" size="sm" onClick={salvarRascunho} disabled={salvando}>
+          <Save className="h-4 w-4 mr-1" /> {salvando ? "Salvando..." : "Salvar"}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setShowDrafts((v) => !v)}>
           <FolderOpen className="h-4 w-4 mr-1" /> Salvos ({drafts.length})
