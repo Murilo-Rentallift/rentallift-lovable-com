@@ -54,15 +54,6 @@ type Draft = {
   fotos: Foto[];
 };
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 function loadDrafts(): Draft[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -74,11 +65,8 @@ function loadDrafts(): Draft[] {
   }
 }
 function saveDrafts(list: Draft[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    toast.error("Falha ao salvar (armazenamento cheio?)");
-  }
+  // pode lançar QuotaExceededError — o caller deve tratar
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
 export function ChecklistRetornoTab() {
