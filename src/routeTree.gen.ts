@@ -16,6 +16,7 @@ import { Route as AlmoxarifadoRouteImport } from './routes/almoxarifado'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OperadorIdRouteImport } from './routes/operador.$id'
+import { Route as ApiPublicHooksWeeklyMissingPartsRouteImport } from './routes/api/public/hooks/weekly-missing-parts'
 
 const VendasRoute = VendasRouteImport.update({
   id: '/vendas',
@@ -52,6 +53,12 @@ const OperadorIdRoute = OperadorIdRouteImport.update({
   path: '/operador/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksWeeklyMissingPartsRoute =
+  ApiPublicHooksWeeklyMissingPartsRouteImport.update({
+    id: '/api/public/hooks/weekly-missing-parts',
+    path: '/api/public/hooks/weekly-missing-parts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/reunioes': typeof ReunioesRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
+  '/api/public/hooks/weekly-missing-parts': typeof ApiPublicHooksWeeklyMissingPartsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +78,7 @@ export interface FileRoutesByTo {
   '/reunioes': typeof ReunioesRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
+  '/api/public/hooks/weekly-missing-parts': typeof ApiPublicHooksWeeklyMissingPartsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +89,7 @@ export interface FileRoutesById {
   '/reunioes': typeof ReunioesRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
+  '/api/public/hooks/weekly-missing-parts': typeof ApiPublicHooksWeeklyMissingPartsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +101,7 @@ export interface FileRouteTypes {
     | '/reunioes'
     | '/vendas'
     | '/operador/$id'
+    | '/api/public/hooks/weekly-missing-parts'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +111,7 @@ export interface FileRouteTypes {
     | '/reunioes'
     | '/vendas'
     | '/operador/$id'
+    | '/api/public/hooks/weekly-missing-parts'
   id:
     | '__root__'
     | '/'
@@ -109,6 +121,7 @@ export interface FileRouteTypes {
     | '/reunioes'
     | '/vendas'
     | '/operador/$id'
+    | '/api/public/hooks/weekly-missing-parts'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +132,7 @@ export interface RootRouteChildren {
   ReunioesRoute: typeof ReunioesRoute
   VendasRoute: typeof VendasRoute
   OperadorIdRoute: typeof OperadorIdRoute
+  ApiPublicHooksWeeklyMissingPartsRoute: typeof ApiPublicHooksWeeklyMissingPartsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperadorIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/weekly-missing-parts': {
+      id: '/api/public/hooks/weekly-missing-parts'
+      path: '/api/public/hooks/weekly-missing-parts'
+      fullPath: '/api/public/hooks/weekly-missing-parts'
+      preLoaderRoute: typeof ApiPublicHooksWeeklyMissingPartsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +204,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReunioesRoute: ReunioesRoute,
   VendasRoute: VendasRoute,
   OperadorIdRoute: OperadorIdRoute,
+  ApiPublicHooksWeeklyMissingPartsRoute: ApiPublicHooksWeeklyMissingPartsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
