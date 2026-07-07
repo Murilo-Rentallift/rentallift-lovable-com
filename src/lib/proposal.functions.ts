@@ -346,7 +346,7 @@ export const generateProposal = createServerFn({ method: "POST" })
     const { mes, ano } = extrairMesAnoParaArquivo(data.data);
     const clienteFmt = sanitizarNomeArquivo(data.cliente.trim().toUpperCase());
     return {
-      filename: `PROPOSTA DE LOCAÇÃO (${clienteFmt}) - (${mes}) ${ano}.docx`,
+      filename: `PROPOSTA DE LOCAÇÃO ${clienteFmt} - (${mes}) ${ano}.docx`,
       base64: Buffer.from(buffer).toString("base64"),
     };
   });
