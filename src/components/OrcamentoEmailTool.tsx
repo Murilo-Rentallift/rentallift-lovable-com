@@ -86,7 +86,7 @@ export function OrcamentoEmailTool() {
   const subjectLine = useMemo(() => {
     const clientUpper = client.trim().toUpperCase();
     const reasonUpper = reason.trim().toUpperCase();
-    let line = `ORÇAMENTO ${number.trim()}`;
+    let line = number.trim() ? `ORÇAMENTO ${number.trim()}` : "ORÇAMENTO";
     if (clientUpper) line += ` - ${clientUpper}`;
     if (reasonUpper) line += ` - ${reasonUpper}`;
     if (isOperatorError) line += " - ERRO DE OPERAÇÃO";
