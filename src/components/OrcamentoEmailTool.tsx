@@ -86,15 +86,13 @@ export function OrcamentoEmailTool() {
   const subjectLine = useMemo(() => {
     const clientUpper = client.trim().toUpperCase();
     const reasonUpper = reason.trim().toUpperCase();
-    const parts: string[] = [];
-    parts.push("ORÇAMENTO");
-    if (number.trim()) parts.push(number.trim());
-    if (clientUpper) parts.push(clientUpper);
-    if (reasonUpper) parts.push(reasonUpper);
-    if (isOperatorError) parts.push("ERRO DE OPERAÇÃO");
-    parts.push("AGUARDANDO APROVAÇÃO");
-    parts.push(`PRAZO: ${deadline || "0"} DIAS`);
-    return parts.join(" - ");
+    let line = `ORÇAMENTO ${number.trim()}`;
+    if (clientUpper) line += ` - ${clientUpper}`;
+    if (reasonUpper) line += ` - ${reasonUpper}`;
+    if (isOperatorError) line += " - ERRO DE OPERAÇÃO";
+    line += " - AGUARDANDO APROVAÇÃO";
+    line += ` - PRAZO: ${deadline || "0"} DIAS`;
+    return line;
   }, [number, client, reason, isOperatorError, deadline]);
 
   const bodyText = useMemo(() => {
