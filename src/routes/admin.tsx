@@ -9,9 +9,10 @@ import {
   adminListMaintenanceReturns, adminAddMaintenanceReturn, adminUpdateMaintenanceReturn, adminDeleteMaintenanceReturn,
   adminListAttendedCalls, adminAddAttendedCall, adminUpdateAttendedCall, adminDeleteAttendedCall,
 } from "@/lib/app.functions";
-import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, BookCheck, Clock, Pencil, Plus, Save, Settings, Trash2, Wrench, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, BookCheck, Clock, Mail, Pencil, Plus, Save, Settings, Trash2, Wrench, X } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Logo";
+import { OrcamentoEmailTool } from "@/components/OrcamentoEmailTool";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Programação Diária" }] }),
@@ -87,7 +88,7 @@ function AdminLogin({ onLogged }: { onLogged: (pin: string) => void }) {
 function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }) {
   const [date, setDate] = useState(todayISO());
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [tab, setTab] = useState<"operadores" | "chamados" | "agenda">("operadores");
+  const [tab, setTab] = useState<"operadores" | "chamados" | "agenda" | "orcamentos">("operadores");
   const qc = useQueryClient();
 
   const getDay = useServerFn(adminGetDay);
@@ -170,6 +171,17 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             <BookCheck className="h-4 w-4" />
             Agenda do dia
           </button>
+          <button
+            onClick={() => setTab("orcamentos")}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
+              tab === "orcamentos"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Mail className="h-4 w-4" />
+            Email Orçamentos
+          </button>
         </div>
       </header>
 
@@ -179,6 +191,8 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
 
         ) : tab === "agenda" ? (
           <AttendedCallsAgenda pin={pin} date={date} />
+        ) : tab === "orcamentos" ? (
+          <OrcamentoEmailTool />
         ) : (
           <>
             {isLoading && (
