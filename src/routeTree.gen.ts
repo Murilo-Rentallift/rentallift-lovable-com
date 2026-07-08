@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VendasRouteImport } from './routes/vendas'
-import { Route as TestOrcamentoRouteImport } from './routes/test-orcamento'
 import { Route as ReunioesRouteImport } from './routes/reunioes'
 import { Route as OficinaRouteImport } from './routes/oficina'
 import { Route as AlmoxarifadoRouteImport } from './routes/almoxarifado'
@@ -22,11 +21,6 @@ import { Route as ApiPublicHooksWeeklyMissingPartsRouteImport } from './routes/a
 const VendasRoute = VendasRouteImport.update({
   id: '/vendas',
   path: '/vendas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TestOrcamentoRoute = TestOrcamentoRouteImport.update({
-  id: '/test-orcamento',
-  path: '/test-orcamento',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReunioesRoute = ReunioesRouteImport.update({
@@ -72,7 +66,6 @@ export interface FileRoutesByFullPath {
   '/almoxarifado': typeof AlmoxarifadoRoute
   '/oficina': typeof OficinaRoute
   '/reunioes': typeof ReunioesRoute
-  '/test-orcamento': typeof TestOrcamentoRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
   '/api/public/hooks/weekly-missing-parts': typeof ApiPublicHooksWeeklyMissingPartsRoute
@@ -83,7 +76,6 @@ export interface FileRoutesByTo {
   '/almoxarifado': typeof AlmoxarifadoRoute
   '/oficina': typeof OficinaRoute
   '/reunioes': typeof ReunioesRoute
-  '/test-orcamento': typeof TestOrcamentoRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
   '/api/public/hooks/weekly-missing-parts': typeof ApiPublicHooksWeeklyMissingPartsRoute
@@ -95,7 +87,6 @@ export interface FileRoutesById {
   '/almoxarifado': typeof AlmoxarifadoRoute
   '/oficina': typeof OficinaRoute
   '/reunioes': typeof ReunioesRoute
-  '/test-orcamento': typeof TestOrcamentoRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
   '/api/public/hooks/weekly-missing-parts': typeof ApiPublicHooksWeeklyMissingPartsRoute
@@ -108,7 +99,6 @@ export interface FileRouteTypes {
     | '/almoxarifado'
     | '/oficina'
     | '/reunioes'
-    | '/test-orcamento'
     | '/vendas'
     | '/operador/$id'
     | '/api/public/hooks/weekly-missing-parts'
@@ -119,7 +109,6 @@ export interface FileRouteTypes {
     | '/almoxarifado'
     | '/oficina'
     | '/reunioes'
-    | '/test-orcamento'
     | '/vendas'
     | '/operador/$id'
     | '/api/public/hooks/weekly-missing-parts'
@@ -130,7 +119,6 @@ export interface FileRouteTypes {
     | '/almoxarifado'
     | '/oficina'
     | '/reunioes'
-    | '/test-orcamento'
     | '/vendas'
     | '/operador/$id'
     | '/api/public/hooks/weekly-missing-parts'
@@ -142,7 +130,6 @@ export interface RootRouteChildren {
   AlmoxarifadoRoute: typeof AlmoxarifadoRoute
   OficinaRoute: typeof OficinaRoute
   ReunioesRoute: typeof ReunioesRoute
-  TestOrcamentoRoute: typeof TestOrcamentoRoute
   VendasRoute: typeof VendasRoute
   OperadorIdRoute: typeof OperadorIdRoute
   ApiPublicHooksWeeklyMissingPartsRoute: typeof ApiPublicHooksWeeklyMissingPartsRoute
@@ -155,13 +142,6 @@ declare module '@tanstack/react-router' {
       path: '/vendas'
       fullPath: '/vendas'
       preLoaderRoute: typeof VendasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/test-orcamento': {
-      id: '/test-orcamento'
-      path: '/test-orcamento'
-      fullPath: '/test-orcamento'
-      preLoaderRoute: typeof TestOrcamentoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reunioes': {
@@ -222,7 +202,6 @@ const rootRouteChildren: RootRouteChildren = {
   AlmoxarifadoRoute: AlmoxarifadoRoute,
   OficinaRoute: OficinaRoute,
   ReunioesRoute: ReunioesRoute,
-  TestOrcamentoRoute: TestOrcamentoRoute,
   VendasRoute: VendasRoute,
   OperadorIdRoute: OperadorIdRoute,
   ApiPublicHooksWeeklyMissingPartsRoute: ApiPublicHooksWeeklyMissingPartsRoute,
