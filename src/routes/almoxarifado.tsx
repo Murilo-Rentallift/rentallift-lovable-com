@@ -29,7 +29,7 @@ const STATUS_OPTIONS: { value: PartStatus; label: string; className: string }[] 
 
 
 type PartSource = "pcm" | "almoxarifado";
-type Part = { id: string; name: string; quantity: number; checked: boolean; status: PartStatus; source?: PartSource };
+type Part = { id: string; name: string; quantity: number; checked: boolean; status: PartStatus; source?: PartSource; original_name?: string | null; original_quantity?: number | null; edited_at?: string | null };
 type Group = {
   operator: { id: string; name: string; position: number };
   parts: Part[];
