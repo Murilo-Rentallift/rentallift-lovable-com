@@ -231,8 +231,11 @@ export type Database = {
         Row: {
           checked: boolean
           created_at: string
+          edited_at: string | null
           id: string
           name: string
+          original_name: string | null
+          original_quantity: number | null
           position: number
           quantity: number
           schedule_id: string
@@ -242,8 +245,11 @@ export type Database = {
         Insert: {
           checked?: boolean
           created_at?: string
+          edited_at?: string | null
           id?: string
           name: string
+          original_name?: string | null
+          original_quantity?: number | null
           position?: number
           quantity?: number
           schedule_id: string
@@ -253,8 +259,11 @@ export type Database = {
         Update: {
           checked?: boolean
           created_at?: string
+          edited_at?: string | null
           id?: string
           name?: string
+          original_name?: string | null
+          original_quantity?: number | null
           position?: number
           quantity?: number
           schedule_id?: string
