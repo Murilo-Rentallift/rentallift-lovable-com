@@ -167,6 +167,7 @@ function AlmoxarifadoPage() {
       toast.error(e.message || "Falha ao buscar original");
     }
   }
+  type EditDraft = { partName: string; quantity: number; code: string };
   const [editing, setEditing] = useState<{ groupId: string; requesterName: string; items: EditDraft[] } | null>(null);
   const [viewingOriginal, setViewingOriginal] = useState<{
     requester_name: string; created_at: string; items: ReqItem[];
