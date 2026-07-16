@@ -1016,6 +1016,14 @@ function AlmoxarifadoPage() {
                                 >
                                   {isAlmox ? "Almoxarifado" : "PCM"}
                                 </span>
+                                {p.edited_at && (
+                                  <span
+                                    className="rounded border border-amber-500/40 bg-amber-500/15 text-amber-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider shrink-0"
+                                    title={`Editada em ${new Date(p.edited_at).toLocaleString("pt-BR")}`}
+                                  >
+                                    Editada
+                                  </span>
+                                )}
                               </div>
                               <div className="flex items-center gap-3 text-sm">
                                 <input
