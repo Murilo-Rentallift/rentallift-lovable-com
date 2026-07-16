@@ -1238,6 +1238,72 @@ function AlmoxarifadoPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal editar peça */}
+      <Dialog open={!!editPart} onOpenChange={(o) => { if (!o && !editPartSaving) setEditPart(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar peça</DialogTitle></DialogHeader>
+          {editPart && (
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">Nome da peça</Label>
+                <Input
+                  value={editPart.name}
+                  onChange={(e) => setEditPart({ ...editPart, name: e.target.value })}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Quantidade</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={editPart.quantity}
+                  onChange={(e) => setEditPart({ ...editPart, quantity: Number(e.target.value) })}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A versão original será preservada e ficará disponível para consulta.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPart(null)} disabled={editPartSaving}>Cancelar</Button>
+            <Button onClick={savePartEdit} disabled={editPartSaving}>
+              {editPartSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal ver original da peça */}
+      <Dialog open={!!viewOriginalPart} onOpenChange={(o) => { if (!o) setViewOriginalPart(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Versão original da peça</DialogTitle></DialogHeader>
+          {viewOriginalPart && (
+            <div className="space-y-3 text-sm">
+              {viewOriginalPart.edited_at && (
+                <div className="text-xs text-muted-foreground">
+                  Editada em {new Date(viewOriginalPart.edited_at).toLocaleString("pt-BR")}
+                </div>
+              )}
+              <div className="rounded border border-border p-3">
+                <div className="text-xs text-muted-foreground mb-1">Original</div>
+                <div className="font-medium">{viewOriginalPart.original_name ?? "—"}</div>
+                <div className="text-muted-foreground">× {viewOriginalPart.original_quantity ?? "—"}</div>
+              </div>
+              <div className="rounded border border-border p-3">
+                <div className="text-xs text-muted-foreground mb-1">Atual</div>
+                <div className="font-medium">{viewOriginalPart.current_name}</div>
+                <div className="text-muted-foreground">× {viewOriginalPart.current_quantity}</div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewOriginalPart(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
