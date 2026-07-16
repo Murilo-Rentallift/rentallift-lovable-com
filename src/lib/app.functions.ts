@@ -628,6 +628,62 @@ export const almoxUpdatePartQuantity = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Almoxarifado: edit a single part (name + quantity) preserving original ----------
+export const almoxEditPart = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; partId: string; name: string; quantity: number }) =>
+    z.object({
+      pin: pinSchema,
+      partId: z.string().uuid(),
+      name: z.string().trim().min(1).max(200),
+      quantity: z.number().int().min(1).max(9999),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: current, error: readErr } = await supabaseAdmin
+      .from("parts")
+      .select("id, name, quantity, original_name, original_quantity")
+      .eq("id", data.partId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!current) throw new Error("Peça não encontrada");
+    const c: any = current;
+    const update: any = {
+      name: data.name,
+      quantity: data.quantity,
+      edited_at: new Date().toISOString(),
+    };
+    if (c.original_name == null) update.original_name = c.name;
+    if (c.original_quantity == null) update.original_quantity = c.quantity;
+    const { error } = await supabaseAdmin.from("parts").update(update).eq("id", data.partId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Almoxarifado: fetch original (pre-edit) version of a part ----------
+export const almoxGetOriginalPart = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; partId: string }) =>
+    z.object({ pin: pinSchema, partId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: row, error } = await supabaseAdmin
+      .from("parts")
+      .select("id, name, quantity, original_name, original_quantity, edited_at")
+      .eq("id", data.partId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("Peça não encontrada");
+    const r: any = row;
+    return {
+      original_name: r.original_name,
+      original_quantity: r.original_quantity,
+      edited_at: r.edited_at,
+      current_name: r.name,
+      current_quantity: r.quantity,
+    };
+  });
+
 // ---------- Almoxarifado: delete part ----------
 export const almoxDeletePart = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; partId: string }) =>
