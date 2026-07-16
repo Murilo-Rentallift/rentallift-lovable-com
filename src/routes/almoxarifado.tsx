@@ -1051,6 +1051,24 @@ function AlmoxarifadoPage() {
                                 </select>
                                 <button
                                   type="button"
+                                  onClick={() => setEditPart({ partId: p.id, name: p.name, quantity: p.quantity })}
+                                  className="rounded border border-input bg-background p-1.5 text-foreground hover:bg-accent transition"
+                                  title="Editar peça"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                {p.edited_at && (
+                                  <button
+                                    type="button"
+                                    onClick={() => viewPartOriginal(p.id)}
+                                    className="rounded border border-amber-500/40 bg-amber-500/10 p-1.5 text-amber-400 hover:bg-amber-500/20 transition"
+                                    title="Ver versão original"
+                                  >
+                                    <History className="h-4 w-4" />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
                                   onClick={() => removePart(p.id, p.name)}
                                   className="rounded border border-red-500/40 bg-red-500/10 p-1.5 text-red-400 hover:bg-red-500/20 transition"
                                   title="Remover peça"
