@@ -572,11 +572,11 @@ export const almoxarifadoGetDay = createServerFn({ method: "POST" })
       .eq("work_date", data.date);
 
     const scheduleIds = (schedules ?? []).map((s) => s.id);
-    let parts: Array<{ id: string; schedule_id: string; name: string; quantity: number; checked: boolean; status: string; source: string }> = [];
+    let parts: Array<{ id: string; schedule_id: string; name: string; quantity: number; checked: boolean; status: string; source: string; original_name: string | null; original_quantity: number | null; edited_at: string | null }> = [];
     if (scheduleIds.length) {
       const { data: p } = await supabaseAdmin
         .from("parts")
-        .select("id, schedule_id, name, quantity, checked, position, status, source")
+        .select("id, schedule_id, name, quantity, checked, position, status, source, original_name, original_quantity, edited_at")
         .in("schedule_id", scheduleIds)
         .order("position", { ascending: true })
         .order("created_at", { ascending: true });
@@ -588,7 +588,7 @@ export const almoxarifadoGetDay = createServerFn({ method: "POST" })
       operator: op,
       parts: parts
         .filter((p) => scheduleToOperator.get(p.schedule_id) === op.id)
-        .map(({ id, name, quantity, checked, status, source }) => ({ id, name, quantity, checked, status, source })),
+        .map(({ id, name, quantity, checked, status, source, original_name, original_quantity, edited_at }) => ({ id, name, quantity, checked, status, source, original_name, original_quantity, edited_at })),
     }));
 
     return { date: data.date, groups: grouped };
@@ -626,6 +626,62 @@ export const almoxUpdatePartQuantity = createServerFn({ method: "POST" })
       .from("parts").update({ quantity: data.quantity }).eq("id", data.partId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// ---------- Almoxarifado: edit a single part (name + quantity) preserving original ----------
+export const almoxEditPart = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; partId: string; name: string; quantity: number }) =>
+    z.object({
+      pin: pinSchema,
+      partId: z.string().uuid(),
+      name: z.string().trim().min(1).max(200),
+      quantity: z.number().int().min(1).max(9999),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: current, error: readErr } = await supabaseAdmin
+      .from("parts")
+      .select("id, name, quantity, original_name, original_quantity")
+      .eq("id", data.partId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!current) throw new Error("Peça não encontrada");
+    const c: any = current;
+    const update: any = {
+      name: data.name,
+      quantity: data.quantity,
+      edited_at: new Date().toISOString(),
+    };
+    if (c.original_name == null) update.original_name = c.name;
+    if (c.original_quantity == null) update.original_quantity = c.quantity;
+    const { error } = await supabaseAdmin.from("parts").update(update).eq("id", data.partId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Almoxarifado: fetch original (pre-edit) version of a part ----------
+export const almoxGetOriginalPart = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; partId: string }) =>
+    z.object({ pin: pinSchema, partId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAlmox(data.pin);
+    const { data: row, error } = await supabaseAdmin
+      .from("parts")
+      .select("id, name, quantity, original_name, original_quantity, edited_at")
+      .eq("id", data.partId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("Peça não encontrada");
+    const r: any = row;
+    return {
+      original_name: r.original_name,
+      original_quantity: r.original_quantity,
+      edited_at: r.edited_at,
+      current_name: r.name,
+      current_quantity: r.quantity,
+    };
   });
 
 // ---------- Almoxarifado: delete part ----------

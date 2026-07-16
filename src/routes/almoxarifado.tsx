@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates, almoxEditRequest, almoxGetOriginalRequest, almoxAddPart, almoxChat } from "@/lib/app.functions";
+import { almoxarifadoGetDay, almoxUpdatePartStatus, almoxWeeklyMissing, almoxDeletePart, almoxUpdatePartQuantity, almoxListRequests, almoxUpdateRequestItemStatus, almoxDeleteGroup, almoxWeeklyMissingRequests, almoxUpcomingDates, almoxEditRequest, almoxGetOriginalRequest, almoxAddPart, almoxChat, almoxEditPart, almoxGetOriginalPart } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +29,7 @@ const STATUS_OPTIONS: { value: PartStatus; label: string; className: string }[] 
 
 
 type PartSource = "pcm" | "almoxarifado";
-type Part = { id: string; name: string; quantity: number; checked: boolean; status: PartStatus; source?: PartSource };
+type Part = { id: string; name: string; quantity: number; checked: boolean; status: PartStatus; source?: PartSource; original_name?: string | null; original_quantity?: number | null; edited_at?: string | null };
 type Group = {
   operator: { id: string; name: string; position: number };
   parts: Part[];
@@ -89,6 +89,8 @@ function AlmoxarifadoPage() {
   const editReq = useServerFn(almoxEditRequest);
   const getOriginal = useServerFn(almoxGetOriginalRequest);
   const addPartFn = useServerFn(almoxAddPart);
+  const editPartFn = useServerFn(almoxEditPart);
+  const getOriginalPart = useServerFn(almoxGetOriginalPart);
   const chatFn = useServerFn(almoxChat);
 
   type ChatMsg = { role: "user" | "assistant"; content: string };
@@ -135,6 +137,36 @@ function AlmoxarifadoPage() {
     }
   }
 
+  const [editPart, setEditPart] = useState<{ partId: string; name: string; quantity: number } | null>(null);
+  const [editPartSaving, setEditPartSaving] = useState(false);
+  const [viewOriginalPart, setViewOriginalPart] = useState<{ original_name: string | null; original_quantity: number | null; edited_at: string | null; current_name: string; current_quantity: number } | null>(null);
+
+  async function savePartEdit() {
+    if (!editPart) return;
+    const name = editPart.name.trim();
+    const quantity = Math.max(1, Math.floor(Number(editPart.quantity) || 0));
+    if (!name) { toast.error("Informe o nome da peça"); return; }
+    setEditPartSaving(true);
+    try {
+      await editPartFn({ data: { pin, partId: editPart.partId, name, quantity } });
+      setEditPart(null);
+      toast.success("Peça atualizada");
+      load(pin, date);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao editar peça");
+    } finally {
+      setEditPartSaving(false);
+    }
+  }
+
+  async function viewPartOriginal(partId: string) {
+    try {
+      const r = await getOriginalPart({ data: { pin, partId } });
+      setViewOriginalPart(r as any);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao buscar original");
+    }
+  }
   type EditDraft = { partName: string; quantity: number; code: string };
   const [editing, setEditing] = useState<{ groupId: string; requesterName: string; items: EditDraft[] } | null>(null);
   const [viewingOriginal, setViewingOriginal] = useState<{
@@ -984,6 +1016,14 @@ function AlmoxarifadoPage() {
                                 >
                                   {isAlmox ? "Almoxarifado" : "PCM"}
                                 </span>
+                                {p.edited_at && (
+                                  <span
+                                    className="rounded border border-amber-500/40 bg-amber-500/15 text-amber-400 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider shrink-0"
+                                    title={`Editada em ${new Date(p.edited_at).toLocaleString("pt-BR")}`}
+                                  >
+                                    Editada
+                                  </span>
+                                )}
                               </div>
                               <div className="flex items-center gap-3 text-sm">
                                 <input
@@ -1009,6 +1049,24 @@ function AlmoxarifadoPage() {
                                     </option>
                                   ))}
                                 </select>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditPart({ partId: p.id, name: p.name, quantity: p.quantity })}
+                                  className="rounded border border-input bg-background p-1.5 text-foreground hover:bg-accent transition"
+                                  title="Editar peça"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                {p.edited_at && (
+                                  <button
+                                    type="button"
+                                    onClick={() => viewPartOriginal(p.id)}
+                                    className="rounded border border-amber-500/40 bg-amber-500/10 p-1.5 text-amber-400 hover:bg-amber-500/20 transition"
+                                    title="Ver versão original"
+                                  >
+                                    <History className="h-4 w-4" />
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => removePart(p.id, p.name)}
@@ -1177,6 +1235,72 @@ function AlmoxarifadoPage() {
             <Button onClick={saveAddPart} disabled={addPartSaving}>
               {addPartSaving ? "Salvando..." : "Adicionar"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal editar peça */}
+      <Dialog open={!!editPart} onOpenChange={(o) => { if (!o && !editPartSaving) setEditPart(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar peça</DialogTitle></DialogHeader>
+          {editPart && (
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs">Nome da peça</Label>
+                <Input
+                  value={editPart.name}
+                  onChange={(e) => setEditPart({ ...editPart, name: e.target.value })}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Quantidade</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={editPart.quantity}
+                  onChange={(e) => setEditPart({ ...editPart, quantity: Number(e.target.value) })}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A versão original será preservada e ficará disponível para consulta.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPart(null)} disabled={editPartSaving}>Cancelar</Button>
+            <Button onClick={savePartEdit} disabled={editPartSaving}>
+              {editPartSaving ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal ver original da peça */}
+      <Dialog open={!!viewOriginalPart} onOpenChange={(o) => { if (!o) setViewOriginalPart(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Versão original da peça</DialogTitle></DialogHeader>
+          {viewOriginalPart && (
+            <div className="space-y-3 text-sm">
+              {viewOriginalPart.edited_at && (
+                <div className="text-xs text-muted-foreground">
+                  Editada em {new Date(viewOriginalPart.edited_at).toLocaleString("pt-BR")}
+                </div>
+              )}
+              <div className="rounded border border-border p-3">
+                <div className="text-xs text-muted-foreground mb-1">Original</div>
+                <div className="font-medium">{viewOriginalPart.original_name ?? "—"}</div>
+                <div className="text-muted-foreground">× {viewOriginalPart.original_quantity ?? "—"}</div>
+              </div>
+              <div className="rounded border border-border p-3">
+                <div className="text-xs text-muted-foreground mb-1">Atual</div>
+                <div className="font-medium">{viewOriginalPart.current_name}</div>
+                <div className="text-muted-foreground">× {viewOriginalPart.current_quantity}</div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewOriginalPart(null)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
