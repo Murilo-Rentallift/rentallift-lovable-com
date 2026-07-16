@@ -89,6 +89,8 @@ function AlmoxarifadoPage() {
   const editReq = useServerFn(almoxEditRequest);
   const getOriginal = useServerFn(almoxGetOriginalRequest);
   const addPartFn = useServerFn(almoxAddPart);
+  const editPartFn = useServerFn(almoxEditPart);
+  const getOriginalPart = useServerFn(almoxGetOriginalPart);
   const chatFn = useServerFn(almoxChat);
 
   type ChatMsg = { role: "user" | "assistant"; content: string };
