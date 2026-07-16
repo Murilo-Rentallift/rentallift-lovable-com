@@ -137,7 +137,36 @@ function AlmoxarifadoPage() {
     }
   }
 
-  type EditDraft = { partName: string; quantity: number; code: string };
+  const [editPart, setEditPart] = useState<{ partId: string; name: string; quantity: number } | null>(null);
+  const [editPartSaving, setEditPartSaving] = useState(false);
+  const [viewOriginalPart, setViewOriginalPart] = useState<{ original_name: string | null; original_quantity: number | null; edited_at: string | null; current_name: string; current_quantity: number } | null>(null);
+
+  async function savePartEdit() {
+    if (!editPart) return;
+    const name = editPart.name.trim();
+    const quantity = Math.max(1, Math.floor(Number(editPart.quantity) || 0));
+    if (!name) { toast.error("Informe o nome da peça"); return; }
+    setEditPartSaving(true);
+    try {
+      await editPartFn({ data: { pin, partId: editPart.partId, name, quantity } });
+      setEditPart(null);
+      toast.success("Peça atualizada");
+      load(pin, date);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao editar peça");
+    } finally {
+      setEditPartSaving(false);
+    }
+  }
+
+  async function viewPartOriginal(partId: string) {
+    try {
+      const r = await getOriginalPart({ data: { pin, partId } });
+      setViewOriginalPart(r as any);
+    } catch (e: any) {
+      toast.error(e.message || "Falha ao buscar original");
+    }
+  }
   const [editing, setEditing] = useState<{ groupId: string; requesterName: string; items: EditDraft[] } | null>(null);
   const [viewingOriginal, setViewingOriginal] = useState<{
     requester_name: string; created_at: string; items: ReqItem[];
