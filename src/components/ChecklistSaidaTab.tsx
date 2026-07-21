@@ -39,7 +39,7 @@ const ITENS_PADRAO: { nome: string; desc: string }[] = [
 ];
 
 type Status = "" | "OK" | "CORRIGIR" | "CORRIGIDO";
-...
+
 const STATUS_OPTS: Status[] = ["", "OK", "CORRIGIR", "CORRIGIDO"];
 const STORAGE_KEY = "checklist-saida-drafts";
 
