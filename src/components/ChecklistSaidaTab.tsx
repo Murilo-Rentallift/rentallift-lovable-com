@@ -38,11 +38,9 @@ const ITENS_PADRAO: { nome: string; desc: string }[] = [
   { nome: "LUBRIFICAÇÃO", desc: "Verificar se todos os pontos de lubrificação estão OK" },
 ];
 
-type Status = "" | "OK" | "CORRIGIR" | "CORRIGIDO" | "N/A";
-type Item = { nome: string; desc: string; status: Status };
-type Foto = { name: string; dataUrl: string };
-
-const STATUS_OPTS: Status[] = ["", "OK", "CORRIGIR", "CORRIGIDO", "N/A"];
+type Status = "" | "OK" | "CORRIGIR" | "CORRIGIDO";
+...
+const STATUS_OPTS: Status[] = ["", "OK", "CORRIGIR", "CORRIGIDO"];
 const STORAGE_KEY = "checklist-saida-drafts";
 
 type Draft = {
