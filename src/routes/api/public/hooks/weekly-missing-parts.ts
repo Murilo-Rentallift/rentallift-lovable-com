@@ -4,6 +4,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const RECIPIENTS = ["Evandro@rentallift.com.br", "Murilo@rentallift.com"];
+const CC_RECIPIENTS = ["william@rentallift.com", "manutencao@rentallift.com"];
 const GMAIL_URL = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
 
 // Compute previous Mon-Sun window in Brasília time (UTC-3), returns YYYY-MM-DD ISO
