@@ -38,11 +38,11 @@ const ITENS_PADRAO: { nome: string; desc: string }[] = [
   { nome: "LUBRIFICAÇÃO", desc: "Verificar se todos os pontos de lubrificação estão OK" },
 ];
 
-type Status = "" | "OK" | "CORRIGIR" | "CORRIGIDO" | "N/A";
+type Status = "" | "OK" | "CORRIGIR" | "CORRIGIDO";
 type Item = { nome: string; desc: string; status: Status };
 type Foto = { name: string; dataUrl: string };
 
-const STATUS_OPTS: Status[] = ["", "OK", "CORRIGIR", "CORRIGIDO", "N/A"];
+const STATUS_OPTS: Status[] = ["", "OK", "CORRIGIR", "CORRIGIDO"];
 const STORAGE_KEY = "checklist-saida-drafts";
 
 type Draft = {
@@ -352,23 +352,21 @@ export function ChecklistSaidaTab() {
         it.status === "OK" ? "X" : "",
         it.status === "CORRIGIR" ? "X" : "",
         it.status === "CORRIGIDO" ? "X" : "",
-        it.status === "N/A" ? "X" : "",
       ];
     });
 
     autoTable(doc, {
       startY: y,
       theme: "grid",
-      head: [["ITENS A VERIFICAR", "OK", "CORRIGIR", "CORRIGIDO", "N/A"]],
+      head: [["ITENS A VERIFICAR", "OK", "CORRIGIR", "CORRIGIDO"]],
       body: rows,
       styles: { fontSize: 9, cellPadding: 1.6, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
       headStyles: { fillColor: [217, 217, 217], textColor: [0, 0, 0], halign: "center", fontStyle: "bold" },
       columnStyles: {
         0: { cellWidth: "auto" },
-        1: { cellWidth: 16, halign: "center" },
-        2: { cellWidth: 20, halign: "center" },
-        3: { cellWidth: 22, halign: "center" },
-        4: { cellWidth: 16, halign: "center" },
+        1: { cellWidth: 18, halign: "center" },
+        2: { cellWidth: 22, halign: "center" },
+        3: { cellWidth: 24, halign: "center" },
       },
       margin: { left: M, right: M },
     });
