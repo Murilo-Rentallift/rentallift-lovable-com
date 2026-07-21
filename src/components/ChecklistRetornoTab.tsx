@@ -24,11 +24,11 @@ const ITENS_PADRAO: { nome: string; desc: string }[] = [
   { nome: "PNEUS", desc: "Verificar integridade" },
 ];
 
-type Status = "" | "OK" | "CORRIGIR" | "CORRIGIDO";
+type Status = "" | "OK" | "CORRIGIR" | "CORRIGIDO" | "N/A";
 type Item = { nome: string; desc: string; status: Status };
 type Foto = { name: string; dataUrl: string };
 
-const STATUS_OPTS: Status[] = ["", "OK", "CORRIGIR", "CORRIGIDO"];
+const STATUS_OPTS: Status[] = ["", "OK", "CORRIGIR", "CORRIGIDO", "N/A"];
 const STORAGE_KEY = "checklist-retorno-drafts";
 const SUBJECT = "CHECKLIST DE RETORNO";
 
