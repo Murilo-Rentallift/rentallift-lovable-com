@@ -191,7 +191,8 @@ async function sendEmailWithPDF(params: {
 
   const mime = [
     `To: ${RECIPIENTS.join(", ")}`,
-    `Subject: Relatório Semanal — Peças em Falta (${formatDateBR(params.startDate)} a ${formatDateBR(params.endDate)})`,
+    `Cc: ${CC_RECIPIENTS.join(", ")}`,
+    `Subject: RELATÓRIO SEMANAL DA PEÇAS EM FALTA`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
     ``,
