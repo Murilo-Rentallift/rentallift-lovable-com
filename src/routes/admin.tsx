@@ -6,10 +6,9 @@ import {
   adminAddPart, adminAddTask, adminChangePin, adminChangeAlmoxPin, adminDeletePart, adminDeleteTask,
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
-  adminListMaintenanceReturns, adminAddMaintenanceReturn, adminUpdateMaintenanceReturn, adminDeleteMaintenanceReturn,
   adminListMaquinasParadas, adminListMaquinasHistorico, adminAddMaquinaParada, adminUpdateMaquinaParada, adminConcluirMaquinaParada, adminDeleteMaquinaParada,
 } from "@/lib/app.functions";
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, Clock, GripVertical, Mail, Pencil, Plus, Save, Settings, Trash2, Wrench, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, Clock, GripVertical, Mail, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Logo";
 import { OrcamentoEmailTool } from "@/components/OrcamentoEmailTool";
@@ -85,14 +84,13 @@ function AdminLogin({ onLogged }: { onLogged: (pin: string) => void }) {
   );
 }
 
-type TabId = "operadores" | "chamados" | "orcamentos" | "maquinas";
+type TabId = "operadores" | "orcamentos" | "maquinas";
 const TAB_DEFS: Record<TabId, { label: string; icon: typeof ClipboardList }> = {
   operadores: { label: "Operadores", icon: ClipboardList },
-  chamados: { label: "Retorno de Manutenções", icon: Wrench },
   orcamentos: { label: "Email Orçamentos", icon: Mail },
   maquinas: { label: "Máquinas Paradas", icon: AlertTriangle },
 };
-const DEFAULT_TAB_ORDER: TabId[] = ["operadores", "chamados", "orcamentos", "maquinas"];
+const DEFAULT_TAB_ORDER: TabId[] = ["operadores", "orcamentos", "maquinas"];
 const TAB_ORDER_KEY = "admin_tab_order";
 
 function loadTabOrder(): TabId[] {
@@ -214,9 +212,7 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
-        {tab === "chamados" ? (
-          <MaintenanceReturns pin={pin} />
-        ) : tab === "orcamentos" ? (
+        {tab === "orcamentos" ? (
           <OrcamentoEmailTool />
         ) : tab === "maquinas" ? (
           <MaquinasParadas pin={pin} />
@@ -768,199 +764,6 @@ function SettingsModal({
 }
 
 // ---------- Pending calls weekly calendar (admin only) ----------
-function mondayOf(iso: string) {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  const dow = dt.getUTCDay(); // 0=Sun
-  const diff = dow === 0 ? -6 : 1 - dow;
-  dt.setUTCDate(dt.getUTCDate() + diff);
-  return dt.toISOString().slice(0, 10);
-}
-function addDaysISO(iso: string, n: number) {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() + n);
-  return dt.toISOString().slice(0, 10);
-}
-const WEEKDAYS_PT = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
-const PRIORITY_STYLES: Record<string, string> = {
-  baixa: "bg-muted text-muted-foreground border-border",
-  normal: "bg-accent/20 text-accent-foreground border-accent/40",
-  alta: "bg-orange-500/20 text-orange-200 border-orange-500/40",
-  urgente: "bg-destructive/30 text-destructive-foreground border-destructive/60",
-};
-
-function MaintenanceReturns({ pin }: { pin: string }) {
-  const qc = useQueryClient();
-  const [clientName, setClientName] = useState("");
-  const [description, setDescription] = useState("");
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editClient, setEditClient] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-
-  const listFn = useServerFn(adminListMaintenanceReturns);
-  const addFn = useServerFn(adminAddMaintenanceReturn);
-  const updFn = useServerFn(adminUpdateMaintenanceReturn);
-  const delFn = useServerFn(adminDeleteMaintenanceReturn);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["maintenance-returns", pin],
-    queryFn: () => listFn({ data: { pin } }),
-    retry: false,
-  });
-
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["maintenance-returns", pin] });
-
-  const addM = useMutation({
-    mutationFn: () => addFn({ data: { pin, clientName: clientName.trim(), description: description.trim() } }),
-    onSuccess: () => {
-      toast.success("Retorno registrado");
-      setClientName(""); setDescription("");
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const updM = useMutation({
-    mutationFn: () => updFn({ data: { pin, id: editId!, clientName: editClient.trim(), description: editDescription.trim() } }),
-    onSuccess: () => {
-      toast.success("Retorno atualizado");
-      setEditId(null);
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const delM = useMutation({
-    mutationFn: (id: string) => delFn({ data: { pin, id } }),
-    onSuccess: invalidate,
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  function fmtDate(iso: string) {
-    const d = new Date(iso);
-    return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  }
-
-  return (
-    <section className="rounded-lg border border-border bg-card overflow-hidden shadow-lg">
-      <div className="px-5 py-3 border-b border-border bg-accent/10">
-        <h3 className="font-display text-lg font-bold uppercase">Retorno de Manutenções</h3>
-        <p className="text-xs text-muted-foreground">Registre o que aconteceu em cada retorno de manutenção.</p>
-      </div>
-
-      <form
-        onSubmit={(e) => { e.preventDefault(); if (clientName.trim()) addM.mutate(); }}
-        className="p-5 border-b border-border space-y-3 bg-background/40"
-      >
-        <div className="grid gap-3 md:grid-cols-[1fr_2fr_auto]">
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Cliente</label>
-            <input
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              maxLength={200}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              placeholder="Nome do cliente"
-            />
-          </div>
-          <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">O que aconteceu</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={2000}
-              rows={2}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
-              placeholder="Descreva o retorno da manutenção"
-            />
-          </div>
-          <div className="flex md:items-end">
-            <button
-              type="submit"
-              disabled={!clientName.trim() || addM.isPending}
-              className="w-full md:w-auto rounded-md bg-accent px-4 py-2 text-sm font-semibold uppercase tracking-wide text-accent-foreground disabled:opacity-40 hover:brightness-110 transition inline-flex items-center justify-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              {addM.isPending ? "Salvando..." : "Adicionar"}
-            </button>
-          </div>
-        </div>
-      </form>
-
-      <div className="divide-y divide-border">
-        {isLoading && (
-          <div className="p-6 text-sm text-muted-foreground italic text-center">Carregando...</div>
-        )}
-        {!isLoading && (data?.returns ?? []).length === 0 && (
-          <div className="p-6 text-sm text-muted-foreground italic text-center">Nenhum retorno registrado.</div>
-        )}
-        {(data?.returns ?? []).map((r) => (
-          <div key={r.id} className="p-4 flex items-start gap-3">
-            {editId === r.id ? (
-              <div className="flex-1 space-y-2">
-                <input
-                  value={editClient}
-                  onChange={(e) => setEditClient(e.target.value)}
-                  maxLength={200}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  maxLength={2000}
-                  rows={3}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
-                />
-                <div className="flex gap-2 justify-end">
-                  <button
-                    onClick={() => setEditId(null)}
-                    className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-muted transition inline-flex items-center gap-1"
-                  >
-                    <X className="h-3 w-3" /> Cancelar
-                  </button>
-                  <button
-                    onClick={() => updM.mutate()}
-                    disabled={!editClient.trim() || updM.isPending}
-                    className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold uppercase text-accent-foreground disabled:opacity-40 hover:brightness-110 transition inline-flex items-center gap-1"
-                  >
-                    <Save className="h-3 w-3" /> Salvar
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-semibold truncate">{r.client_name}</p>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">{fmtDate(r.created_at)}</p>
-                  </div>
-                  {r.description && (
-                    <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">{r.description}</p>
-                  )}
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <button
-                    onClick={() => { setEditId(r.id); setEditClient(r.client_name); setEditDescription(r.description); }}
-                    className="rounded-md border border-border bg-background p-2 hover:bg-muted transition"
-                    title="Editar"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => { if (confirm("Remover este retorno?")) delM.mutate(r.id); }}
-                    className="rounded-md border border-border bg-background p-2 hover:bg-destructive/20 hover:text-destructive transition"
-                    title="Remover"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 
 
