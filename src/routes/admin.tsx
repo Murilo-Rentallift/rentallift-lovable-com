@@ -972,6 +972,12 @@ function MaquinasParadas({ pin }: { pin: string }) {
             <input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} maxLength={200}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
           </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Máquina parada desde</label>
+            <input type="datetime-local" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+            <p className="mt-1 text-[10px] text-muted-foreground">Se vazio, usa a data/hora atual.</p>
+          </div>
           <div className="md:col-span-5">
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Motivo</label>
             <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={2000} rows={2}
