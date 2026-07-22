@@ -89,7 +89,7 @@ function AdminLogin({ onLogged }: { onLogged: (pin: string) => void }) {
 function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }) {
   const [date, setDate] = useState(todayISO());
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [tab, setTab] = useState<"operadores" | "chamados" | "agenda" | "orcamentos">("operadores");
+  const [tab, setTab] = useState<"operadores" | "chamados" | "agenda" | "orcamentos" | "maquinas">("operadores");
   const qc = useQueryClient();
 
   const getDay = useServerFn(adminGetDay);
