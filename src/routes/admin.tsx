@@ -870,11 +870,12 @@ function MaquinasParadas({ pin }: { pin: string }) {
         local: local.trim(),
         motivo: motivo.trim(),
         responsavel: responsavel.trim(),
+        ...(dataInicio ? { dataInicio: new Date(dataInicio).toISOString() } : {}),
       },
     }),
     onSuccess: () => {
       toast.success("Máquina registrada");
-      setCodigoFrota(""); setCliente(""); setLocal(""); setMotivo(""); setResponsavel("");
+      setCodigoFrota(""); setCliente(""); setLocal(""); setMotivo(""); setResponsavel(""); setDataInicio("");
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
