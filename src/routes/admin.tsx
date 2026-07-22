@@ -917,7 +917,9 @@ function MaquinasParadas({ pin }: { pin: string }) {
     setELocal(r.local ?? "");
     setEMotivo(r.motivo);
     setEResp(r.responsavel ?? "");
+    setEDataInicio(toLocalInput(r.data_inicio_parada));
   }
+
 
   return (
     <section className="rounded-lg border border-border bg-card overflow-hidden shadow-lg">
