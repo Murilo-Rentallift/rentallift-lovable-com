@@ -1403,6 +1403,114 @@ export const adminDeleteMaintenanceReturn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------- Admin: Máquinas Paradas ----------
+export const adminListMaquinasParadas = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { data: rows, error } = await supabaseAdmin
+      .from("maquinas_paradas" as any)
+      .select("id, codigo_frota, cliente, local, motivo, data_inicio_parada, responsavel, status, alerta_enviado, data_conclusao, created_at")
+      .eq("status", "parada")
+      .order("data_inicio_parada", { ascending: true });
+    if (error) throw new Error(error.message);
+    return { items: (rows ?? []) as any[] };
+  });
+
+export const adminListMaquinasHistorico = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string }) => z.object({ pin: pinSchema }).parse(d))
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { data: rows, error } = await supabaseAdmin
+      .from("maquinas_paradas" as any)
+      .select("id, codigo_frota, cliente, local, motivo, data_inicio_parada, responsavel, status, data_conclusao, created_at")
+      .eq("status", "concluida")
+      .order("data_conclusao", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { items: (rows ?? []) as any[] };
+  });
+
+export const adminAddMaquinaParada = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; codigoFrota: string; cliente?: string; local?: string; motivo: string; responsavel?: string }) =>
+    z.object({
+      pin: pinSchema,
+      codigoFrota: z.string().trim().min(1).max(100),
+      cliente: z.string().trim().max(200).optional().default(""),
+      local: z.string().trim().max(200).optional().default(""),
+      motivo: z.string().trim().min(1).max(2000),
+      responsavel: z.string().trim().max(200).optional().default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin.from("maquinas_paradas" as any).insert({
+      codigo_frota: data.codigoFrota,
+      cliente: data.cliente || null,
+      local: data.local || null,
+      motivo: data.motivo,
+      responsavel: data.responsavel || null,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminUpdateMaquinaParada = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; id: string; codigoFrota: string; cliente?: string; local?: string; motivo: string; responsavel?: string }) =>
+    z.object({
+      pin: pinSchema,
+      id: z.string().uuid(),
+      codigoFrota: z.string().trim().min(1).max(100),
+      cliente: z.string().trim().max(200).optional().default(""),
+      local: z.string().trim().max(200).optional().default(""),
+      motivo: z.string().trim().min(1).max(2000),
+      responsavel: z.string().trim().max(200).optional().default(""),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("maquinas_paradas" as any)
+      .update({
+        codigo_frota: data.codigoFrota,
+        cliente: data.cliente || null,
+        local: data.local || null,
+        motivo: data.motivo,
+        responsavel: data.responsavel || null,
+      })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminConcluirMaquinaParada = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; id: string }) =>
+    z.object({ pin: pinSchema, id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("maquinas_paradas" as any)
+      .update({ status: "concluida", data_conclusao: new Date().toISOString() })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminDeleteMaquinaParada = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; id: string }) =>
+    z.object({ pin: pinSchema, id: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyAdmin(data.pin);
+    const { error } = await supabaseAdmin
+      .from("maquinas_paradas" as any)
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
 // ---------- Almoxarifado chat: natural-language Q&A over parts data ----------
 export const almoxChat = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; question: string }) =>

@@ -116,6 +116,48 @@ export type Database = {
         }
         Relationships: []
       }
+      maquinas_paradas: {
+        Row: {
+          alerta_enviado: boolean
+          cliente: string | null
+          codigo_frota: string
+          created_at: string
+          data_conclusao: string | null
+          data_inicio_parada: string
+          id: string
+          local: string | null
+          motivo: string
+          responsavel: string | null
+          status: string
+        }
+        Insert: {
+          alerta_enviado?: boolean
+          cliente?: string | null
+          codigo_frota: string
+          created_at?: string
+          data_conclusao?: string | null
+          data_inicio_parada?: string
+          id?: string
+          local?: string | null
+          motivo: string
+          responsavel?: string | null
+          status?: string
+        }
+        Update: {
+          alerta_enviado?: boolean
+          cliente?: string | null
+          codigo_frota?: string
+          created_at?: string
+          data_conclusao?: string | null
+          data_inicio_parada?: string
+          id?: string
+          local?: string | null
+          motivo?: string
+          responsavel?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       meetings: {
         Row: {
           created_at: string
