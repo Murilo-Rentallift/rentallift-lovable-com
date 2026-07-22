@@ -826,6 +826,7 @@ function MaquinasParadas({ pin }: { pin: string }) {
   const [local, setLocal] = useState("");
   const [motivo, setMotivo] = useState("");
   const [responsavel, setResponsavel] = useState("");
+  const [dataInicio, setDataInicio] = useState("");
 
   const [editId, setEditId] = useState<string | null>(null);
   const [eCodigo, setECodigo] = useState("");
@@ -833,6 +834,7 @@ function MaquinasParadas({ pin }: { pin: string }) {
   const [eLocal, setELocal] = useState("");
   const [eMotivo, setEMotivo] = useState("");
   const [eResp, setEResp] = useState("");
+  const [eDataInicio, setEDataInicio] = useState("");
 
   const listFn = useServerFn(adminListMaquinasParadas);
   const histFn = useServerFn(adminListMaquinasHistorico);
