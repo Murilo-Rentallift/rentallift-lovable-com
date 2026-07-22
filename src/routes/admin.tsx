@@ -804,6 +804,12 @@ function totalElapsed(startIso: string, endIso: string): string {
   return `${hours}h`;
 }
 
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 type MaquinaRow = {
   id: string;
   codigo_frota: string;
@@ -826,6 +832,7 @@ function MaquinasParadas({ pin }: { pin: string }) {
   const [local, setLocal] = useState("");
   const [motivo, setMotivo] = useState("");
   const [responsavel, setResponsavel] = useState("");
+  const [dataInicio, setDataInicio] = useState("");
 
   const [editId, setEditId] = useState<string | null>(null);
   const [eCodigo, setECodigo] = useState("");
@@ -833,6 +840,7 @@ function MaquinasParadas({ pin }: { pin: string }) {
   const [eLocal, setELocal] = useState("");
   const [eMotivo, setEMotivo] = useState("");
   const [eResp, setEResp] = useState("");
+  const [eDataInicio, setEDataInicio] = useState("");
 
   const listFn = useServerFn(adminListMaquinasParadas);
   const histFn = useServerFn(adminListMaquinasHistorico);
@@ -868,11 +876,12 @@ function MaquinasParadas({ pin }: { pin: string }) {
         local: local.trim(),
         motivo: motivo.trim(),
         responsavel: responsavel.trim(),
+        ...(dataInicio ? { dataInicio: new Date(dataInicio).toISOString() } : {}),
       },
     }),
     onSuccess: () => {
       toast.success("Máquina registrada");
-      setCodigoFrota(""); setCliente(""); setLocal(""); setMotivo(""); setResponsavel("");
+      setCodigoFrota(""); setCliente(""); setLocal(""); setMotivo(""); setResponsavel(""); setDataInicio("");
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -888,6 +897,7 @@ function MaquinasParadas({ pin }: { pin: string }) {
         local: eLocal.trim(),
         motivo: eMotivo.trim(),
         responsavel: eResp.trim(),
+        ...(eDataInicio ? { dataInicio: new Date(eDataInicio).toISOString() } : {}),
       },
     }),
     onSuccess: () => { toast.success("Atualizada"); setEditId(null); invalidate(); },
@@ -913,7 +923,9 @@ function MaquinasParadas({ pin }: { pin: string }) {
     setELocal(r.local ?? "");
     setEMotivo(r.motivo);
     setEResp(r.responsavel ?? "");
+    setEDataInicio(toLocalInput(r.data_inicio_parada));
   }
+
 
   return (
     <section className="rounded-lg border border-border bg-card overflow-hidden shadow-lg">
@@ -960,6 +972,12 @@ function MaquinasParadas({ pin }: { pin: string }) {
             <input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} maxLength={200}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
           </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Máquina parada desde</label>
+            <input type="datetime-local" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+            <p className="mt-1 text-[10px] text-muted-foreground">Se vazio, usa a data/hora atual.</p>
+          </div>
           <div className="md:col-span-5">
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Motivo</label>
             <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={2000} rows={2}
@@ -996,6 +1014,11 @@ function MaquinasParadas({ pin }: { pin: string }) {
                     className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="Local" />
                   <input value={eResp} onChange={(e) => setEResp(e.target.value)} maxLength={200}
                     className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="Responsável" />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Máquina parada desde</label>
+                  <input type="datetime-local" value={eDataInicio} onChange={(e) => setEDataInicio(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
                 </div>
                 <textarea value={eMotivo} onChange={(e) => setEMotivo(e.target.value)} maxLength={2000} rows={2}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none" placeholder="Motivo" />

@@ -1431,7 +1431,7 @@ export const adminListMaquinasHistorico = createServerFn({ method: "POST" })
   });
 
 export const adminAddMaquinaParada = createServerFn({ method: "POST" })
-  .inputValidator((d: { pin: string; codigoFrota: string; cliente?: string; local?: string; motivo: string; responsavel?: string }) =>
+  .inputValidator((d: { pin: string; codigoFrota: string; cliente?: string; local?: string; motivo: string; responsavel?: string; dataInicio?: string }) =>
     z.object({
       pin: pinSchema,
       codigoFrota: z.string().trim().min(1).max(100),
@@ -1439,6 +1439,7 @@ export const adminAddMaquinaParada = createServerFn({ method: "POST" })
       local: z.string().trim().max(200).optional().default(""),
       motivo: z.string().trim().min(1).max(2000),
       responsavel: z.string().trim().max(200).optional().default(""),
+      dataInicio: z.string().datetime().optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -1449,13 +1450,14 @@ export const adminAddMaquinaParada = createServerFn({ method: "POST" })
       local: data.local || null,
       motivo: data.motivo,
       responsavel: data.responsavel || null,
+      ...(data.dataInicio ? { data_inicio_parada: data.dataInicio } : {}),
     });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const adminUpdateMaquinaParada = createServerFn({ method: "POST" })
-  .inputValidator((d: { pin: string; id: string; codigoFrota: string; cliente?: string; local?: string; motivo: string; responsavel?: string }) =>
+  .inputValidator((d: { pin: string; id: string; codigoFrota: string; cliente?: string; local?: string; motivo: string; responsavel?: string; dataInicio?: string }) =>
     z.object({
       pin: pinSchema,
       id: z.string().uuid(),
@@ -1464,6 +1466,7 @@ export const adminUpdateMaquinaParada = createServerFn({ method: "POST" })
       local: z.string().trim().max(200).optional().default(""),
       motivo: z.string().trim().min(1).max(2000),
       responsavel: z.string().trim().max(200).optional().default(""),
+      dataInicio: z.string().datetime().optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -1476,11 +1479,13 @@ export const adminUpdateMaquinaParada = createServerFn({ method: "POST" })
         local: data.local || null,
         motivo: data.motivo,
         responsavel: data.responsavel || null,
+        ...(data.dataInicio ? { data_inicio_parada: data.dataInicio } : {}),
       })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const adminConcluirMaquinaParada = createServerFn({ method: "POST" })
   .inputValidator((d: { pin: string; id: string }) =>
