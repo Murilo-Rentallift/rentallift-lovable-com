@@ -891,6 +891,7 @@ function MaquinasParadas({ pin }: { pin: string }) {
         local: eLocal.trim(),
         motivo: eMotivo.trim(),
         responsavel: eResp.trim(),
+        ...(eDataInicio ? { dataInicio: new Date(eDataInicio).toISOString() } : {}),
       },
     }),
     onSuccess: () => { toast.success("Atualizada"); setEditId(null); invalidate(); },
