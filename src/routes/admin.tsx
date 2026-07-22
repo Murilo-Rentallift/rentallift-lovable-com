@@ -6,10 +6,9 @@ import {
   adminAddPart, adminAddTask, adminChangePin, adminChangeAlmoxPin, adminDeletePart, adminDeleteTask,
   adminEditPart, adminEditTask, adminGetDay, adminLogin, adminMoveTask,
   adminSaveTask, adminUpdateOperator,
-  adminListMaintenanceReturns, adminAddMaintenanceReturn, adminUpdateMaintenanceReturn, adminDeleteMaintenanceReturn,
   adminListMaquinasParadas, adminListMaquinasHistorico, adminAddMaquinaParada, adminUpdateMaquinaParada, adminConcluirMaquinaParada, adminDeleteMaquinaParada,
 } from "@/lib/app.functions";
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, Clock, GripVertical, Mail, Pencil, Plus, Save, Settings, Trash2, Wrench, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CalendarDays, Check, ClipboardList, Clock, GripVertical, Mail, Pencil, Plus, Save, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/Logo";
 import { OrcamentoEmailTool } from "@/components/OrcamentoEmailTool";
