@@ -205,6 +205,8 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
           <AttendedCallsAgenda pin={pin} date={date} />
         ) : tab === "orcamentos" ? (
           <OrcamentoEmailTool />
+        ) : tab === "maquinas" ? (
+          <MaquinasParadas pin={pin} />
         ) : (
           <>
             {isLoading && (
