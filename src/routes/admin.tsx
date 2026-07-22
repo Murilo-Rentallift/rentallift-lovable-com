@@ -85,11 +85,56 @@ function AdminLogin({ onLogged }: { onLogged: (pin: string) => void }) {
   );
 }
 
+type TabId = "operadores" | "chamados" | "orcamentos" | "maquinas";
+const TAB_DEFS: Record<TabId, { label: string; icon: typeof ClipboardList }> = {
+  operadores: { label: "Operadores", icon: ClipboardList },
+  chamados: { label: "Retorno de Manutenções", icon: Wrench },
+  orcamentos: { label: "Email Orçamentos", icon: Mail },
+  maquinas: { label: "Máquinas Paradas", icon: AlertTriangle },
+};
+const DEFAULT_TAB_ORDER: TabId[] = ["operadores", "chamados", "orcamentos", "maquinas"];
+const TAB_ORDER_KEY = "admin_tab_order";
+
+function loadTabOrder(): TabId[] {
+  if (typeof window === "undefined") return DEFAULT_TAB_ORDER;
+  try {
+    const raw = localStorage.getItem(TAB_ORDER_KEY);
+    if (!raw) return DEFAULT_TAB_ORDER;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return DEFAULT_TAB_ORDER;
+    const valid = parsed.filter((x): x is TabId => typeof x === "string" && x in TAB_DEFS);
+    const missing = DEFAULT_TAB_ORDER.filter((t) => !valid.includes(t));
+    return [...valid, ...missing];
+  } catch {
+    return DEFAULT_TAB_ORDER;
+  }
+}
+
 function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }) {
   const [date, setDate] = useState(todayISO());
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [tab, setTab] = useState<"operadores" | "chamados" | "agenda" | "orcamentos" | "maquinas">("operadores");
+  const [tab, setTab] = useState<TabId>("operadores");
+  const [tabOrder, setTabOrder] = useState<TabId[]>(DEFAULT_TAB_ORDER);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const qc = useQueryClient();
+
+  useEffect(() => { setTabOrder(loadTabOrder()); }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try { localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(tabOrder)); } catch { /* ignore */ }
+    }
+  }, [tabOrder]);
+
+  function onDrop(targetIdx: number) {
+    if (dragIndex === null || dragIndex === targetIdx) { setDragIndex(null); return; }
+    setTabOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIndex, 1);
+      next.splice(targetIdx, 0, moved);
+      return next;
+    });
+    setDragIndex(null);
+  }
 
   const getDay = useServerFn(adminGetDay);
   const { data, isLoading, error } = useQuery({
@@ -117,7 +162,7 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             <h1 className="font-display text-xl font-bold uppercase">Painel do Admin</h1>
           </div>
           <div className="flex items-center gap-2">
-            {(tab === "operadores" || tab === "agenda") && (
+            {tab === "operadores" && (
               <input
                 type="date"
                 value={date}
@@ -137,71 +182,40 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             </button>
           </div>
         </div>
-        <div className="mx-auto max-w-5xl px-6 pb-3 flex gap-2">
-          <button
-            onClick={() => setTab("operadores")}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
-              tab === "operadores"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-card border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <ClipboardList className="h-4 w-4" />
-            Operadores
-          </button>
-          <button
-            onClick={() => setTab("chamados")}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
-              tab === "chamados"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-card border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Wrench className="h-4 w-4" />
-            Retorno de Manutenções
-          </button>
-          <button
-            onClick={() => setTab("agenda")}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
-              tab === "agenda"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-card border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <BookCheck className="h-4 w-4" />
-            Agenda do dia
-          </button>
-          <button
-            onClick={() => setTab("orcamentos")}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
-              tab === "orcamentos"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-card border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Mail className="h-4 w-4" />
-            Email Orçamentos
-          </button>
-          <button
-            onClick={() => setTab("maquinas")}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
-              tab === "maquinas"
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-card border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <AlertTriangle className="h-4 w-4" />
-            Máquinas Paradas
-          </button>
+        <div className="mx-auto max-w-5xl px-6 pb-3 flex gap-2 flex-wrap">
+          {tabOrder.map((id, idx) => {
+            const def = TAB_DEFS[id];
+            const Icon = def.icon;
+            const active = tab === id;
+            const dragging = dragIndex === idx;
+            return (
+              <button
+                key={id}
+                draggable
+                onDragStart={(e) => { setDragIndex(idx); e.dataTransfer.effectAllowed = "move"; }}
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                onDrop={(e) => { e.preventDefault(); onDrop(idx); }}
+                onDragEnd={() => setDragIndex(null)}
+                onClick={() => setTab(id)}
+                title="Arraste para reordenar"
+                className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold uppercase tracking-wide transition border cursor-grab active:cursor-grabbing ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card border-border text-muted-foreground hover:text-foreground"
+                } ${dragging ? "opacity-50" : ""}`}
+              >
+                <GripVertical className="h-3.5 w-3.5 opacity-60" />
+                <Icon className="h-4 w-4" />
+                {def.label}
+              </button>
+            );
+          })}
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
         {tab === "chamados" ? (
           <MaintenanceReturns pin={pin} />
-
-        ) : tab === "agenda" ? (
-          <AttendedCallsAgenda pin={pin} date={date} />
         ) : tab === "orcamentos" ? (
           <OrcamentoEmailTool />
         ) : tab === "maquinas" ? (
@@ -236,6 +250,7 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
           </>
         )}
       </main>
+
 
       {settingsOpen && data && (
         <SettingsModal
