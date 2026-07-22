@@ -1176,3 +1176,319 @@ function AttendedCallRow({
     </li>
   );
 }
+
+// ---------- Máquinas Paradas (admin) ----------
+function useNowTick(intervalMs: number = 60_000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
+
+function formatElapsed(startIso: string, now: number): string {
+  const ms = now - new Date(startIso).getTime();
+  if (ms < 0) return "0h";
+  const totalMinutes = Math.floor(ms / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  return `${hours}h`;
+}
+
+function elapsedBadgeClass(startIso: string, now: number): string {
+  const hours = (now - new Date(startIso).getTime()) / 3_600_000;
+  if (hours < 24) return "bg-emerald-500/15 text-emerald-500 border-emerald-500/30";
+  if (hours < 48) return "bg-amber-500/15 text-amber-500 border-amber-500/30";
+  return "bg-destructive/15 text-destructive border-destructive/30";
+}
+
+function totalElapsed(startIso: string, endIso: string): string {
+  const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+  if (ms < 0) return "0h";
+  const totalMinutes = Math.floor(ms / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  return `${hours}h`;
+}
+
+type MaquinaRow = {
+  id: string;
+  codigo_frota: string;
+  cliente: string | null;
+  local: string | null;
+  motivo: string;
+  responsavel: string | null;
+  data_inicio_parada: string;
+  data_conclusao: string | null;
+  status: string;
+};
+
+function MaquinasParadas({ pin }: { pin: string }) {
+  const qc = useQueryClient();
+  const now = useNowTick(60_000);
+  const [view, setView] = useState<"ativas" | "historico">("ativas");
+
+  const [codigoFrota, setCodigoFrota] = useState("");
+  const [cliente, setCliente] = useState("");
+  const [local, setLocal] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [responsavel, setResponsavel] = useState("");
+
+  const [editId, setEditId] = useState<string | null>(null);
+  const [eCodigo, setECodigo] = useState("");
+  const [eCliente, setECliente] = useState("");
+  const [eLocal, setELocal] = useState("");
+  const [eMotivo, setEMotivo] = useState("");
+  const [eResp, setEResp] = useState("");
+
+  const listFn = useServerFn(adminListMaquinasParadas);
+  const histFn = useServerFn(adminListMaquinasHistorico);
+  const addFn = useServerFn(adminAddMaquinaParada);
+  const updFn = useServerFn(adminUpdateMaquinaParada);
+  const doneFn = useServerFn(adminConcluirMaquinaParada);
+  const delFn = useServerFn(adminDeleteMaquinaParada);
+
+  const ativas = useQuery({
+    queryKey: ["maquinas-paradas", pin],
+    queryFn: () => listFn({ data: { pin } }),
+    retry: false,
+    enabled: view === "ativas",
+  });
+  const historico = useQuery({
+    queryKey: ["maquinas-historico", pin],
+    queryFn: () => histFn({ data: { pin } }),
+    retry: false,
+    enabled: view === "historico",
+  });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["maquinas-paradas", pin] });
+    qc.invalidateQueries({ queryKey: ["maquinas-historico", pin] });
+  };
+
+  const addM = useMutation({
+    mutationFn: () => addFn({
+      data: {
+        pin,
+        codigoFrota: codigoFrota.trim(),
+        cliente: cliente.trim(),
+        local: local.trim(),
+        motivo: motivo.trim(),
+        responsavel: responsavel.trim(),
+      },
+    }),
+    onSuccess: () => {
+      toast.success("Máquina registrada");
+      setCodigoFrota(""); setCliente(""); setLocal(""); setMotivo(""); setResponsavel("");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updM = useMutation({
+    mutationFn: () => updFn({
+      data: {
+        pin,
+        id: editId!,
+        codigoFrota: eCodigo.trim(),
+        cliente: eCliente.trim(),
+        local: eLocal.trim(),
+        motivo: eMotivo.trim(),
+        responsavel: eResp.trim(),
+      },
+    }),
+    onSuccess: () => { toast.success("Atualizada"); setEditId(null); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const doneM = useMutation({
+    mutationFn: (id: string) => doneFn({ data: { pin, id } }),
+    onSuccess: () => { toast.success("Máquina concluída"); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const delM = useMutation({
+    mutationFn: (id: string) => delFn({ data: { pin, id } }),
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function startEdit(r: MaquinaRow) {
+    setEditId(r.id);
+    setECodigo(r.codigo_frota);
+    setECliente(r.cliente ?? "");
+    setELocal(r.local ?? "");
+    setEMotivo(r.motivo);
+    setEResp(r.responsavel ?? "");
+  }
+
+  return (
+    <section className="rounded-lg border border-border bg-card overflow-hidden shadow-lg">
+      <div className="px-5 py-3 border-b border-border bg-accent/10 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="font-display text-lg font-bold uppercase">Máquinas Paradas</h3>
+          <p className="text-xs text-muted-foreground">Alerta automático por email após 48h paradas.</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setView("ativas")}
+            className={`rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition border ${view === "ativas" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:text-foreground"}`}
+          >Ativas</button>
+          <button
+            onClick={() => setView("historico")}
+            className={`rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition border ${view === "historico" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:text-foreground"}`}
+          >Histórico</button>
+        </div>
+      </div>
+
+      {view === "ativas" && (
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (codigoFrota.trim() && motivo.trim()) addM.mutate(); }}
+          className="p-5 border-b border-border grid gap-3 md:grid-cols-5 bg-background/40"
+        >
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Código frota</label>
+            <input value={codigoFrota} onChange={(e) => setCodigoFrota(e.target.value)} maxLength={100}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              placeholder="Ex: 1234" />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Cliente</label>
+            <input value={cliente} onChange={(e) => setCliente(e.target.value)} maxLength={200}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Local</label>
+            <input value={local} onChange={(e) => setLocal(e.target.value)} maxLength={200}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Responsável</label>
+            <input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} maxLength={200}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div className="md:col-span-5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Motivo</label>
+            <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} maxLength={2000} rows={2}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
+              placeholder="Descreva o motivo" />
+          </div>
+          <div className="md:col-span-5 flex justify-end">
+            <button type="submit" disabled={!codigoFrota.trim() || !motivo.trim() || addM.isPending}
+              className="rounded-md bg-accent px-4 py-2 text-sm font-semibold uppercase tracking-wide text-accent-foreground disabled:opacity-40 hover:brightness-110 transition inline-flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              {addM.isPending ? "Salvando..." : "Registrar"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="divide-y divide-border">
+        {view === "ativas" && ativas.isLoading && (
+          <div className="p-6 text-sm text-muted-foreground italic text-center">Carregando...</div>
+        )}
+        {view === "ativas" && !ativas.isLoading && (ativas.data?.items ?? []).length === 0 && (
+          <div className="p-6 text-sm text-muted-foreground italic text-center">Nenhuma máquina parada.</div>
+        )}
+        {view === "ativas" && ((ativas.data?.items ?? []) as MaquinaRow[]).map((r) => (
+          <div key={r.id} className="p-4">
+            {editId === r.id ? (
+              <div className="space-y-2">
+                <div className="grid gap-2 md:grid-cols-4">
+                  <input value={eCodigo} onChange={(e) => setECodigo(e.target.value)} maxLength={100}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="Código frota" />
+                  <input value={eCliente} onChange={(e) => setECliente(e.target.value)} maxLength={200}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="Cliente" />
+                  <input value={eLocal} onChange={(e) => setELocal(e.target.value)} maxLength={200}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="Local" />
+                  <input value={eResp} onChange={(e) => setEResp(e.target.value)} maxLength={200}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="Responsável" />
+                </div>
+                <textarea value={eMotivo} onChange={(e) => setEMotivo(e.target.value)} maxLength={2000} rows={2}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none" placeholder="Motivo" />
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setEditId(null)}
+                    className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-muted transition inline-flex items-center gap-1">
+                    <X className="h-3 w-3" /> Cancelar
+                  </button>
+                  <button onClick={() => updM.mutate()} disabled={!eCodigo.trim() || !eMotivo.trim() || updM.isPending}
+                    className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold uppercase text-accent-foreground disabled:opacity-40 hover:brightness-110 transition inline-flex items-center gap-1">
+                    <Save className="h-3 w-3" /> Salvar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-bold text-base">{r.codigo_frota}</span>
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${elapsedBadgeClass(r.data_inicio_parada, now)}`}>
+                      <AlertTriangle className="h-3 w-3" />
+                      {formatElapsed(r.data_inicio_parada, now)}
+                    </span>
+                  </div>
+                  <div className="mt-1 grid gap-x-4 gap-y-0.5 text-sm md:grid-cols-2">
+                    <div><span className="text-muted-foreground">Cliente:</span> {r.cliente || "—"}</div>
+                    <div><span className="text-muted-foreground">Local:</span> {r.local || "—"}</div>
+                    <div><span className="text-muted-foreground">Responsável:</span> {r.responsavel || "—"}</div>
+                    <div><span className="text-muted-foreground">Início:</span> {new Date(r.data_inicio_parada).toLocaleString("pt-BR")}</div>
+                  </div>
+                  <p className="mt-1 text-sm whitespace-pre-wrap"><span className="text-muted-foreground">Motivo:</span> {r.motivo}</p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={() => startEdit(r)}
+                    className="rounded-md border border-border bg-background p-2 hover:bg-muted transition" title="Editar">
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button onClick={() => { if (confirm("Marcar como concluída?")) doneM.mutate(r.id); }}
+                    className="rounded-md border border-border bg-background px-2 py-1 text-xs font-semibold uppercase text-emerald-500 hover:bg-emerald-500/10 transition inline-flex items-center gap-1" title="Concluir">
+                    <Check className="h-3 w-3" /> Concluir
+                  </button>
+                  <button onClick={() => { if (confirm("Remover este registro?")) delM.mutate(r.id); }}
+                    className="rounded-md border border-border bg-background p-2 hover:bg-destructive/20 hover:text-destructive transition" title="Remover">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {view === "historico" && historico.isLoading && (
+          <div className="p-6 text-sm text-muted-foreground italic text-center">Carregando...</div>
+        )}
+        {view === "historico" && !historico.isLoading && (historico.data?.items ?? []).length === 0 && (
+          <div className="p-6 text-sm text-muted-foreground italic text-center">Nenhuma máquina no histórico.</div>
+        )}
+        {view === "historico" && ((historico.data?.items ?? []) as MaquinaRow[]).map((r) => (
+          <div key={r.id} className="p-4 flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono font-bold text-base">{r.codigo_frota}</span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {r.data_conclusao ? totalElapsed(r.data_inicio_parada, r.data_conclusao) : "—"}
+                </span>
+              </div>
+              <div className="mt-1 grid gap-x-4 gap-y-0.5 text-sm md:grid-cols-2">
+                <div><span className="text-muted-foreground">Cliente:</span> {r.cliente || "—"}</div>
+                <div><span className="text-muted-foreground">Local:</span> {r.local || "—"}</div>
+                <div><span className="text-muted-foreground">Responsável:</span> {r.responsavel || "—"}</div>
+                <div><span className="text-muted-foreground">Início:</span> {new Date(r.data_inicio_parada).toLocaleString("pt-BR")}</div>
+                <div><span className="text-muted-foreground">Conclusão:</span> {r.data_conclusao ? new Date(r.data_conclusao).toLocaleString("pt-BR") : "—"}</div>
+              </div>
+              <p className="mt-1 text-sm whitespace-pre-wrap"><span className="text-muted-foreground">Motivo:</span> {r.motivo}</p>
+            </div>
+            <button onClick={() => { if (confirm("Remover este registro?")) delM.mutate(r.id); }}
+              className="rounded-md border border-border bg-background p-2 hover:bg-destructive/20 hover:text-destructive transition shrink-0" title="Remover">
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
