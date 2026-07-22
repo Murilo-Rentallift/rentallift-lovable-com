@@ -1015,6 +1015,11 @@ function MaquinasParadas({ pin }: { pin: string }) {
                   <input value={eResp} onChange={(e) => setEResp(e.target.value)} maxLength={200}
                     className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="Responsável" />
                 </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Máquina parada desde</label>
+                  <input type="datetime-local" value={eDataInicio} onChange={(e) => setEDataInicio(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+                </div>
                 <textarea value={eMotivo} onChange={(e) => setEMotivo(e.target.value)} maxLength={2000} rows={2}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none" placeholder="Motivo" />
                 <div className="flex gap-2 justify-end">
