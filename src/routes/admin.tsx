@@ -84,14 +84,13 @@ function AdminLogin({ onLogged }: { onLogged: (pin: string) => void }) {
   );
 }
 
-type TabId = "operadores" | "chamados" | "orcamentos" | "maquinas";
+type TabId = "operadores" | "orcamentos" | "maquinas";
 const TAB_DEFS: Record<TabId, { label: string; icon: typeof ClipboardList }> = {
   operadores: { label: "Operadores", icon: ClipboardList },
-  chamados: { label: "Retorno de Manutenções", icon: Wrench },
   orcamentos: { label: "Email Orçamentos", icon: Mail },
   maquinas: { label: "Máquinas Paradas", icon: AlertTriangle },
 };
-const DEFAULT_TAB_ORDER: TabId[] = ["operadores", "chamados", "orcamentos", "maquinas"];
+const DEFAULT_TAB_ORDER: TabId[] = ["operadores", "orcamentos", "maquinas"];
 const TAB_ORDER_KEY = "admin_tab_order";
 
 function loadTabOrder(): TabId[] {
