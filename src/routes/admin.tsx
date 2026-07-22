@@ -183,6 +183,17 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
             <Mail className="h-4 w-4" />
             Email Orçamentos
           </button>
+          <button
+            onClick={() => setTab("maquinas")}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold uppercase tracking-wide transition border ${
+              tab === "maquinas"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <AlertTriangle className="h-4 w-4" />
+            Máquinas Paradas
+          </button>
         </div>
       </header>
 
