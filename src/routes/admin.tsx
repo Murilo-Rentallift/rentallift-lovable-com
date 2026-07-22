@@ -212,9 +212,7 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
-        {tab === "chamados" ? (
-          <MaintenanceReturns pin={pin} />
-        ) : tab === "orcamentos" ? (
+        {tab === "orcamentos" ? (
           <OrcamentoEmailTool />
         ) : tab === "maquinas" ? (
           <MaquinasParadas pin={pin} />
