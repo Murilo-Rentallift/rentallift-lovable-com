@@ -107,7 +107,7 @@ Valor Locação: ${valorLocacao}
 
 End. de entrega: ${endereco}
 
-Data de Entrega: ${dataEntregaFinal}
+Data de ${modalidadeData}: ${dataEntregaFinal}
 
 Frete por conta do:
 
