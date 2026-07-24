@@ -236,7 +236,25 @@ OBS: ${observacao}`;
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Data de Entrega</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label>Data de {modalidadeData}</Label>
+                <div className="inline-flex rounded-md border p-0.5 bg-muted/40">
+                  {(["Entrega", "Retirada"] as const).map((op) => (
+                    <button
+                      key={op}
+                      type="button"
+                      onClick={() => setModalidadeData(op)}
+                      className={`px-3 py-1 text-xs rounded-sm transition-colors ${
+                        modalidadeData === op
+                          ? "bg-background shadow-sm font-medium"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {op}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <Input
                 type="date"
                 value={dataEntrega}
