@@ -44,6 +44,7 @@ export function LiberacaoEquipamentoTab() {
   const [desmontagem, setDesmontagem] = useState<SimNao>("Não");
   const [valorLocacao, setValorLocacao] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [modalidadeData, setModalidadeData] = useState<"Entrega" | "Retirada">("Entrega");
   const [dataEntrega, setDataEntrega] = useState("");
   const [dataEntregaTexto, setDataEntregaTexto] = useState("");
   const [frete, setFrete] = useState<Frete>("Cliente");
