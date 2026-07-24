@@ -92,6 +92,81 @@ export type Database = {
         }
         Relationships: []
       }
+      liberacoes_equipamento: {
+        Row: {
+          acessorios: string | null
+          cliente: string | null
+          created_at: string
+          data_cobranca: string | null
+          data_cobranca_branco: boolean
+          data_cobranca_texto: string | null
+          data_entrega: string | null
+          data_entrega_texto: string | null
+          desmontagem: string | null
+          empilhadeira: string | null
+          empresa: string
+          endereco: string | null
+          frete: string | null
+          id: string
+          mensagem: string | null
+          modalidade_data: string
+          observacao: string | null
+          tipo: string
+          transportadora: string | null
+          updated_at: string
+          valor_frete: string | null
+          valor_locacao: string | null
+        }
+        Insert: {
+          acessorios?: string | null
+          cliente?: string | null
+          created_at?: string
+          data_cobranca?: string | null
+          data_cobranca_branco?: boolean
+          data_cobranca_texto?: string | null
+          data_entrega?: string | null
+          data_entrega_texto?: string | null
+          desmontagem?: string | null
+          empilhadeira?: string | null
+          empresa: string
+          endereco?: string | null
+          frete?: string | null
+          id?: string
+          mensagem?: string | null
+          modalidade_data: string
+          observacao?: string | null
+          tipo: string
+          transportadora?: string | null
+          updated_at?: string
+          valor_frete?: string | null
+          valor_locacao?: string | null
+        }
+        Update: {
+          acessorios?: string | null
+          cliente?: string | null
+          created_at?: string
+          data_cobranca?: string | null
+          data_cobranca_branco?: boolean
+          data_cobranca_texto?: string | null
+          data_entrega?: string | null
+          data_entrega_texto?: string | null
+          desmontagem?: string | null
+          empilhadeira?: string | null
+          empresa?: string
+          endereco?: string | null
+          frete?: string | null
+          id?: string
+          mensagem?: string | null
+          modalidade_data?: string
+          observacao?: string | null
+          tipo?: string
+          transportadora?: string | null
+          updated_at?: string
+          valor_frete?: string | null
+          valor_locacao?: string | null
+        }
+        Relationships: []
+      }
       maintenance_returns: {
         Row: {
           client_name: string

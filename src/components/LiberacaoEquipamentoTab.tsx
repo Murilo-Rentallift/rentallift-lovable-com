@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Copy, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { salvarLiberacaoEquipamento } from "@/lib/app.functions";
 
 type Empresa = "Rental" | "Rle" | "Empisa";
 type TipoLib =
@@ -56,7 +58,9 @@ export function LiberacaoEquipamentoTab() {
   const [observacao, setObservacao] = useState("");
   const [mensagem, setMensagem] = useState("");
 
-  const gerarMensagem = () => {
+  const salvar = useServerFn(salvarLiberacaoEquipamento);
+
+  const gerarMensagem = async () => {
     const empresaLinha = empresas
       .map((e) => `(${e === empresa ? "x" : " "}) ${e}`)
       .join(" ");
@@ -121,7 +125,36 @@ Data de Início ou Encerramento da Cobrança: ${dataCobrancaFinal}
 OBS: ${observacao}`;
 
     setMensagem(msg);
-    toast.success("Mensagem gerada");
+
+    try {
+      await salvar({
+        data: {
+          empresa,
+          tipo,
+          cliente,
+          empilhadeira,
+          acessorios,
+          desmontagem,
+          valorLocacao,
+          endereco,
+          modalidadeData,
+          dataEntrega: dataEntrega || undefined,
+          dataEntregaTexto,
+          frete,
+          transportadora,
+          valorFrete,
+          dataCobranca: dataCobrancaBranco ? undefined : dataCobranca || undefined,
+          dataCobrancaTexto: dataCobrancaBranco ? "" : dataCobrancaTexto,
+          dataCobrancaBranco,
+          observacao,
+          mensagem: msg,
+        },
+      });
+      toast.success("Mensagem gerada e liberação salva");
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : "Erro ao salvar";
+      toast.error(`Mensagem gerada, mas falhou ao salvar: ${errMsg}`);
+    }
   };
 
   const copiar = async () => {
