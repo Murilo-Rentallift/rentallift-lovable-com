@@ -1640,3 +1640,56 @@ ${JSON.stringify(dados)}`;
     const answer: string = json?.choices?.[0]?.message?.content?.trim() ?? "Sem resposta.";
     return { answer };
   });
+
+// ---------- Vendas: salvar Liberação de Equipamento ----------
+export const salvarLiberacaoEquipamento = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    empresa: string;
+    tipo: string;
+    cliente?: string;
+    empilhadeira?: string;
+    acessorios?: string;
+    desmontagem?: string;
+    valorLocacao?: string;
+    endereco?: string;
+    modalidadeData: "Entrega" | "Retirada";
+    dataEntrega?: string;
+    dataEntregaTexto?: string;
+    frete?: string;
+    transportadora?: string;
+    valorFrete?: string;
+    dataCobranca?: string;
+    dataCobrancaTexto?: string;
+    dataCobrancaBranco?: boolean;
+    observacao?: string;
+    mensagem?: string;
+  }) => d)
+  .handler(async ({ data }) => {
+    const { data: row, error } = await supabaseAdmin
+      .from("liberacoes_equipamento")
+      .insert({
+        empresa: data.empresa,
+        tipo: data.tipo,
+        cliente: data.cliente ?? null,
+        empilhadeira: data.empilhadeira ?? null,
+        acessorios: data.acessorios ?? null,
+        desmontagem: data.desmontagem ?? null,
+        valor_locacao: data.valorLocacao ?? null,
+        endereco: data.endereco ?? null,
+        modalidade_data: data.modalidadeData,
+        data_entrega: data.dataEntrega ? data.dataEntrega : null,
+        data_entrega_texto: data.dataEntregaTexto ?? null,
+        frete: data.frete ?? null,
+        transportadora: data.transportadora ?? null,
+        valor_frete: data.valorFrete ?? null,
+        data_cobranca: data.dataCobranca ? data.dataCobranca : null,
+        data_cobranca_texto: data.dataCobrancaTexto ?? null,
+        data_cobranca_branco: data.dataCobrancaBranco ?? false,
+        observacao: data.observacao ?? null,
+        mensagem: data.mensagem ?? null,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id };
+  });
