@@ -58,7 +58,9 @@ export function LiberacaoEquipamentoTab() {
   const [observacao, setObservacao] = useState("");
   const [mensagem, setMensagem] = useState("");
 
-  const gerarMensagem = () => {
+  const salvar = useServerFn(salvarLiberacaoEquipamento);
+
+  const gerarMensagem = async () => {
     const empresaLinha = empresas
       .map((e) => `(${e === empresa ? "x" : " "}) ${e}`)
       .join(" ");
