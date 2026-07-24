@@ -125,7 +125,36 @@ Data de Início ou Encerramento da Cobrança: ${dataCobrancaFinal}
 OBS: ${observacao}`;
 
     setMensagem(msg);
-    toast.success("Mensagem gerada");
+
+    try {
+      await salvar({
+        data: {
+          empresa,
+          tipo,
+          cliente,
+          empilhadeira,
+          acessorios,
+          desmontagem,
+          valorLocacao,
+          endereco,
+          modalidadeData,
+          dataEntrega: dataEntrega || undefined,
+          dataEntregaTexto,
+          frete,
+          transportadora,
+          valorFrete,
+          dataCobranca: dataCobrancaBranco ? undefined : dataCobranca || undefined,
+          dataCobrancaTexto: dataCobrancaBranco ? "" : dataCobrancaTexto,
+          dataCobrancaBranco,
+          observacao,
+          mensagem: msg,
+        },
+      });
+      toast.success("Mensagem gerada e liberação salva");
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : "Erro ao salvar";
+      toast.error(`Mensagem gerada, mas falhou ao salvar: ${errMsg}`);
+    }
   };
 
   const copiar = async () => {
