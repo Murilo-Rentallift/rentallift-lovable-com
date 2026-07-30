@@ -102,6 +102,40 @@ export const createMaquina = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Registro criado automaticamente pelo checklist da Oficina: fica aguardando
+// classificação manual (tipo e condição) antes de virar máquina de verdade.
+export const createMaquinaPendente = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        frota: z.string().default(""),
+        modelo: z.string().default(""),
+        marca: z.string().default(""),
+        observacoes: z.string().nullable().optional(),
+        novasFotos: z.array(fotoSchema).default([]),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const fotos = await uploadFotos(data.novasFotos);
+    const { data: row, error } = await supabaseAdmin
+      .from("maquinas_disponibilidade")
+      .insert({
+        tipo: "",
+        frota: data.frota,
+        modelo: data.modelo,
+        marca: data.marca,
+        status: "pendente",
+        condicao: "",
+        observacoes: data.observacoes ?? null,
+        fotos,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { ok: true, id: row.id };
+  });
+
 export const updateMaquina = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => maquinaInput.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
