@@ -84,6 +84,7 @@ type FormState = {
   marca: string;
   anoFabricacao: string;
   status: "disponivel" | "reservada";
+  condicao: "nova" | "usada";
   observacoes: string;
   fotosExistentes: string[];
   fotosExistentesUrls: string[];
@@ -97,6 +98,7 @@ const emptyForm = (tipo: string): FormState => ({
   marca: "",
   anoFabricacao: "",
   status: "disponivel",
+  condicao: "usada",
   observacoes: "",
   fotosExistentes: [],
   fotosExistentesUrls: [],
