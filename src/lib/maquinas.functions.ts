@@ -13,6 +13,7 @@ export type MaquinaRow = {
   marca: string;
   ano_fabricacao: number | null;
   status: string;
+  condicao: string;
   observacoes: string | null;
   fotos: string[];
   fotosUrls: string[];
@@ -55,6 +56,7 @@ const maquinaInput = z.object({
   marca: z.string().default(""),
   anoFabricacao: z.number().int().nullable().optional(),
   status: z.enum(["disponivel", "reservada"]).default("disponivel"),
+  condicao: z.enum(["nova", "usada"]).default("usada"),
   observacoes: z.string().nullable().optional(),
   fotosExistentes: z.array(z.string()).default([]),
   novasFotos: z.array(fotoSchema).default([]),
@@ -92,6 +94,7 @@ export const createMaquina = createServerFn({ method: "POST" })
       marca: data.marca,
       ano_fabricacao: data.anoFabricacao ?? null,
       status: data.status,
+      condicao: data.condicao,
       observacoes: data.observacoes ?? null,
       fotos: [...data.fotosExistentes, ...novas],
     });
@@ -119,6 +122,7 @@ export const updateMaquina = createServerFn({ method: "POST" })
         marca: data.marca,
         ano_fabricacao: data.anoFabricacao ?? null,
         status: data.status,
+        condicao: data.condicao,
         observacoes: data.observacoes ?? null,
         fotos: [...data.fotosExistentes, ...novas],
       })

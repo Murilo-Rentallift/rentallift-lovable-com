@@ -1,0 +1,1 @@
+ALTER TABLE public.maquinas_disponibilidade ADD COLUMN IF NOT EXISTS condicao text NOT NULL DEFAULT 'usada';
