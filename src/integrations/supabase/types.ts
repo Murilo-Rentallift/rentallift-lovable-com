@@ -194,6 +194,7 @@ export type Database = {
       maquinas_disponibilidade: {
         Row: {
           ano_fabricacao: number | null
+          condicao: string
           created_at: string
           fotos: string[]
           frota: string
@@ -207,6 +208,7 @@ export type Database = {
         }
         Insert: {
           ano_fabricacao?: number | null
+          condicao?: string
           created_at?: string
           fotos?: string[]
           frota?: string
@@ -220,6 +222,7 @@ export type Database = {
         }
         Update: {
           ano_fabricacao?: number | null
+          condicao?: string
           created_at?: string
           fotos?: string[]
           frota?: string
