@@ -518,6 +518,24 @@ export function MaquinasDisponiveisTab() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Condição</Label>
+                  <Select
+                    value={form.condicao}
+                    onValueChange={(v) =>
+                      setForm({ ...form, condicao: v as FormState["condicao"] })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nova">Nova</SelectItem>
+                      <SelectItem value="usada">Usada</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
               </div>
 
               <div className="space-y-2">
