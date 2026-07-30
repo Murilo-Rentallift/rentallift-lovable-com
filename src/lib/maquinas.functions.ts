@@ -94,6 +94,7 @@ export const createMaquina = createServerFn({ method: "POST" })
       marca: data.marca,
       ano_fabricacao: data.anoFabricacao ?? null,
       status: data.status,
+      condicao: data.condicao,
       observacoes: data.observacoes ?? null,
       fotos: [...data.fotosExistentes, ...novas],
     });
@@ -121,6 +122,7 @@ export const updateMaquina = createServerFn({ method: "POST" })
         marca: data.marca,
         ano_fabricacao: data.anoFabricacao ?? null,
         status: data.status,
+        condicao: data.condicao,
         observacoes: data.observacoes ?? null,
         fotos: [...data.fotosExistentes, ...novas],
       })
