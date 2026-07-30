@@ -528,6 +528,125 @@ export function MaquinasDisponiveisTab() {
         </p>
       )}
 
+      {pendentes.length > 0 && (
+        <section className="space-y-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
+          <div className="flex items-center gap-2">
+            <Badge className="bg-amber-500/20 text-amber-500 hover:bg-amber-500/20">
+              <ClipboardList className="mr-1 h-3.5 w-3.5" />
+              {pendentes.length} máquina(s) aguardando classificação
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              Vindas dos checklists da Oficina — escolha Tipo e Condição para confirmar.
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {pendentes.map((m: MaquinaRow) => {
+              const st = pendState(m.id);
+              const urls = m.fotosUrls.filter(Boolean);
+              return (
+                <Card key={m.id} className="overflow-hidden border-amber-500/30">
+                  <Galeria urls={urls} onOpen={(index) => setLightbox({ urls, index })} />
+                  <CardContent className="space-y-3 p-4">
+                    <div>
+                      <p className="font-semibold">Frota {m.frota || "—"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {m.modelo || "—"} · {m.marca || "—"}
+                      </p>
+                    </div>
+                    {m.observacoes && (
+                      <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+                        {m.observacoes}
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Tipo *</Label>
+                        <Select
+                          value={st.tipo}
+                          onValueChange={(v) => setPend(m.id, { tipo: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TIPOS.map((t) => (
+                              <SelectItem key={t} value={t}>
+                                {t}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Condição *</Label>
+                        <Select
+                          value={st.condicao}
+                          onValueChange={(v) =>
+                            setPend(m.id, { condicao: v as "nova" | "usada" })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nova">Nova</SelectItem>
+                            <SelectItem value="usada">Usada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Status</Label>
+                        <Select
+                          value={st.status}
+                          onValueChange={(v) =>
+                            setPend(m.id, { status: v as "disponivel" | "reservada" })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="disponivel">Disponível</SelectItem>
+                            <SelectItem value="reservada">Reservada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => confirmarPendente(m)}
+                        disabled={confirmandoId === m.id}
+                      >
+                        <Check className="h-4 w-4" />
+                        {confirmandoId === m.id ? "Confirmando..." : "Confirmar e adicionar"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (confirm("Descartar esta máquina pendente?")) delMut.mutate(m.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" /> Descartar
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => abrirEdicao(m)}>
+                        <Pencil className="h-4 w-4" /> Editar dados
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+
+
       {tipoAtivo ? (
         <div className="space-y-4">
           <Button variant="ghost" size="sm" onClick={() => setTipoAtivo(null)}>
