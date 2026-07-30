@@ -374,7 +374,7 @@ export function MaquinasDisponiveisTab() {
                 key={t}
                 type="button"
                 onClick={() => setTipoAtivo(t)}
-                className="group relative overflow-hidden rounded-xl border border-border/60 bg-card/60 p-4 text-left backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_0_28px_-6px_hsl(var(--primary)/0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group relative overflow-hidden rounded-xl border border-border/60 bg-card/60 p-4 text-left backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_0_28px_-6px_var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-60 transition-opacity group-hover:opacity-100" />
                 <div className="relative space-y-3">
