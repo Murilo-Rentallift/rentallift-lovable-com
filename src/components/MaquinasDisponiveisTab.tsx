@@ -209,6 +209,7 @@ export function MaquinasDisponiveisTab() {
       toast.error((e as Error).message);
     } finally {
       if (fileRef.current) fileRef.current.value = "";
+      if (camRef.current) camRef.current.value = "";
     }
   };
 
@@ -487,13 +488,35 @@ export function MaquinasDisponiveisTab() {
 
               <div className="space-y-2">
                 <Label>Fotos</Label>
-                <Input
+                <input
                   ref={fileRef}
                   type="file"
                   accept="image/*"
                   multiple
+                  className="hidden"
                   onChange={(e) => onPickFiles(e.target.files)}
                 />
+                <input
+                  ref={camRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => onPickFiles(e.target.files)}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" /> Escolher arquivo
+                  </Button>
+                  <Button type="button" onClick={() => camRef.current?.click()}>
+                    <Camera className="h-4 w-4" /> Tirar foto agora
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-2 pt-1">
                   {form.fotosExistentesUrls.map((url, i) => (
                     <div key={form.fotosExistentes[i]} className="relative">
