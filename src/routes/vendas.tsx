@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LiberacaoEquipamentoTab } from "@/components/LiberacaoEquipamentoTab";
 import { ContratosTab } from "@/components/ContratosTab";
+import { MaquinasDisponiveisTab } from "@/components/MaquinasDisponiveisTab";
 import { ArrowLeft, FileDown, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
