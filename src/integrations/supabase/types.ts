@@ -191,6 +191,48 @@ export type Database = {
         }
         Relationships: []
       }
+      maquinas_disponibilidade: {
+        Row: {
+          ano_fabricacao: number | null
+          created_at: string
+          fotos: string[]
+          frota: string
+          id: string
+          marca: string
+          modelo: string
+          observacoes: string | null
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ano_fabricacao?: number | null
+          created_at?: string
+          fotos?: string[]
+          frota?: string
+          id?: string
+          marca?: string
+          modelo?: string
+          observacoes?: string | null
+          status?: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ano_fabricacao?: number | null
+          created_at?: string
+          fotos?: string[]
+          frota?: string
+          id?: string
+          marca?: string
+          modelo?: string
+          observacoes?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       maquinas_paradas: {
         Row: {
           alerta_enviado: boolean
