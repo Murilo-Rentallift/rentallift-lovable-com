@@ -330,6 +330,9 @@ function VendasPage() {
         <TabsContent value="contratos">
           <ContratosTab />
         </TabsContent>
+        <TabsContent value="maquinas">
+          <MaquinasDisponiveisTab />
+        </TabsContent>
         </Tabs>
       </main>
     </div>
