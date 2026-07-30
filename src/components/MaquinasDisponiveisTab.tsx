@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,14 @@ import {
   ChevronRight,
   ImageOff,
   X,
+  Forklift,
+  BatteryCharging,
+  Fuel,
+  Truck,
+  PackageOpen,
+  ArrowLeft,
+  Camera,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,6 +65,14 @@ const TIPOS = [
   "TRANSPALETEIRA",
   "PALETEIRA COM TORRE",
 ] as const;
+
+function tileIcon(tipo: string) {
+  if (tipo.startsWith("GLP")) return Fuel;
+  if (tipo.startsWith("LITIO")) return BatteryCharging;
+  if (tipo === "RETRÁTIL") return Forklift;
+  if (tipo === "TRANSPALETEIRA") return Truck;
+  return PackageOpen;
+}
 
 type NovaFoto = { dataUrl: string; name?: string };
 
@@ -139,10 +155,11 @@ export function MaquinasDisponiveisTab() {
   const remove = useServerFn(deleteMaquina);
 
   const [busca, setBusca] = useState("");
-  const [tipoAtivo, setTipoAtivo] = useState<string>(TIPOS[0]);
+  const [tipoAtivo, setTipoAtivo] = useState<string | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const camRef = useRef<HTMLInputElement>(null);
 
   const { data: maquinas = [], isLoading } = useQuery({
     queryKey: ["maquinas-disponibilidade"],
@@ -192,6 +209,7 @@ export function MaquinasDisponiveisTab() {
       toast.error((e as Error).message);
     } finally {
       if (fileRef.current) fileRef.current.value = "";
+      if (camRef.current) camRef.current.value = "";
     }
   };
 
@@ -338,24 +356,42 @@ export function MaquinasDisponiveisTab() {
         </p>
       )}
 
-      <Tabs value={tipoAtivo} onValueChange={setTipoAtivo} className="space-y-4">
-        <TabsList className="flex h-auto flex-wrap justify-start gap-1">
+      {tipoAtivo ? (
+        <div className="space-y-4">
+          <Button variant="ghost" size="sm" onClick={() => setTipoAtivo(null)}>
+            <ArrowLeft className="h-4 w-4" /> Voltar aos tipos
+          </Button>
+          {renderLista(tipoAtivo)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {TIPOS.map((t) => {
-            const n = filtradas.filter((m: MaquinaRow) => m.tipo === t).length;
+            const doTipo = filtradas.filter((m: MaquinaRow) => m.tipo === t);
+            const disp = doTipo.filter((m) => m.status === "disponivel").length;
+            const Icon = tileIcon(t);
             return (
-              <TabsTrigger key={t} value={t} className="text-xs">
-                {t}
-                <span className="ml-1 text-muted-foreground">({n})</span>
-              </TabsTrigger>
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTipoAtivo(t)}
+                className="group relative overflow-hidden rounded-xl border border-border/60 bg-card/60 p-4 text-left backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_0_28px_-6px_var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-60 transition-opacity group-hover:opacity-100" />
+                <div className="relative space-y-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-primary/40 bg-primary/10 text-primary transition-transform group-hover:scale-105">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <p className="text-sm font-semibold leading-tight tracking-wide">{t}</p>
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-primary">{disp} disponíveis</span> /{" "}
+                    {doTipo.length} total
+                  </p>
+                </div>
+              </button>
             );
           })}
-        </TabsList>
-        {TIPOS.map((t) => (
-          <TabsContent key={t} value={t}>
-            {renderLista(t)}
-          </TabsContent>
-        ))}
-      </Tabs>
+        </div>
+      )}
 
       <Dialog open={!!form} onOpenChange={(o) => !o && setForm(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -452,13 +488,35 @@ export function MaquinasDisponiveisTab() {
 
               <div className="space-y-2">
                 <Label>Fotos</Label>
-                <Input
+                <input
                   ref={fileRef}
                   type="file"
                   accept="image/*"
                   multiple
+                  className="hidden"
                   onChange={(e) => onPickFiles(e.target.files)}
                 />
+                <input
+                  ref={camRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => onPickFiles(e.target.files)}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" /> Escolher arquivo
+                  </Button>
+                  <Button type="button" onClick={() => camRef.current?.click()}>
+                    <Camera className="h-4 w-4" /> Tirar foto agora
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-2 pt-1">
                   {form.fotosExistentesUrls.map((url, i) => (
                     <div key={form.fotosExistentes[i]} className="relative">
