@@ -105,7 +105,13 @@ const emptyForm = (tipo: string): FormState => ({
   novasFotos: [],
 });
 
-function Galeria({ urls }: { urls: string[] }) {
+function Galeria({
+  urls,
+  onOpen,
+}: {
+  urls: string[];
+  onOpen?: (index: number) => void;
+}) {
   const [i, setI] = useState(0);
   if (!urls.length) {
     return (
@@ -114,14 +120,22 @@ function Galeria({ urls }: { urls: string[] }) {
       </div>
     );
   }
+  const idx = Math.min(i, urls.length - 1);
   return (
     <div className="relative h-40 overflow-hidden rounded-md bg-muted">
-      <img
-        src={urls[Math.min(i, urls.length - 1)]}
-        alt="Foto da máquina"
-        loading="lazy"
-        className="h-40 w-full object-cover"
-      />
+      <button
+        type="button"
+        onClick={() => onOpen?.(idx)}
+        className="block h-40 w-full cursor-zoom-in"
+        aria-label="Ampliar foto"
+      >
+        <img
+          src={urls[idx]}
+          alt="Foto da máquina"
+          loading="lazy"
+          className="h-40 w-full object-cover"
+        />
+      </button>
       {urls.length > 1 && (
         <>
           <button
@@ -141,11 +155,64 @@ function Galeria({ urls }: { urls: string[] }) {
             <ChevronRight className="h-4 w-4" />
           </button>
           <span className="absolute bottom-1 right-2 rounded bg-background/80 px-1.5 text-xs">
-            {Math.min(i, urls.length - 1) + 1}/{urls.length}
+            {idx + 1}/{urls.length}
           </span>
         </>
       )}
     </div>
+  );
+}
+
+function Lightbox({
+  urls,
+  index,
+  onIndex,
+  onClose,
+}: {
+  urls: string[];
+  index: number;
+  onIndex: (i: number) => void;
+  onClose: () => void;
+}) {
+  const idx = Math.min(index, urls.length - 1);
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-4xl border-border/60 bg-background/95 p-3">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Visualizador de fotos</DialogTitle>
+        </DialogHeader>
+        <div className="relative">
+          <img
+            src={urls[idx]}
+            alt={`Foto ${idx + 1}`}
+            className="max-h-[75vh] w-full rounded-md object-contain"
+          />
+          {urls.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => onIndex((idx - 1 + urls.length) % urls.length)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-2 hover:bg-background"
+                aria-label="Foto anterior"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onIndex((idx + 1) % urls.length)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-2 hover:bg-background"
+                aria-label="Próxima foto"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded bg-background/80 px-2 py-0.5 text-xs">
+                {idx + 1}/{urls.length}
+              </span>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
