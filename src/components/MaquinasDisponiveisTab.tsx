@@ -47,6 +47,8 @@ import {
   ArrowLeft,
   Camera,
   Upload,
+  ClipboardList,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -105,7 +107,13 @@ const emptyForm = (tipo: string): FormState => ({
   novasFotos: [],
 });
 
-function Galeria({ urls }: { urls: string[] }) {
+function Galeria({
+  urls,
+  onOpen,
+}: {
+  urls: string[];
+  onOpen?: (index: number) => void;
+}) {
   const [i, setI] = useState(0);
   if (!urls.length) {
     return (
@@ -114,14 +122,22 @@ function Galeria({ urls }: { urls: string[] }) {
       </div>
     );
   }
+  const idx = Math.min(i, urls.length - 1);
   return (
     <div className="relative h-40 overflow-hidden rounded-md bg-muted">
-      <img
-        src={urls[Math.min(i, urls.length - 1)]}
-        alt="Foto da máquina"
-        loading="lazy"
-        className="h-40 w-full object-cover"
-      />
+      <button
+        type="button"
+        onClick={() => onOpen?.(idx)}
+        className="block h-40 w-full cursor-zoom-in"
+        aria-label="Ampliar foto"
+      >
+        <img
+          src={urls[idx]}
+          alt="Foto da máquina"
+          loading="lazy"
+          className="h-40 w-full object-cover"
+        />
+      </button>
       {urls.length > 1 && (
         <>
           <button
@@ -141,11 +157,64 @@ function Galeria({ urls }: { urls: string[] }) {
             <ChevronRight className="h-4 w-4" />
           </button>
           <span className="absolute bottom-1 right-2 rounded bg-background/80 px-1.5 text-xs">
-            {Math.min(i, urls.length - 1) + 1}/{urls.length}
+            {idx + 1}/{urls.length}
           </span>
         </>
       )}
     </div>
+  );
+}
+
+function Lightbox({
+  urls,
+  index,
+  onIndex,
+  onClose,
+}: {
+  urls: string[];
+  index: number;
+  onIndex: (i: number) => void;
+  onClose: () => void;
+}) {
+  const idx = Math.min(index, urls.length - 1);
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-4xl border-border/60 bg-background/95 p-3">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Visualizador de fotos</DialogTitle>
+        </DialogHeader>
+        <div className="relative">
+          <img
+            src={urls[idx]}
+            alt={`Foto ${idx + 1}`}
+            className="max-h-[75vh] w-full rounded-md object-contain"
+          />
+          {urls.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => onIndex((idx - 1 + urls.length) % urls.length)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-2 hover:bg-background"
+                aria-label="Foto anterior"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onIndex((idx + 1) % urls.length)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-2 hover:bg-background"
+                aria-label="Próxima foto"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded bg-background/80 px-2 py-0.5 text-xs">
+                {idx + 1}/{urls.length}
+              </span>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -161,6 +230,11 @@ export function MaquinasDisponiveisTab() {
   const [condicaoFiltro, setCondicaoFiltro] = useState<"nova" | "usada">("usada");
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
+  const [pendForm, setPendForm] = useState<
+    Record<string, { tipo: string; condicao: "" | "nova" | "usada"; status: "disponivel" | "reservada" }>
+  >({});
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
 
@@ -169,19 +243,23 @@ export function MaquinasDisponiveisTab() {
     queryFn: () => list(),
   });
 
-  const termo = busca.trim().toLowerCase();
-  const filtradas = useMemo(
-    () =>
-      termo
-        ? maquinas.filter((m: MaquinaRow) =>
-            [m.modelo, m.marca, m.frota, m.tipo, m.observacoes ?? ""]
-              .join(" ")
-              .toLowerCase()
-              .includes(termo),
-          )
-        : maquinas,
-    [maquinas, termo],
+  const pendentes = useMemo(
+    () => maquinas.filter((m: MaquinaRow) => m.status === "pendente"),
+    [maquinas],
   );
+
+  const termo = busca.trim().toLowerCase();
+  const filtradas = useMemo(() => {
+    const base = maquinas.filter((m: MaquinaRow) => m.status !== "pendente");
+    return termo
+      ? base.filter((m: MaquinaRow) =>
+          [m.modelo, m.marca, m.frota, m.tipo, m.observacoes ?? ""]
+            .join(" ")
+            .toLowerCase()
+            .includes(termo),
+        )
+      : base;
+  }, [maquinas, termo]);
 
   const invalidate = () =>
     qc.invalidateQueries({ queryKey: ["maquinas-disponibilidade"] });
@@ -194,6 +272,53 @@ export function MaquinasDisponiveisTab() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const pendState = (id: string) =>
+    pendForm[id] ?? { tipo: "", condicao: "" as const, status: "disponivel" as const };
+
+  const setPend = (id: string, patch: Partial<ReturnType<typeof pendState>>) =>
+    setPendForm((s) => ({ ...s, [id]: { ...pendState(id), ...patch } }));
+
+  const confirmarPendente = async (m: MaquinaRow) => {
+    const st = pendState(m.id);
+    if (!st.tipo) {
+      toast.error("Selecione o tipo da máquina");
+      return;
+    }
+    if (!st.condicao) {
+      toast.error("Selecione a condição (Nova ou Usada)");
+      return;
+    }
+    setConfirmandoId(m.id);
+    try {
+      await update({
+        data: {
+          id: m.id,
+          tipo: st.tipo,
+          frota: m.frota,
+          modelo: m.modelo,
+          marca: m.marca,
+          anoFabricacao: m.ano_fabricacao ?? null,
+          status: st.status,
+          condicao: st.condicao,
+          observacoes: m.observacoes ?? null,
+          fotosExistentes: m.fotos,
+          novasFotos: [],
+        },
+      });
+      toast.success("Máquina classificada e adicionada");
+      setPendForm((s) => {
+        const { [m.id]: _drop, ...rest } = s;
+        return rest;
+      });
+      invalidate();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setConfirmandoId(null);
+    }
+  };
+
 
   const onPickFiles = async (files: FileList | null) => {
     if (!files?.length || !form) return;
@@ -317,7 +442,12 @@ export function MaquinasDisponiveisTab() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {daCondicao.map((m) => (
               <Card key={m.id} className="overflow-hidden">
-                <Galeria urls={m.fotosUrls.filter(Boolean)} />
+                <Galeria
+                  urls={m.fotosUrls.filter(Boolean)}
+                  onOpen={(index) =>
+                    setLightbox({ urls: m.fotosUrls.filter(Boolean), index })
+                  }
+                />
                 <CardContent className="space-y-2 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -399,6 +529,125 @@ export function MaquinasDisponiveisTab() {
           {filtradas.length} resultado(s) em todos os tipos.
         </p>
       )}
+
+      {pendentes.length > 0 && (
+        <section className="space-y-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
+          <div className="flex items-center gap-2">
+            <Badge className="bg-amber-500/20 text-amber-500 hover:bg-amber-500/20">
+              <ClipboardList className="mr-1 h-3.5 w-3.5" />
+              {pendentes.length} máquina(s) aguardando classificação
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              Vindas dos checklists da Oficina — escolha Tipo e Condição para confirmar.
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {pendentes.map((m: MaquinaRow) => {
+              const st = pendState(m.id);
+              const urls = m.fotosUrls.filter(Boolean);
+              return (
+                <Card key={m.id} className="overflow-hidden border-amber-500/30">
+                  <Galeria urls={urls} onOpen={(index) => setLightbox({ urls, index })} />
+                  <CardContent className="space-y-3 p-4">
+                    <div>
+                      <p className="font-semibold">Frota {m.frota || "—"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {m.modelo || "—"} · {m.marca || "—"}
+                      </p>
+                    </div>
+                    {m.observacoes && (
+                      <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+                        {m.observacoes}
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Tipo *</Label>
+                        <Select
+                          value={st.tipo}
+                          onValueChange={(v) => setPend(m.id, { tipo: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TIPOS.map((t) => (
+                              <SelectItem key={t} value={t}>
+                                {t}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Condição *</Label>
+                        <Select
+                          value={st.condicao}
+                          onValueChange={(v) =>
+                            setPend(m.id, { condicao: v as "nova" | "usada" })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nova">Nova</SelectItem>
+                            <SelectItem value="usada">Usada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Status</Label>
+                        <Select
+                          value={st.status}
+                          onValueChange={(v) =>
+                            setPend(m.id, { status: v as "disponivel" | "reservada" })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="disponivel">Disponível</SelectItem>
+                            <SelectItem value="reservada">Reservada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => confirmarPendente(m)}
+                        disabled={confirmandoId === m.id}
+                      >
+                        <Check className="h-4 w-4" />
+                        {confirmandoId === m.id ? "Confirmando..." : "Confirmar e adicionar"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          if (confirm("Descartar esta máquina pendente?")) delMut.mutate(m.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" /> Descartar
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => abrirEdicao(m)}>
+                        <Pencil className="h-4 w-4" /> Editar dados
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+
 
       {tipoAtivo ? (
         <div className="space-y-4">
@@ -641,6 +890,15 @@ export function MaquinasDisponiveisTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {lightbox && lightbox.urls.length > 0 && (
+        <Lightbox
+          urls={lightbox.urls}
+          index={lightbox.index}
+          onIndex={(i) => setLightbox((s) => (s ? { ...s, index: i } : s))}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }
