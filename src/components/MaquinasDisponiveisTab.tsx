@@ -66,6 +66,14 @@ const TIPOS = [
   "PALETEIRA COM TORRE",
 ] as const;
 
+function tileIcon(tipo: string) {
+  if (tipo.startsWith("GLP")) return Fuel;
+  if (tipo.startsWith("LITIO")) return BatteryCharging;
+  if (tipo === "RETRÁTIL") return Forklift;
+  if (tipo === "TRANSPALETEIRA") return Truck;
+  return PackageOpen;
+}
+
 type NovaFoto = { dataUrl: string; name?: string };
 
 type FormState = {
