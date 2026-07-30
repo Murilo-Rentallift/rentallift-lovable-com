@@ -271,6 +271,53 @@ export function MaquinasDisponiveisTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const pendState = (id: string) =>
+    pendForm[id] ?? { tipo: "", condicao: "" as const, status: "disponivel" as const };
+
+  const setPend = (id: string, patch: Partial<ReturnType<typeof pendState>>) =>
+    setPendForm((s) => ({ ...s, [id]: { ...pendState(id), ...patch } }));
+
+  const confirmarPendente = async (m: MaquinaRow) => {
+    const st = pendState(m.id);
+    if (!st.tipo) {
+      toast.error("Selecione o tipo da máquina");
+      return;
+    }
+    if (!st.condicao) {
+      toast.error("Selecione a condição (Nova ou Usada)");
+      return;
+    }
+    setConfirmandoId(m.id);
+    try {
+      await update({
+        data: {
+          id: m.id,
+          tipo: st.tipo,
+          frota: m.frota,
+          modelo: m.modelo,
+          marca: m.marca,
+          anoFabricacao: m.ano_fabricacao ?? null,
+          status: st.status,
+          condicao: st.condicao,
+          observacoes: m.observacoes ?? null,
+          fotosExistentes: m.fotos,
+          novasFotos: [],
+        },
+      });
+      toast.success("Máquina classificada e adicionada");
+      setPendForm((s) => {
+        const { [m.id]: _drop, ...rest } = s;
+        return rest;
+      });
+      invalidate();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setConfirmandoId(null);
+    }
+  };
+
+
   const onPickFiles = async (files: FileList | null) => {
     if (!files?.length || !form) return;
     try {
