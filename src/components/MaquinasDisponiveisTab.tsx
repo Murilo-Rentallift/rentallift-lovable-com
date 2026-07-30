@@ -266,6 +266,11 @@ export function MaquinasDisponiveisTab() {
   const renderLista = (tipo: string) => {
     const doTipo = filtradas.filter((m: MaquinaRow) => m.tipo === tipo);
     const disponiveis = doTipo.filter((m) => m.status === "disponivel").length;
+    const novasCount = doTipo.filter((m) => m.condicao === "nova").length;
+    const usadasCount = doTipo.length - novasCount;
+    const daCondicao = doTipo.filter((m) =>
+      condicaoFiltro === "nova" ? m.condicao === "nova" : m.condicao !== "nova",
+    );
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -280,15 +285,36 @@ export function MaquinasDisponiveisTab() {
           </Button>
         </div>
 
+        <div className="inline-flex rounded-lg border border-border bg-muted/40 p-1">
+          {([
+            ["nova", `Novas (${novasCount})`],
+            ["usada", `Usadas (${usadasCount})`],
+          ] as const).map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setCondicaoFiltro(v)}
+              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                condicaoFiltro === v
+                  ? "bg-primary text-primary-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Carregando...</p>
-        ) : doTipo.length === 0 ? (
+        ) : daCondicao.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Nenhuma máquina cadastrada {termo ? "para esta busca" : "neste tipo"}.
+            Nenhuma máquina {condicaoFiltro === "nova" ? "nova" : "usada"} cadastrada{" "}
+            {termo ? "para esta busca" : "neste tipo"}.
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {doTipo.map((m) => (
+            {daCondicao.map((m) => (
               <Card key={m.id} className="overflow-hidden">
                 <Galeria urls={m.fotosUrls.filter(Boolean)} />
                 <CardContent className="space-y-2 p-4">
@@ -304,16 +330,29 @@ export function MaquinasDisponiveisTab() {
                         </p>
                       )}
                     </div>
-                    <Badge
-                      className={
-                        m.status === "reservada"
-                          ? "bg-yellow-500/15 text-yellow-500 hover:bg-yellow-500/15"
-                          : "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/15"
-                      }
-                    >
-                      {m.status === "reservada" ? "Reservada" : "Disponível"}
-                    </Badge>
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      <Badge
+                        className={
+                          m.status === "reservada"
+                            ? "bg-yellow-500/15 text-yellow-500 hover:bg-yellow-500/15"
+                            : "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/15"
+                        }
+                      >
+                        {m.status === "reservada" ? "Reservada" : "Disponível"}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={
+                          m.condicao === "nova"
+                            ? "border-sky-500/50 bg-sky-500/10 text-sky-500"
+                            : "border-muted-foreground/40 bg-muted text-muted-foreground"
+                        }
+                      >
+                        {m.condicao === "nova" ? "Nova" : "Usada"}
+                      </Badge>
+                    </div>
                   </div>
+
                   {m.observacoes && (
                     <p className="whitespace-pre-wrap text-sm text-muted-foreground">
                       {m.observacoes}
