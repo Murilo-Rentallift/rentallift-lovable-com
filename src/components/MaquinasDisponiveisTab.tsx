@@ -890,6 +890,15 @@ export function MaquinasDisponiveisTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {lightbox && lightbox.urls.length > 0 && (
+        <Lightbox
+          urls={lightbox.urls}
+          index={lightbox.index}
+          onIndex={(i) => setLightbox((s) => (s ? { ...s, index: i } : s))}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }
