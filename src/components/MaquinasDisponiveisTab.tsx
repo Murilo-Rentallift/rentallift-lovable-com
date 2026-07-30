@@ -147,10 +147,11 @@ export function MaquinasDisponiveisTab() {
   const remove = useServerFn(deleteMaquina);
 
   const [busca, setBusca] = useState("");
-  const [tipoAtivo, setTipoAtivo] = useState<string>(TIPOS[0]);
+  const [tipoAtivo, setTipoAtivo] = useState<string | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const camRef = useRef<HTMLInputElement>(null);
 
   const { data: maquinas = [], isLoading } = useQuery({
     queryKey: ["maquinas-disponibilidade"],
