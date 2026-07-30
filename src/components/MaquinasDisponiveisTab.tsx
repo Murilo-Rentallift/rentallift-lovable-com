@@ -158,6 +158,7 @@ export function MaquinasDisponiveisTab() {
 
   const [busca, setBusca] = useState("");
   const [tipoAtivo, setTipoAtivo] = useState<string | null>(null);
+  const [condicaoFiltro, setCondicaoFiltro] = useState<"nova" | "usada">("usada");
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
