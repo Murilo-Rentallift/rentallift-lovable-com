@@ -228,6 +228,11 @@ export function MaquinasDisponiveisTab() {
   const [condicaoFiltro, setCondicaoFiltro] = useState<"nova" | "usada">("usada");
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [lightbox, setLightbox] = useState<{ urls: string[]; index: number } | null>(null);
+  const [pendForm, setPendForm] = useState<
+    Record<string, { tipo: string; condicao: "" | "nova" | "usada"; status: "disponivel" | "reservada" }>
+  >({});
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
 
@@ -236,19 +241,23 @@ export function MaquinasDisponiveisTab() {
     queryFn: () => list(),
   });
 
-  const termo = busca.trim().toLowerCase();
-  const filtradas = useMemo(
-    () =>
-      termo
-        ? maquinas.filter((m: MaquinaRow) =>
-            [m.modelo, m.marca, m.frota, m.tipo, m.observacoes ?? ""]
-              .join(" ")
-              .toLowerCase()
-              .includes(termo),
-          )
-        : maquinas,
-    [maquinas, termo],
+  const pendentes = useMemo(
+    () => maquinas.filter((m: MaquinaRow) => m.status === "pendente"),
+    [maquinas],
   );
+
+  const termo = busca.trim().toLowerCase();
+  const filtradas = useMemo(() => {
+    const base = maquinas.filter((m: MaquinaRow) => m.status !== "pendente");
+    return termo
+      ? base.filter((m: MaquinaRow) =>
+          [m.modelo, m.marca, m.frota, m.tipo, m.observacoes ?? ""]
+            .join(" ")
+            .toLowerCase()
+            .includes(termo),
+        )
+      : base;
+  }, [maquinas, termo]);
 
   const invalidate = () =>
     qc.invalidateQueries({ queryKey: ["maquinas-disponibilidade"] });
