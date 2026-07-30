@@ -440,7 +440,12 @@ export function MaquinasDisponiveisTab() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {daCondicao.map((m) => (
               <Card key={m.id} className="overflow-hidden">
-                <Galeria urls={m.fotosUrls.filter(Boolean)} />
+                <Galeria
+                  urls={m.fotosUrls.filter(Boolean)}
+                  onOpen={(index) =>
+                    setLightbox({ urls: m.fotosUrls.filter(Boolean), index })
+                  }
+                />
                 <CardContent className="space-y-2 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
