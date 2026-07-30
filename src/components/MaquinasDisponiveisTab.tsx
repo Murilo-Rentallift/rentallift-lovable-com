@@ -47,6 +47,8 @@ import {
   ArrowLeft,
   Camera,
   Upload,
+  ClipboardList,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
