@@ -555,6 +555,7 @@ export function ChecklistRetornoTab() {
         data: { body: previewBody, fileName: previewFileName, pdfBase64: previewPdfBase64, clientEmail: trimmed, subject: SUBJECT },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email-client-ret" });
+      await enviarParaClassificacaoUmaVez();
       setPreviewOpen(false);
       if (previewPdfUrl) {
         URL.revokeObjectURL(previewPdfUrl);
