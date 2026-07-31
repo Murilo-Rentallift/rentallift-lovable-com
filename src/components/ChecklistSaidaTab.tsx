@@ -503,16 +503,7 @@ export function ChecklistSaidaTab() {
         doc.save(pdfFileName());
       }
       toast.success(`PDF gerado (${formatBytes(size)})`, { id: toastId });
-      const { enviarChecklistParaClassificacao } = await import("@/lib/checklistToMaquina");
-      await enviarChecklistParaClassificacao({
-        origem: "Saída",
-        frota,
-        cliente,
-        horimetro,
-        data,
-        obs,
-        fotos,
-      });
+      await enviarParaClassificacaoUmaVez();
     } catch (e: any) {
       const detail = e?.message || String(e);
       toast.error(`Erro ao gerar PDF: ${detail}`, { id: toastId, duration: 8000 });
