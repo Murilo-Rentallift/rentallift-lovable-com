@@ -265,6 +265,7 @@ export function ChecklistSaidaTab() {
     setItens(ITENS_PADRAO.map((n) => ({ ...n, status: "" })));
     setFotos([]);
     setSigKey((k) => k + 1);
+    enviadoParaClassificacaoRef.current = false;
     toast.info("Novo checklist iniciado");
   }
 
