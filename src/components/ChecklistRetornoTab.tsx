@@ -510,6 +510,7 @@ export function ChecklistRetornoTab() {
         data: { body, fileName, pdfBase64, subject: SUBJECT },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email-ret" });
+      await enviarParaClassificacaoUmaVez();
     } catch (e: any) {
       toast.error(e?.message || "Erro ao enviar por email", { id: "send-email-ret" });
     } finally {
