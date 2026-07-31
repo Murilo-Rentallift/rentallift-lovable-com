@@ -106,6 +106,24 @@ export function ChecklistRetornoTab() {
   const [sigKey, setSigKey] = useState(0);
   const [filtroMes, setFiltroMes] = useState("");
   const [filtroFrota, setFiltroFrota] = useState("");
+  const enviadoParaClassificacaoRef = useRef(false);
+
+  async function enviarParaClassificacaoUmaVez() {
+    if (enviadoParaClassificacaoRef.current) return;
+    const { enviarChecklistParaClassificacao } = await import("@/lib/checklistToMaquina");
+    await enviarChecklistParaClassificacao({
+      origem: "Retorno",
+      frota,
+      cliente,
+      horimetro,
+      data,
+      obs,
+      fotos,
+    });
+    enviadoParaClassificacaoRef.current = true;
+  }
+
+
 
   useEffect(() => {
     setDrafts(loadDrafts());
