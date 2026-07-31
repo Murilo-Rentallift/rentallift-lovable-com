@@ -119,6 +119,24 @@ export function ChecklistSaidaTab() {
   const [sigKey, setSigKey] = useState(0); // forces SignaturePad remount when loading draft
   const [filtroMes, setFiltroMes] = useState("");
   const [filtroFrota, setFiltroFrota] = useState("");
+  const enviadoParaClassificacaoRef = useRef(false);
+
+  async function enviarParaClassificacaoUmaVez() {
+    if (enviadoParaClassificacaoRef.current) return;
+    const { enviarChecklistParaClassificacao } = await import("@/lib/checklistToMaquina");
+    await enviarChecklistParaClassificacao({
+      origem: "Saída",
+      frota,
+      cliente,
+      horimetro,
+      data,
+      obs,
+      fotos,
+    });
+    enviadoParaClassificacaoRef.current = true;
+  }
+
+
 
   useEffect(() => {
     setDrafts(loadDrafts());
