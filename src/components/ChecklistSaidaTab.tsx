@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -119,6 +119,24 @@ export function ChecklistSaidaTab() {
   const [sigKey, setSigKey] = useState(0); // forces SignaturePad remount when loading draft
   const [filtroMes, setFiltroMes] = useState("");
   const [filtroFrota, setFiltroFrota] = useState("");
+  const enviadoParaClassificacaoRef = useRef(false);
+
+  async function enviarParaClassificacaoUmaVez() {
+    if (enviadoParaClassificacaoRef.current) return;
+    const { enviarChecklistParaClassificacao } = await import("@/lib/checklistToMaquina");
+    await enviarChecklistParaClassificacao({
+      origem: "Saída",
+      frota,
+      cliente,
+      horimetro,
+      data,
+      obs,
+      fotos,
+    });
+    enviadoParaClassificacaoRef.current = true;
+  }
+
+
 
   useEffect(() => {
     setDrafts(loadDrafts());
@@ -247,6 +265,7 @@ export function ChecklistSaidaTab() {
     setItens(ITENS_PADRAO.map((n) => ({ ...n, status: "" })));
     setFotos([]);
     setSigKey((k) => k + 1);
+    enviadoParaClassificacaoRef.current = false;
     toast.info("Novo checklist iniciado");
   }
 
@@ -260,6 +279,7 @@ export function ChecklistSaidaTab() {
     setItens(d.itens?.length ? d.itens : ITENS_PADRAO.map((n) => ({ ...n, status: "" })));
     setFotos(d.fotos || []);
     setSigKey((k) => k + 1);
+    enviadoParaClassificacaoRef.current = false;
     setShowDrafts(false);
     toast.success("Checklist carregado");
   }
@@ -483,16 +503,7 @@ export function ChecklistSaidaTab() {
         doc.save(pdfFileName());
       }
       toast.success(`PDF gerado (${formatBytes(size)})`, { id: toastId });
-      const { enviarChecklistParaClassificacao } = await import("@/lib/checklistToMaquina");
-      await enviarChecklistParaClassificacao({
-        origem: "Saída",
-        frota,
-        cliente,
-        horimetro,
-        data,
-        obs,
-        fotos,
-      });
+      await enviarParaClassificacaoUmaVez();
     } catch (e: any) {
       const detail = e?.message || String(e);
       toast.error(`Erro ao gerar PDF: ${detail}`, { id: toastId, duration: 8000 });
@@ -518,6 +529,7 @@ export function ChecklistSaidaTab() {
         data: { body, fileName, pdfBase64 },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email" });
+      await enviarParaClassificacaoUmaVez();
     } catch (e: any) {
       toast.error(e?.message || "Erro ao enviar por email", { id: "send-email" });
     } finally {
@@ -564,6 +576,7 @@ export function ChecklistSaidaTab() {
         data: { body: previewBody, fileName: previewFileName, pdfBase64: previewPdfBase64, clientEmail: trimmed },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email-client" });
+      await enviarParaClassificacaoUmaVez();
       setPreviewOpen(false);
       if (previewPdfUrl) {
         URL.revokeObjectURL(previewPdfUrl);

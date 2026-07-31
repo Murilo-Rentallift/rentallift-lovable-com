@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,6 +106,24 @@ export function ChecklistRetornoTab() {
   const [sigKey, setSigKey] = useState(0);
   const [filtroMes, setFiltroMes] = useState("");
   const [filtroFrota, setFiltroFrota] = useState("");
+  const enviadoParaClassificacaoRef = useRef(false);
+
+  async function enviarParaClassificacaoUmaVez() {
+    if (enviadoParaClassificacaoRef.current) return;
+    const { enviarChecklistParaClassificacao } = await import("@/lib/checklistToMaquina");
+    await enviarChecklistParaClassificacao({
+      origem: "Retorno",
+      frota,
+      cliente,
+      horimetro,
+      data,
+      obs,
+      fotos,
+    });
+    enviadoParaClassificacaoRef.current = true;
+  }
+
+
 
   useEffect(() => {
     setDrafts(loadDrafts());
@@ -227,6 +245,7 @@ export function ChecklistRetornoTab() {
     setItens(ITENS_PADRAO.map((n) => ({ ...n, status: "" })));
     setFotos([]);
     setSigKey((k) => k + 1);
+    enviadoParaClassificacaoRef.current = false;
     toast.info("Novo checklist iniciado");
   }
 
@@ -240,6 +259,7 @@ export function ChecklistRetornoTab() {
     setItens(d.itens?.length ? d.itens : ITENS_PADRAO.map((n) => ({ ...n, status: "" })));
     setFotos(d.fotos || []);
     setSigKey((k) => k + 1);
+    enviadoParaClassificacaoRef.current = false;
     setShowDrafts(false);
     toast.success("Checklist carregado");
   }
@@ -467,6 +487,7 @@ export function ChecklistRetornoTab() {
         doc.save(pdfFileName());
       }
       toast.success(`PDF gerado (${formatBytes(size)})`, { id: toastId });
+      await enviarParaClassificacaoUmaVez();
     } catch (e: any) {
       const detail = e?.message || String(e);
       toast.error(`Erro ao gerar PDF: ${detail}`, { id: toastId, duration: 8000 });
@@ -492,6 +513,7 @@ export function ChecklistRetornoTab() {
         data: { body, fileName, pdfBase64, subject: SUBJECT },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email-ret" });
+      await enviarParaClassificacaoUmaVez();
     } catch (e: any) {
       toast.error(e?.message || "Erro ao enviar por email", { id: "send-email-ret" });
     } finally {
@@ -537,6 +559,7 @@ export function ChecklistRetornoTab() {
         data: { body: previewBody, fileName: previewFileName, pdfBase64: previewPdfBase64, clientEmail: trimmed, subject: SUBJECT },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email-client-ret" });
+      await enviarParaClassificacaoUmaVez();
       setPreviewOpen(false);
       if (previewPdfUrl) {
         URL.revokeObjectURL(previewPdfUrl);
