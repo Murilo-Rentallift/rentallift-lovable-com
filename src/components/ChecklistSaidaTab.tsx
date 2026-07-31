@@ -576,6 +576,7 @@ export function ChecklistSaidaTab() {
         data: { body: previewBody, fileName: previewFileName, pdfBase64: previewPdfBase64, clientEmail: trimmed },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email-client" });
+      await enviarParaClassificacaoUmaVez();
       setPreviewOpen(false);
       if (previewPdfUrl) {
         URL.revokeObjectURL(previewPdfUrl);
