@@ -529,6 +529,7 @@ export function ChecklistSaidaTab() {
         data: { body, fileName, pdfBase64 },
       });
       toast.success(`Email enviado para ${result.recipients.length} destinatário(s)`, { id: "send-email" });
+      await enviarParaClassificacaoUmaVez();
     } catch (e: any) {
       toast.error(e?.message || "Erro ao enviar por email", { id: "send-email" });
     } finally {
