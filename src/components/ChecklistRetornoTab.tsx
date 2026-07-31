@@ -258,6 +258,7 @@ export function ChecklistRetornoTab() {
     setItens(d.itens?.length ? d.itens : ITENS_PADRAO.map((n) => ({ ...n, status: "" })));
     setFotos(d.fotos || []);
     setSigKey((k) => k + 1);
+    enviadoParaClassificacaoRef.current = false;
     setShowDrafts(false);
     toast.success("Checklist carregado");
   }
