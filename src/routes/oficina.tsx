@@ -42,7 +42,8 @@ import {
 import { Logo } from "@/components/Logo";
 import { ChecklistSaidaTab } from "@/components/ChecklistSaidaTab";
 import { ChecklistRetornoTab } from "@/components/ChecklistRetornoTab";
-import { ClipboardCheck } from "lucide-react";
+import { CarrosTab } from "@/components/CarrosTab";
+import { ClipboardCheck, Car } from "lucide-react";
 
 export const Route = createFileRoute("/oficina")({
   head: () => ({ meta: [{ title: "Oficina — Requisição de Peças" }] }),
@@ -78,7 +79,7 @@ const WORKSHOP_STATUSES = [
 ] as const;
 
 type Line = { partName: string; quantity: number; code: string };
-type TabKey = "requisicao" | "itens" | "saida" | "checklist" | "checklist-retorno";
+type TabKey = "requisicao" | "itens" | "saida" | "checklist" | "checklist-retorno" | "carros";
 
 function OficinaPage() {
   const doLogin = useServerFn(oficinaLogin);
@@ -171,6 +172,9 @@ function OficinaPage() {
           <TabBtn active={tab === "checklist-retorno"} onClick={() => setTab("checklist-retorno")} icon={<ClipboardCheck className="h-4 w-4" />}>
             Checklist de Retorno
           </TabBtn>
+          <TabBtn active={tab === "carros"} onClick={() => setTab("carros")} icon={<Car className="h-4 w-4" />}>
+            CARROS
+          </TabBtn>
         </nav>
       </header>
 
@@ -180,6 +184,7 @@ function OficinaPage() {
         {tab === "saida" && <SaidaTab pin={pin} />}
         {tab === "checklist" && <ChecklistSaidaTab />}
         {tab === "checklist-retorno" && <ChecklistRetornoTab />}
+        {tab === "carros" && <CarrosTab pin={pin} />}
       </main>
     </div>
   );

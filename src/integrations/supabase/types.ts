@@ -68,6 +68,65 @@ export type Database = {
         }
         Relationships: []
       }
+      checklists_veiculos: {
+        Row: {
+          assinaturas: Json
+          condutor: string
+          created_at: string
+          data: string
+          frota: string
+          id: string
+          itens: Json
+          lider: string
+          obs_manutencao: string
+          placa: string
+          status_final: string
+          updated_at: string
+          veiculo_id: string
+          vistoriador: string
+        }
+        Insert: {
+          assinaturas?: Json
+          condutor?: string
+          created_at?: string
+          data?: string
+          frota?: string
+          id?: string
+          itens?: Json
+          lider?: string
+          obs_manutencao?: string
+          placa?: string
+          status_final?: string
+          updated_at?: string
+          veiculo_id: string
+          vistoriador?: string
+        }
+        Update: {
+          assinaturas?: Json
+          condutor?: string
+          created_at?: string
+          data?: string
+          frota?: string
+          id?: string
+          itens?: Json
+          lider?: string
+          obs_manutencao?: string
+          placa?: string
+          status_final?: string
+          updated_at?: string
+          veiculo_id?: string
+          vistoriador?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklists_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "frota_veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           contractor_name: string
@@ -91,6 +150,71 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      frota_veiculos: {
+        Row: {
+          condutor_atual: string
+          created_at: string
+          id: string
+          numero_frota: string
+          placa: string
+          status: string
+          updated_at: string
+          veiculo: string
+        }
+        Insert: {
+          condutor_atual?: string
+          created_at?: string
+          id?: string
+          numero_frota?: string
+          placa?: string
+          status?: string
+          updated_at?: string
+          veiculo?: string
+        }
+        Update: {
+          condutor_atual?: string
+          created_at?: string
+          id?: string
+          numero_frota?: string
+          placa?: string
+          status?: string
+          updated_at?: string
+          veiculo?: string
+        }
+        Relationships: []
+      }
+      historico_condutores: {
+        Row: {
+          condutor_anterior: string
+          condutor_novo: string
+          created_at: string
+          id: string
+          veiculo_id: string
+        }
+        Insert: {
+          condutor_anterior?: string
+          condutor_novo?: string
+          created_at?: string
+          id?: string
+          veiculo_id: string
+        }
+        Update: {
+          condutor_anterior?: string
+          condutor_novo?: string
+          created_at?: string
+          id?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_condutores_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "frota_veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       liberacoes_equipamento: {
         Row: {
@@ -442,6 +566,57 @@ export type Database = {
           },
         ]
       }
+      pendencias_veiculos: {
+        Row: {
+          checklist_id: string | null
+          created_at: string
+          descricao: string
+          fotos: string[]
+          id: string
+          item: string
+          resolved_at: string | null
+          status: string
+          veiculo_id: string
+        }
+        Insert: {
+          checklist_id?: string | null
+          created_at?: string
+          descricao?: string
+          fotos?: string[]
+          id?: string
+          item?: string
+          resolved_at?: string | null
+          status?: string
+          veiculo_id: string
+        }
+        Update: {
+          checklist_id?: string | null
+          created_at?: string
+          descricao?: string
+          fotos?: string[]
+          id?: string
+          item?: string
+          resolved_at?: string | null
+          status?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pendencias_veiculos_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists_veiculos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pendencias_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "frota_veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_calls: {
         Row: {
           call_date: string
@@ -475,6 +650,53 @@ export type Database = {
         }
         Relationships: []
       }
+      retiradas_veiculos: {
+        Row: {
+          created_at: string
+          data_retorno: string | null
+          data_saida: string
+          destino_motivo: string
+          id: string
+          km_retorno: number | null
+          km_saida: number | null
+          observacao_devolucao: string | null
+          retirado_por: string
+          veiculo_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_retorno?: string | null
+          data_saida?: string
+          destino_motivo?: string
+          id?: string
+          km_retorno?: number | null
+          km_saida?: number | null
+          observacao_devolucao?: string | null
+          retirado_por?: string
+          veiculo_id: string
+        }
+        Update: {
+          created_at?: string
+          data_retorno?: string | null
+          data_saida?: string
+          destino_motivo?: string
+          id?: string
+          km_retorno?: number | null
+          km_saida?: number | null
+          observacao_devolucao?: string | null
+          retirado_por?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retiradas_veiculos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "frota_veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedules: {
         Row: {
           created_at: string
@@ -506,6 +728,44 @@ export type Database = {
             columns: ["operator_id"]
             isOneToOne: false
             referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solicitacoes_manutencao: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          origem: string
+          resolved_at: string | null
+          status: string
+          veiculo_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          origem?: string
+          resolved_at?: string | null
+          status?: string
+          veiculo_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          origem?: string
+          resolved_at?: string | null
+          status?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_manutencao_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "frota_veiculos"
             referencedColumns: ["id"]
           },
         ]
