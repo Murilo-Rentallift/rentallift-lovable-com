@@ -90,10 +90,29 @@ async function fetchMissingRows(startDate: string, endDate: string) {
   return rows;
 }
 
+async function fetchMissingRequests(startDate: string, endDate: string) {
+  const { data: rows, error } = await supabaseAdmin
+    .from("part_requests" as any)
+    .select("requester_name, part_name, quantity, created_at")
+    .eq("status", "em_falta")
+    .eq("superseded", false)
+    .gte("created_at", `${startDate}T00:00:00Z`)
+    .lte("created_at", `${endDate}T23:59:59Z`)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return ((rows ?? []) as any[]).map((r) => ({
+    date: String(r.created_at ?? "").slice(0, 10),
+    requesterName: r.requester_name ?? "—",
+    name: r.part_name ?? "",
+    quantity: (r.quantity ?? 0) as number,
+  }));
+}
+
 function buildPDF(
   startDate: string,
   endDate: string,
   rows: Array<{ date: string; operatorName: string; name: string; quantity: number }>,
+  requests: Array<{ date: string; requesterName: string; name: string; quantity: number }> = [],
 ): string {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -110,9 +129,13 @@ function buildPDF(
 
   let y = 35;
 
-  if (!rows.length) {
+  if (!rows.length && !requests.length) {
     doc.setTextColor(0, 0, 0);
     doc.text("Nenhuma peça em falta registrada nesta semana.", 14, y);
+  } else if (!rows.length) {
+    doc.setTextColor(0, 0, 0);
+    doc.text("Nenhuma peça do dia em falta nesta semana.", 14, y);
+    y += 12;
   } else {
     autoTable(doc, {
       startY: y,
