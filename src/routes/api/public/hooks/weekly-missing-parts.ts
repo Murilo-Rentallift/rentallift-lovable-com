@@ -90,10 +90,29 @@ async function fetchMissingRows(startDate: string, endDate: string) {
   return rows;
 }
 
+async function fetchMissingRequests(startDate: string, endDate: string) {
+  const { data: rows, error } = await supabaseAdmin
+    .from("part_requests" as any)
+    .select("requester_name, part_name, quantity, created_at")
+    .eq("status", "em_falta")
+    .eq("superseded", false)
+    .gte("created_at", `${startDate}T00:00:00Z`)
+    .lte("created_at", `${endDate}T23:59:59Z`)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return ((rows ?? []) as any[]).map((r) => ({
+    date: String(r.created_at ?? "").slice(0, 10),
+    requesterName: r.requester_name ?? "—",
+    name: r.part_name ?? "",
+    quantity: (r.quantity ?? 0) as number,
+  }));
+}
+
 function buildPDF(
   startDate: string,
   endDate: string,
   rows: Array<{ date: string; operatorName: string; name: string; quantity: number }>,
+  requests: Array<{ date: string; requesterName: string; name: string; quantity: number }> = [],
 ): string {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -110,9 +129,13 @@ function buildPDF(
 
   let y = 35;
 
-  if (!rows.length) {
+  if (!rows.length && !requests.length) {
     doc.setTextColor(0, 0, 0);
     doc.text("Nenhuma peça em falta registrada nesta semana.", 14, y);
+  } else if (!rows.length) {
+    doc.setTextColor(0, 0, 0);
+    doc.text("Nenhuma peça do dia em falta nesta semana.", 14, y);
+    y += 12;
   } else {
     autoTable(doc, {
       startY: y,
@@ -152,7 +175,46 @@ function buildPDF(
       columnStyles: { 1: { halign: "center", cellWidth: 40 } },
       margin: { left: 14, right: 14 },
     });
+    // @ts-ignore
+    y = (doc as any).lastAutoTable.finalY + 10;
   }
+
+  if (rows.length || requests.length) {
+    if (y > 240) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(127, 29, 29);
+    doc.text("REQUISIÇÕES DA OFICINA — EM FALTA", 14, y);
+    y += 4;
+
+    if (!requests.length) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Nenhuma requisição da oficina em falta nesta semana.", 14, y + 4);
+    } else {
+      autoTable(doc, {
+        startY: y,
+        head: [["Data", "Solicitante", "Peça", "Qtd"]],
+        body: requests.map((r) => [
+          formatDateBR(r.date),
+          r.requesterName,
+          r.name,
+          String(r.quantity),
+        ]),
+        theme: "striped",
+        headStyles: { fillColor: [127, 29, 29], textColor: 255, fontStyle: "bold" },
+        styles: { fontSize: 10, cellPadding: 2 },
+        columnStyles: { 0: { cellWidth: 26 }, 3: { halign: "center", cellWidth: 18 } },
+        margin: { left: 14, right: 14 },
+      });
+    }
+  }
+
+
 
   const pages = doc.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
@@ -237,14 +299,18 @@ export const Route = createFileRoute("/api/public/hooks/weekly-missing-parts")({
       POST: async () => {
         try {
           const { startDate, endDate } = previousWeekBR();
-          const rows = await fetchMissingRows(startDate, endDate);
-          const pdfBase64 = buildPDF(startDate, endDate, rows);
+          const [rows, requests] = await Promise.all([
+            fetchMissingRows(startDate, endDate),
+            fetchMissingRequests(startDate, endDate),
+          ]);
+          const pdfBase64 = buildPDF(startDate, endDate, rows, requests);
           const fileName = `pecas_em_falta_${startDate}_a_${endDate}.pdf`;
           const result = await sendEmailWithPDF({ startDate, endDate, fileName, pdfBase64 });
           console.log("[weekly-missing-parts] enviado", {
             startDate,
             endDate,
             rows: rows.length,
+            rowsOficina: requests.length,
             messageId: result?.id,
           });
           return Response.json({
@@ -252,6 +318,7 @@ export const Route = createFileRoute("/api/public/hooks/weekly-missing-parts")({
             startDate,
             endDate,
             rowCount: rows.length,
+            rowCountOficina: requests.length,
             recipients: RECIPIENTS,
           });
         } catch (e: any) {
