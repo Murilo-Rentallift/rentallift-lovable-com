@@ -172,6 +172,9 @@ function OficinaPage() {
           <TabBtn active={tab === "checklist-retorno"} onClick={() => setTab("checklist-retorno")} icon={<ClipboardCheck className="h-4 w-4" />}>
             Checklist de Retorno
           </TabBtn>
+          <TabBtn active={tab === "carros"} onClick={() => setTab("carros")} icon={<Car className="h-4 w-4" />}>
+            CARROS
+          </TabBtn>
         </nav>
       </header>
 
@@ -181,6 +184,7 @@ function OficinaPage() {
         {tab === "saida" && <SaidaTab pin={pin} />}
         {tab === "checklist" && <ChecklistSaidaTab />}
         {tab === "checklist-retorno" && <ChecklistRetornoTab />}
+        {tab === "carros" && <CarrosTab pin={pin} />}
       </main>
     </div>
   );
