@@ -175,7 +175,46 @@ function buildPDF(
       columnStyles: { 1: { halign: "center", cellWidth: 40 } },
       margin: { left: 14, right: 14 },
     });
+    // @ts-ignore
+    y = (doc as any).lastAutoTable.finalY + 10;
   }
+
+  if (rows.length || requests.length) {
+    if (y > 240) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(127, 29, 29);
+    doc.text("REQUISIÇÕES DA OFICINA — EM FALTA", 14, y);
+    y += 4;
+
+    if (!requests.length) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Nenhuma requisição da oficina em falta nesta semana.", 14, y + 4);
+    } else {
+      autoTable(doc, {
+        startY: y,
+        head: [["Data", "Solicitante", "Peça", "Qtd"]],
+        body: requests.map((r) => [
+          formatDateBR(r.date),
+          r.requesterName,
+          r.name,
+          String(r.quantity),
+        ]),
+        theme: "striped",
+        headStyles: { fillColor: [127, 29, 29], textColor: 255, fontStyle: "bold" },
+        styles: { fontSize: 10, cellPadding: 2 },
+        columnStyles: { 0: { cellWidth: 26 }, 3: { halign: "center", cellWidth: 18 } },
+        margin: { left: 14, right: 14 },
+      });
+    }
+  }
+
+
 
   const pages = doc.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
