@@ -120,4 +120,11 @@ export async function sendGmail(opts: {
   return { ok: true as const, id: result?.id, recipients: opts.to };
 }
 
-export const ALERTA_MANUTENCAO_PADRAO = ["Murilo@rentallift.com", "rildo@rentallift.com"];
+export const DESTINATARIOS_FROTA = [
+  "Murilo@rentallift.com",
+  "manutencao@rentallift.com",
+  "william@rentallift.com",
+  "recebimento@rentallift.com",
+];
+
+export const ALERTA_MANUTENCAO_PADRAO = DESTINATARIOS_FROTA;
