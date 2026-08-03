@@ -299,14 +299,18 @@ export const Route = createFileRoute("/api/public/hooks/weekly-missing-parts")({
       POST: async () => {
         try {
           const { startDate, endDate } = previousWeekBR();
-          const rows = await fetchMissingRows(startDate, endDate);
-          const pdfBase64 = buildPDF(startDate, endDate, rows);
+          const [rows, requests] = await Promise.all([
+            fetchMissingRows(startDate, endDate),
+            fetchMissingRequests(startDate, endDate),
+          ]);
+          const pdfBase64 = buildPDF(startDate, endDate, rows, requests);
           const fileName = `pecas_em_falta_${startDate}_a_${endDate}.pdf`;
           const result = await sendEmailWithPDF({ startDate, endDate, fileName, pdfBase64 });
           console.log("[weekly-missing-parts] enviado", {
             startDate,
             endDate,
             rows: rows.length,
+            rowsOficina: requests.length,
             messageId: result?.id,
           });
           return Response.json({
@@ -314,6 +318,7 @@ export const Route = createFileRoute("/api/public/hooks/weekly-missing-parts")({
             startDate,
             endDate,
             rowCount: rows.length,
+            rowCountOficina: requests.length,
             recipients: RECIPIENTS,
           });
         } catch (e: any) {
