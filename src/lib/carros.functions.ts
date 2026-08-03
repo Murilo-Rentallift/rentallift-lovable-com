@@ -438,7 +438,7 @@ export const carrosSendChecklistEmail = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await verifyOficinaPin(data.pin);
     return sendGmail({
-      to: ["Murilo@rentallift.com"],
+      to: DESTINATARIOS_FROTA,
       subject: "CHECK LIST VEICULOS FROTA",
       body: data.body,
       attachment: { fileName: data.fileName, pdfBase64: data.pdfBase64 },
