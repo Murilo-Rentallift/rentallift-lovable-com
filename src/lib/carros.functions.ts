@@ -7,6 +7,7 @@ import {
   signFotos,
   sendGmail,
   ALERTA_MANUTENCAO_PADRAO,
+  DESTINATARIOS_FROTA,
 } from "@/lib/carros.server";
 
 export type VeiculoCard = {
