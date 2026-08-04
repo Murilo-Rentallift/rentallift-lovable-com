@@ -8,7 +8,9 @@ import {
   Camera,
   Car,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
+  History,
   Loader2,
   Pencil,
   RotateCcw,
@@ -16,6 +18,7 @@ import {
   ShieldCheck,
   Wrench,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
