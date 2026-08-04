@@ -8,7 +8,9 @@ import {
   Camera,
   Car,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
+  History,
   Loader2,
   Pencil,
   RotateCcw,
@@ -16,6 +18,7 @@ import {
   ShieldCheck,
   Wrench,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,13 +100,115 @@ function fmtDateTime(v?: string | null) {
   return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
+function RetiradasTable({ retiradas }: { retiradas: any[] }) {
+  if (!retiradas.length)
+    return <p className="mt-3 text-sm text-muted-foreground">Nenhuma retirada registrada.</p>;
+  return (
+    <div className="mt-3 overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="text-left text-muted-foreground">
+          <tr>
+            <th className="p-2">Quem pegou</th>
+            <th className="p-2">Destino/Motivo</th>
+            <th className="p-2">Saída</th>
+            <th className="p-2">KM saída</th>
+            <th className="p-2">Retorno</th>
+            <th className="p-2">KM retorno</th>
+            <th className="p-2">Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {retiradas.map((r) => (
+            <tr key={r.id} className="border-t border-border">
+              <td className="p-2">{r.retirado_por}</td>
+              <td className="p-2">{r.destino_motivo || "—"}</td>
+              <td className="p-2">{fmtDateTime(r.data_saida)}</td>
+              <td className="p-2">{r.km_saida ?? "—"}</td>
+              <td className="p-2">{r.data_retorno ? fmtDateTime(r.data_retorno) : "Em uso"}</td>
+              <td className="p-2">{r.km_retorno ?? "—"}</td>
+              <td className="p-2">
+                {r.observacao_devolucao ? (
+                  <span className="text-red-600">
+                    {r.observacao_devolucao} (gerou manutenção)
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ReservaHistoricoCard({ pin, veiculo }: { pin: string; veiculo: any }) {
+  const getVeiculo = useServerFn(carrosGetVeiculo);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [retiradas, setRetiradas] = useState<any[] | null>(null);
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && !retiradas) {
+      setLoading(true);
+      try {
+        const r: any = await getVeiculo({ data: { pin, id: veiculo.id } });
+        setRetiradas(r.retiradas ?? []);
+      } catch (e: any) {
+        toast.error(e.message || "Falha ao carregar histórico");
+        setOpen(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <button
+        type="button"
+        onClick={() => void toggle()}
+        className="flex w-full items-center justify-between text-left"
+      >
+        <span>
+          <span className="block text-base font-bold tracking-wide">{veiculo.placa}</span>
+          <span className="block text-sm text-muted-foreground">
+            {veiculo.veiculo} • Frota {veiculo.numero_frota}
+            {veiculo.emUso ? ` • Em uso (${veiculo.emUso.retirado_por})` : ""}
+          </span>
+        </span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open &&
+        (loading ? (
+          <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando histórico...
+          </div>
+        ) : (
+          <RetiradasTable retiradas={retiradas ?? []} />
+        ))}
+    </div>
+  );
+}
+
 export function CarrosTab({ pin }: { pin: string }) {
+
   const listFrota = useServerFn(carrosListFrota);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [qFrota, setQFrota] = useState("");
   const [qCondutor, setQCondutor] = useState("todos");
+  const [histOpen, setHistOpen] = useState(false);
+  const reservas = useMemo(
+    () =>
+      rows.filter((r) => (r.condutor_atual ?? "").trim().toUpperCase().startsWith("RESERVA")),
+    [rows],
+  );
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -188,6 +293,39 @@ export function CarrosTab({ pin }: { pin: string }) {
         </Select>
       </div>
 
+      <button
+        type="button"
+        onClick={() => setHistOpen(true)}
+        className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-4 text-left transition hover:border-primary/60 hover:shadow-md"
+      >
+        <span className="flex items-center gap-2 font-semibold">
+          <History className="h-5 w-5" /> Histórico de Uso
+        </span>
+        <span className="text-sm text-muted-foreground">Ver por veículo reserva</span>
+      </button>
+
+      <Dialog open={histOpen} onOpenChange={setHistOpen}>
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" /> Histórico de Uso — Veículos Reserva
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {reservas.map((v) => (
+              <ReservaHistoricoCard key={v.id} pin={pin} veiculo={v} />
+            ))}
+            {!reservas.length && (
+              <p className="text-sm text-muted-foreground">
+                Nenhum veículo reserva cadastrado.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
+
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Carregando frota...
@@ -268,6 +406,8 @@ function VeiculoDetalhe({
   const [loading, setLoading] = useState(true);
   const [editCondutor, setEditCondutor] = useState(false);
   const [condutorTmp, setCondutorTmp] = useState("");
+  const [verHistorico, setVerHistorico] = useState(false);
+
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [verChecklist, setVerChecklist] = useState<any | null>(null);
 
@@ -575,46 +715,21 @@ function VeiculoDetalhe({
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">
-        <h3 className="mb-3 font-semibold">Histórico de Uso (Reservas)</h3>
-        {!data.retiradas.length ? (
-          <p className="text-sm text-muted-foreground">Nenhuma retirada registrada.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="p-2">Quem pegou</th>
-                  <th className="p-2">Destino/Motivo</th>
-                  <th className="p-2">Saída</th>
-                  <th className="p-2">KM saída</th>
-                  <th className="p-2">Retorno</th>
-                  <th className="p-2">KM retorno</th>
-                  <th className="p-2">Observação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.retiradas.map((r: any) => (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="p-2">{r.retirado_por}</td>
-                    <td className="p-2">{r.destino_motivo || "—"}</td>
-                    <td className="p-2">{fmtDateTime(r.data_saida)}</td>
-                    <td className="p-2">{r.km_saida ?? "—"}</td>
-                    <td className="p-2">{r.data_retorno ? fmtDateTime(r.data_retorno) : "Em uso"}</td>
-                    <td className="p-2">{r.km_retorno ?? "—"}</td>
-                    <td className="p-2">
-                      {r.observacao_devolucao ? (
-                        <span className="text-red-600">{r.observacao_devolucao} (gerou manutenção)</span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setVerHistorico((s) => !s)}
+          className="flex w-full items-center justify-between text-left font-semibold"
+        >
+          <span className="flex items-center gap-2">
+            <History className="h-4 w-4" /> Histórico de Uso (Reservas)
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 transition ${verHistorico ? "rotate-180" : ""}`}
+          />
+        </button>
+        {verHistorico && <RetiradasTable retiradas={data.retiradas as any[]} />}
       </section>
+
 
       {!!data.historicoCondutores.length && (
         <section className="rounded-xl border border-border bg-card p-4">
