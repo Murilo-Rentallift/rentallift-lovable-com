@@ -605,7 +605,7 @@ function VeiculoDetalhe({
               </Button>
             ) : (
               <Button variant="outline" onClick={() => setRetiradaOpen(true)}>
-                Retirar veículo
+                Registrar Saída
               </Button>
             )}
           </div>
