@@ -5,15 +5,6 @@ import {
   oficinaLogin,
   oficinaCreateRequest,
   oficinaListRequests,
-  oficinaListWorkshopItems,
-  oficinaCreateWorkshopItem,
-  oficinaUpdateWorkshopItem,
-  oficinaDeleteWorkshopItem,
-  oficinaListToolLoans,
-  oficinaCreateToolLoan,
-  oficinaUpdateToolLoan,
-  oficinaReturnToolLoan,
-  oficinaDeleteToolLoan,
 } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,11 +24,7 @@ import {
   Send,
   Plus,
   Trash2,
-  Package,
-  HardHat,
   ClipboardList,
-  AlertTriangle,
-  Check,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ChecklistSaidaTab } from "@/components/ChecklistSaidaTab";
@@ -160,12 +147,6 @@ function OficinaPage() {
           <TabBtn active={tab === "requisicao"} onClick={() => setTab("requisicao")} icon={<ClipboardList className="h-4 w-4" />}>
             Requisição de Peças
           </TabBtn>
-          <TabBtn active={tab === "itens"} onClick={() => setTab("itens")} icon={<Package className="h-4 w-4" />}>
-            Saída de Peças
-          </TabBtn>
-          <TabBtn active={tab === "saida"} onClick={() => setTab("saida")} icon={<HardHat className="h-4 w-4" />}>
-            Ferramentas
-          </TabBtn>
           <TabBtn active={tab === "checklist"} onClick={() => setTab("checklist")} icon={<ClipboardCheck className="h-4 w-4" />}>
             Checklist de Saída
           </TabBtn>
@@ -180,8 +161,6 @@ function OficinaPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-8 space-y-6">
         {tab === "requisicao" && <RequisicaoTab pin={pin} />}
-        {tab === "itens" && <ItensTab pin={pin} />}
-        {tab === "saida" && <SaidaTab pin={pin} />}
         {tab === "checklist" && <ChecklistSaidaTab />}
         {tab === "checklist-retorno" && <ChecklistRetornoTab />}
         {tab === "carros" && <CarrosTab pin={pin} />}
