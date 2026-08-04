@@ -575,46 +575,21 @@ function VeiculoDetalhe({
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">
-        <h3 className="mb-3 font-semibold">Histórico de Uso (Reservas)</h3>
-        {!data.retiradas.length ? (
-          <p className="text-sm text-muted-foreground">Nenhuma retirada registrada.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="p-2">Quem pegou</th>
-                  <th className="p-2">Destino/Motivo</th>
-                  <th className="p-2">Saída</th>
-                  <th className="p-2">KM saída</th>
-                  <th className="p-2">Retorno</th>
-                  <th className="p-2">KM retorno</th>
-                  <th className="p-2">Observação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.retiradas.map((r: any) => (
-                  <tr key={r.id} className="border-t border-border">
-                    <td className="p-2">{r.retirado_por}</td>
-                    <td className="p-2">{r.destino_motivo || "—"}</td>
-                    <td className="p-2">{fmtDateTime(r.data_saida)}</td>
-                    <td className="p-2">{r.km_saida ?? "—"}</td>
-                    <td className="p-2">{r.data_retorno ? fmtDateTime(r.data_retorno) : "Em uso"}</td>
-                    <td className="p-2">{r.km_retorno ?? "—"}</td>
-                    <td className="p-2">
-                      {r.observacao_devolucao ? (
-                        <span className="text-red-600">{r.observacao_devolucao} (gerou manutenção)</span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setVerHistorico((s) => !s)}
+          className="flex w-full items-center justify-between text-left font-semibold"
+        >
+          <span className="flex items-center gap-2">
+            <History className="h-4 w-4" /> Histórico de Uso (Reservas)
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 transition ${verHistorico ? "rotate-180" : ""}`}
+          />
+        </button>
+        {verHistorico && <RetiradasTable retiradas={data.retiradas as any[]} />}
       </section>
+
 
       {!!data.historicoCondutores.length && (
         <section className="rounded-xl border border-border bg-card p-4">
