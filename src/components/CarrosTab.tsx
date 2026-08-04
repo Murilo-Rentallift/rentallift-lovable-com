@@ -202,6 +202,13 @@ export function CarrosTab({ pin }: { pin: string }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [qFrota, setQFrota] = useState("");
   const [qCondutor, setQCondutor] = useState("todos");
+  const [histOpen, setHistOpen] = useState(false);
+  const reservas = useMemo(
+    () =>
+      rows.filter((r) => (r.condutor_atual ?? "").trim().toUpperCase().startsWith("RESERVA")),
+    [rows],
+  );
+
 
   const load = useCallback(async () => {
     setLoading(true);
