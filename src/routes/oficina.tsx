@@ -66,7 +66,7 @@ const WORKSHOP_STATUSES = [
 ] as const;
 
 type Line = { partName: string; quantity: number; code: string };
-type TabKey = "requisicao" | "itens" | "saida" | "checklist" | "checklist-retorno" | "carros";
+type TabKey = "requisicao" | "checklist" | "checklist-retorno" | "carros";
 
 function OficinaPage() {
   const doLogin = useServerFn(oficinaLogin);
