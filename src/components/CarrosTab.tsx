@@ -286,6 +286,39 @@ export function CarrosTab({ pin }: { pin: string }) {
         </Select>
       </div>
 
+      <button
+        type="button"
+        onClick={() => setHistOpen(true)}
+        className="flex w-full items-center justify-between rounded-xl border border-border bg-card p-4 text-left transition hover:border-primary/60 hover:shadow-md"
+      >
+        <span className="flex items-center gap-2 font-semibold">
+          <History className="h-5 w-5" /> Histórico de Uso
+        </span>
+        <span className="text-sm text-muted-foreground">Ver por veículo reserva</span>
+      </button>
+
+      <Dialog open={histOpen} onOpenChange={setHistOpen}>
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" /> Histórico de Uso — Veículos Reserva
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {reservas.map((v) => (
+              <ReservaHistoricoCard key={v.id} pin={pin} veiculo={v} />
+            ))}
+            {!reservas.length && (
+              <p className="text-sm text-muted-foreground">
+                Nenhum veículo reserva cadastrado.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
+
       {loading ? (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Carregando frota...
