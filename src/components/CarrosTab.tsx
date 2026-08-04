@@ -271,6 +271,8 @@ function VeiculoDetalhe({
   const [loading, setLoading] = useState(true);
   const [editCondutor, setEditCondutor] = useState(false);
   const [condutorTmp, setCondutorTmp] = useState("");
+  const [verHistorico, setVerHistorico] = useState(false);
+
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [verChecklist, setVerChecklist] = useState<any | null>(null);
 
