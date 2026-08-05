@@ -827,7 +827,7 @@ function VeiculoDetalhe({
                 {(verChecklist.itens as any[]).map((i, idx) => (
                   <li key={idx} className="flex items-start justify-between gap-3 p-2">
                     <span>{i.item}</span>
-                    <span className={i.resposta === "nao" ? "text-red-600" : "text-emerald-600"}>
+                    <span className={respostaProblema(i.item, i.resposta) ? "text-red-600" : "text-emerald-600"}>
                       {i.resposta ? i.resposta.toUpperCase() : "—"}
                       {i.obs ? ` — ${i.obs}` : ""}
                     </span>
