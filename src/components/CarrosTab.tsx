@@ -1113,6 +1113,35 @@ function ChecklistFlow({
           <Label>Líder</Label>
           <Input value={lider} onChange={(e) => setLider(e.target.value)} />
         </div>
+        {destinoAtivo && (
+          <div className="sm:col-span-3">
+            <div className="flex items-center justify-between">
+              <Label>Destino / Motivo da saída</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDestinoAtivo(false);
+                  setDestino("");
+                }}
+              >
+                Remover
+              </Button>
+            </div>
+            <Input
+              value={destino}
+              onChange={(e) => setDestino(e.target.value)}
+              placeholder="Ex.: Obra Cliente X — entrega de peças"
+            />
+          </div>
+        )}
+        {!destinoAtivo && (
+          <div className="sm:col-span-3">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setDestinoAtivo(true)}>
+              <Plus className="h-4 w-4" /> Adicionar destino
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-border bg-card p-4">
