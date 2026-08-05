@@ -1244,9 +1244,9 @@ function ChecklistFlow({
               className={`h-7 w-7 rounded text-xs font-medium ${
                 i === idx
                   ? "bg-primary text-primary-foreground"
-                  : it.resposta === "nao"
+                  : respostaProblema(it.item, it.resposta)
                     ? "bg-red-500/20 text-red-600"
-                    : it.resposta === "sim"
+                    : it.resposta
                       ? "bg-emerald-500/20 text-emerald-600"
                       : "bg-muted text-muted-foreground"
               }`}
