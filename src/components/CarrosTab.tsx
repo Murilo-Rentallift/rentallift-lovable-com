@@ -874,6 +874,8 @@ function ChecklistFlow({
   const [assLider, setAssLider] = useState("");
   const [assCondutor, setAssCondutor] = useState("");
   const [extraEmails, setExtraEmails] = useState("");
+  const [destinoAtivo, setDestinoAtivo] = useState(false);
+  const [destino, setDestino] = useState("");
   const [idx, setIdx] = useState(0);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
