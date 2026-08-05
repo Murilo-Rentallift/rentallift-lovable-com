@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Search,
   ShieldCheck,
+  Plus,
   Wrench,
 } from "lucide-react";
 
