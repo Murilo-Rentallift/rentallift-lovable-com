@@ -1165,16 +1165,35 @@ function ChecklistFlow({
           <div className="text-xl font-bold">{atual.item}</div>
           <div className="mt-4 flex justify-center gap-3">
             <Button
-              variant={atual.resposta === "sim" ? "default" : "outline"}
-              onClick={() => setAtual({ resposta: "sim" })}
+              variant={
+                atual.resposta === "sim"
+                  ? ITENS_INVERTIDOS.has(atual.item)
+                    ? "destructive"
+                    : "default"
+                  : "outline"
+              }
+              onClick={() => {
+                setAtual({ resposta: "sim" });
+                if (ITENS_INVERTIDOS.has(atual.item)) {
+                  setTimeout(() => fileRef.current?.click(), 100);
+                }
+              }}
             >
               SIM
             </Button>
             <Button
-              variant={atual.resposta === "nao" ? "destructive" : "outline"}
+              variant={
+                atual.resposta === "nao"
+                  ? ITENS_INVERTIDOS.has(atual.item)
+                    ? "default"
+                    : "destructive"
+                  : "outline"
+              }
               onClick={() => {
                 setAtual({ resposta: "nao" });
-                setTimeout(() => fileRef.current?.click(), 100);
+                if (!ITENS_INVERTIDOS.has(atual.item)) {
+                  setTimeout(() => fileRef.current?.click(), 100);
+                }
               }}
             >
               NÃO
