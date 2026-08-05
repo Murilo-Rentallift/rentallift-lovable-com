@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Search,
   ShieldCheck,
+  Plus,
   Wrench,
 } from "lucide-react";
 
@@ -73,6 +74,14 @@ const ITENS_CHECKLIST = [
   "VAZAMENTO ÁGUA",
   "EXTINTOR",
 ];
+
+// Itens com lógica invertida: "SIM" significa que HÁ vazamento (problema)
+const ITENS_INVERTIDOS = new Set(["VAZAMENTO OLEO", "VAZAMENTO ÁGUA"]);
+
+function respostaProblema(item: string, resposta: "sim" | "nao" | null) {
+  if (!resposta) return false;
+  return ITENS_INVERTIDOS.has(item) ? resposta === "sim" : resposta === "nao";
+}
 
 const STATUS_META: Record<string, { label: string; dot: string; text: string }> = {
   disponivel: { label: "Disponível", dot: "bg-emerald-500", text: "text-emerald-600" },
@@ -818,7 +827,7 @@ function VeiculoDetalhe({
                 {(verChecklist.itens as any[]).map((i, idx) => (
                   <li key={idx} className="flex items-start justify-between gap-3 p-2">
                     <span>{i.item}</span>
-                    <span className={i.resposta === "nao" ? "text-red-600" : "text-emerald-600"}>
+                    <span className={respostaProblema(i.item, i.resposta) ? "text-red-600" : "text-emerald-600"}>
                       {i.resposta ? i.resposta.toUpperCase() : "—"}
                       {i.obs ? ` — ${i.obs}` : ""}
                     </span>
@@ -866,6 +875,8 @@ function ChecklistFlow({
   const [assLider, setAssLider] = useState("");
   const [assCondutor, setAssCondutor] = useState("");
   const [extraEmails, setExtraEmails] = useState("");
+  const [destinoAtivo, setDestinoAtivo] = useState(false);
+  const [destino, setDestino] = useState("");
   const [idx, setIdx] = useState(0);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -916,7 +927,10 @@ function ChecklistFlow({
           { content: `CONDUTOR: ${condutor}`, styles: { fontStyle: "bold" as const } },
           { content: `DATA: ${dataCk.split("-").reverse().join("/")}`, styles: { fontStyle: "bold" as const } },
         ],
-      ],
+        ...(destino.trim()
+          ? [[{ content: `DESTINO/MOTIVO: ${destino.trim()}`, colSpan: 4, styles: { fontStyle: "bold" as const } }]]
+          : []),
+      ] as any,
     });
 
     autoTable(doc, {
@@ -981,7 +995,7 @@ function ChecklistFlow({
     if (!vistoriador.trim()) return toast.error("Informe o vistoriador");
     const naoRespondidos = itens.filter((i) => !i.resposta);
     if (naoRespondidos.length) return toast.error("Responda todos os 18 itens");
-    const semObs = itens.find((i) => i.resposta === "nao" && !i.obs.trim());
+    const semObs = itens.find((i) => respostaProblema(i.item, i.resposta) && !i.obs.trim());
     if (semObs) return toast.error(`Observação obrigatória no item ${semObs.item}`);
 
     setBusy(true);
@@ -1027,6 +1041,7 @@ function ChecklistFlow({
               `Veículo: ${veiculo.veiculo} — Frota ${frota} — Placa ${placa}`,
               `Condutor: ${condutor}`,
               `Vistoriador: ${vistoriador}`,
+              ...(destino.trim() ? [`Destino/Motivo: ${destino.trim()}`] : []),
               `Status final: ${STATUS_META[statusFinal].label}`,
             ].join("\n"),
           },
@@ -1048,7 +1063,7 @@ function ChecklistFlow({
               veiculoLabel: `${veiculo.veiculo} — Frota ${frota} — ${placa}`,
               origem: "Checklist",
               descricao:
-                [obsManutencao, ...itens.filter((i) => i.resposta === "nao").map((i) => `${i.item}: ${i.obs}`)]
+                [obsManutencao, ...itens.filter((i) => respostaProblema(i.item, i.resposta)).map((i) => `${i.item}: ${i.obs}`)]
                   .filter(Boolean)
                   .join(" | ") || "Checklist com necessidade de manutenção",
               extraRecipients: extras,
@@ -1099,6 +1114,35 @@ function ChecklistFlow({
           <Label>Líder</Label>
           <Input value={lider} onChange={(e) => setLider(e.target.value)} />
         </div>
+        {destinoAtivo && (
+          <div className="sm:col-span-3">
+            <div className="flex items-center justify-between">
+              <Label>Destino / Motivo da saída</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDestinoAtivo(false);
+                  setDestino("");
+                }}
+              >
+                Remover
+              </Button>
+            </div>
+            <Input
+              value={destino}
+              onChange={(e) => setDestino(e.target.value)}
+              placeholder="Ex.: Obra Cliente X — entrega de peças"
+            />
+          </div>
+        )}
+        {!destinoAtivo && (
+          <div className="sm:col-span-3">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setDestinoAtivo(true)}>
+              <Plus className="h-4 w-4" /> Adicionar destino
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-border bg-card p-4">
@@ -1121,16 +1165,35 @@ function ChecklistFlow({
           <div className="text-xl font-bold">{atual.item}</div>
           <div className="mt-4 flex justify-center gap-3">
             <Button
-              variant={atual.resposta === "sim" ? "default" : "outline"}
-              onClick={() => setAtual({ resposta: "sim" })}
+              variant={
+                atual.resposta === "sim"
+                  ? ITENS_INVERTIDOS.has(atual.item)
+                    ? "destructive"
+                    : "default"
+                  : "outline"
+              }
+              onClick={() => {
+                setAtual({ resposta: "sim" });
+                if (ITENS_INVERTIDOS.has(atual.item)) {
+                  setTimeout(() => fileRef.current?.click(), 100);
+                }
+              }}
             >
               SIM
             </Button>
             <Button
-              variant={atual.resposta === "nao" ? "destructive" : "outline"}
+              variant={
+                atual.resposta === "nao"
+                  ? ITENS_INVERTIDOS.has(atual.item)
+                    ? "default"
+                    : "destructive"
+                  : "outline"
+              }
               onClick={() => {
                 setAtual({ resposta: "nao" });
-                setTimeout(() => fileRef.current?.click(), 100);
+                if (!ITENS_INVERTIDOS.has(atual.item)) {
+                  setTimeout(() => fileRef.current?.click(), 100);
+                }
               }}
             >
               NÃO
@@ -1151,7 +1214,7 @@ function ChecklistFlow({
           }}
         />
 
-        {atual.resposta === "nao" && (
+        {respostaProblema(atual.item, atual.resposta) && (
           <div className="mt-4 space-y-3">
             <div>
               <Label>Observação (obrigatória)</Label>
@@ -1181,9 +1244,9 @@ function ChecklistFlow({
               className={`h-7 w-7 rounded text-xs font-medium ${
                 i === idx
                   ? "bg-primary text-primary-foreground"
-                  : it.resposta === "nao"
+                  : respostaProblema(it.item, it.resposta)
                     ? "bg-red-500/20 text-red-600"
-                    : it.resposta === "sim"
+                    : it.resposta
                       ? "bg-emerald-500/20 text-emerald-600"
                       : "bg-muted text-muted-foreground"
               }`}
