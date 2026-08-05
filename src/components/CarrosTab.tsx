@@ -926,7 +926,10 @@ function ChecklistFlow({
           { content: `CONDUTOR: ${condutor}`, styles: { fontStyle: "bold" as const } },
           { content: `DATA: ${dataCk.split("-").reverse().join("/")}`, styles: { fontStyle: "bold" as const } },
         ],
-      ],
+        ...(destino.trim()
+          ? [[{ content: `DESTINO/MOTIVO: ${destino.trim()}`, colSpan: 4, styles: { fontStyle: "bold" as const } }]]
+          : []),
+      ] as any,
     });
 
     autoTable(doc, {
