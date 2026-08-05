@@ -1040,6 +1040,7 @@ function ChecklistFlow({
               `Veículo: ${veiculo.veiculo} — Frota ${frota} — Placa ${placa}`,
               `Condutor: ${condutor}`,
               `Vistoriador: ${vistoriador}`,
+              ...(destino.trim() ? [`Destino/Motivo: ${destino.trim()}`] : []),
               `Status final: ${STATUS_META[statusFinal].label}`,
             ].join("\n"),
           },
