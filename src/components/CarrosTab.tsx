@@ -1062,7 +1062,7 @@ function ChecklistFlow({
               veiculoLabel: `${veiculo.veiculo} — Frota ${frota} — ${placa}`,
               origem: "Checklist",
               descricao:
-                [obsManutencao, ...itens.filter((i) => i.resposta === "nao").map((i) => `${i.item}: ${i.obs}`)]
+                [obsManutencao, ...itens.filter((i) => respostaProblema(i.item, i.resposta)).map((i) => `${i.item}: ${i.obs}`)]
                   .filter(Boolean)
                   .join(" | ") || "Checklist com necessidade de manutenção",
               extraRecipients: extras,
