@@ -1214,7 +1214,7 @@ function ChecklistFlow({
           }}
         />
 
-        {atual.resposta === "nao" && (
+        {respostaProblema(atual.item, atual.resposta) && (
           <div className="mt-4 space-y-3">
             <div>
               <Label>Observação (obrigatória)</Label>
