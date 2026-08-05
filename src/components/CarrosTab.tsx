@@ -994,7 +994,7 @@ function ChecklistFlow({
     if (!vistoriador.trim()) return toast.error("Informe o vistoriador");
     const naoRespondidos = itens.filter((i) => !i.resposta);
     if (naoRespondidos.length) return toast.error("Responda todos os 18 itens");
-    const semObs = itens.find((i) => i.resposta === "nao" && !i.obs.trim());
+    const semObs = itens.find((i) => respostaProblema(i.item, i.resposta) && !i.obs.trim());
     if (semObs) return toast.error(`Observação obrigatória no item ${semObs.item}`);
 
     setBusy(true);
