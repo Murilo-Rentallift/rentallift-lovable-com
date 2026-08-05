@@ -74,6 +74,14 @@ const ITENS_CHECKLIST = [
   "EXTINTOR",
 ];
 
+// Itens com lógica invertida: "SIM" significa que HÁ vazamento (problema)
+const ITENS_INVERTIDOS = new Set(["VAZAMENTO OLEO", "VAZAMENTO ÁGUA"]);
+
+function respostaProblema(item: string, resposta: "sim" | "nao" | null) {
+  if (!resposta) return false;
+  return ITENS_INVERTIDOS.has(item) ? resposta === "sim" : resposta === "nao";
+}
+
 const STATUS_META: Record<string, { label: string; dot: string; text: string }> = {
   disponivel: { label: "Disponível", dot: "bg-emerald-500", text: "text-emerald-600" },
   pendencia: { label: "Disponível com pendência", dot: "bg-amber-500", text: "text-amber-600" },
