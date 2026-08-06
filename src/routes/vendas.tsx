@@ -335,6 +335,9 @@ function VendasPage() {
         <TabsContent value="maquinas">
           <MaquinasDisponiveisTab />
         </TabsContent>
+        <TabsContent value="glp-litio">
+          <ComparativoGlpLitio />
+        </TabsContent>
         </Tabs>
       </main>
     </div>
