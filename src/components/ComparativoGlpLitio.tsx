@@ -152,7 +152,7 @@ export function ComparativoGlpLitio() {
   const anualAnim = useAnimatedNumber(calc.economiaAnual);
 
   const addSetor = () =>
-    setSetores((s) => [...s, { id: Date.now(), nome: "", maquinas: "1", botijoesDia: "2" }]);
+    setSetores((s) => [...s, { id: Date.now(), nome: "", maquinas: "1", botijoesDia: "1" }]);
   const removeSetor = (id: number) =>
     setSetores((s) => (s.length > 1 ? s.filter((x) => x.id !== id) : s));
   const updSetor = (id: number, k: keyof Setor, v: string) =>
