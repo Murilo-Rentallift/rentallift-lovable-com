@@ -96,8 +96,8 @@ export function OrcamentoEmailTool() {
   }, [number, client, reason, isOperatorError, deadline]);
 
   const bodyText = useMemo(() => {
-    const responsibleFmt = responsible.trim() || "";
-    const reasonFmt = reason.trim() || "";
+    const responsibleFmt = responsible.trim().toLowerCase() || "";
+    const reasonFmt = reason.trim().toLowerCase() || "";
     const lines = [
       `${greeting}${responsibleFmt ? `, ${responsibleFmt}` : ""}, tudo bem?`,
       "",
