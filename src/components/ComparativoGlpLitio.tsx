@@ -147,6 +147,8 @@ export function ComparativoGlpLitio() {
   }, [custoBotijao, locacaoGlp, locacaoLitio, valorKwh, horasDia, diasUteis, horasPorCarga, setores]);
 
   const mensalAnim = useAnimatedNumber(calc.economiaMensal);
+  const glpAnim = useAnimatedNumber(calc.totalGlpGeral);
+  const litioAnim = useAnimatedNumber(calc.totalLitioGeral);
   const anualAnim = useAnimatedNumber(calc.economiaAnual);
 
   const addSetor = () =>
