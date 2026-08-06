@@ -154,29 +154,85 @@ export function ComparativoGlpLitio() {
     "Lítio": Math.round(l.totalLitio),
   }));
 
+  const copiarResumo = async () => {
+    const linhasTxt = calc.linhas.map((l, i) => {
+      const nome = l.setor.nome.trim() || `Setor ${i + 1}`;
+      return `• ${nome}: ${l.qtd} máquina(s) | GLP ${brl(l.totalGlp)}/mês | Lítio ${brl(l.totalLitio)}/mês | Economia ${brl(l.economia)}/mês`;
+    });
+    const txt = [
+      "COMPARATIVO DE CUSTOS — EMPILHADEIRA GLP x LÍTIO",
+      "",
+      "Parâmetros utilizados:",
+      `- Custo do botijão GLP: ${brl(num(custoBotijao))}`,
+      `- Locação mensal GLP: ${brl(num(locacaoGlp))}`,
+      `- Locação mensal Lítio: ${brl(num(locacaoLitio))}`,
+      `- Valor do KW/h: ${brl(num(valorKwh))}`,
+      `- Horas de uso por dia: ${num(horasDia)}`,
+      `- Dias úteis no mês: ${num(diasUteis)}`,
+      `- Horas por carga: ${num(horasPorCarga)} | Carga completa lítio: ${KWH_CARGA_COMPLETA} kWh`,
+      "",
+      "Por setor:",
+      ...linhasTxt,
+      "",
+      `CUSTO MENSAL TOTAL GLP: ${brl(calc.totalGlpGeral)}`,
+      `CUSTO MENSAL TOTAL LÍTIO: ${brl(calc.totalLitioGeral)}`,
+      `ECONOMIA MENSAL: ${brl(calc.economiaMensal)}`,
+      `ECONOMIA ANUAL: ${brl(calc.economiaAnual)}`,
+      "",
+      "Rental Lift",
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(txt);
+      toast.success("Resumo copiado");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Destaques */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card/60 p-6 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_40px_-10px_var(--primary)]">
-          <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
+        <div className="relative overflow-hidden rounded-2xl border border-destructive/40 bg-card/60 p-5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5">
+          <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-destructive/20 blur-3xl" />
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
-            <TrendingUp className="h-4 w-4 text-primary" /> Economia mensal total
+            <Flame className="h-4 w-4 text-destructive" /> Custo mensal GLP
           </div>
-          <div className="mt-2 font-mono text-4xl font-bold tabular-nums text-primary">
-            {brl(mensalAnim)}
+          <div className="mt-2 font-mono text-3xl font-bold tabular-nums text-destructive">
+            {brl(glpAnim)}
           </div>
         </div>
-        <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card/60 p-6 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_40px_-10px_var(--primary)]">
+        <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card/60 p-5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5">
           <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
-            <TrendingUp className="h-4 w-4 text-primary" /> Economia anual total
+            <Zap className="h-4 w-4 text-primary" /> Custo mensal Lítio
           </div>
-          <div className="mt-2 font-mono text-4xl font-bold tabular-nums text-primary">
-            {brl(anualAnim)}
+          <div className="mt-2 font-mono text-3xl font-bold tabular-nums text-primary">
+            {brl(litioAnim)}
           </div>
         </div>
       </div>
+
+      <div className="relative overflow-hidden rounded-2xl border border-primary/50 bg-card/60 p-8 text-center backdrop-blur transition-all duration-300 hover:shadow-[0_0_60px_-14px_var(--primary)]">
+        <div className="absolute -left-16 -top-16 h-48 w-48 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -right-16 -bottom-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+        <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground">
+          <TrendingUp className="h-4 w-4 text-primary" /> Economia mensal
+        </div>
+        <div className="mt-3 font-mono text-5xl font-extrabold tabular-nums text-primary md:text-6xl">
+          {brl(mensalAnim)}
+        </div>
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/50 px-4 py-1.5 backdrop-blur">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">Economia anual</span>
+          <span className="font-mono text-sm font-bold tabular-nums text-primary">{brl(anualAnim)}</span>
+        </div>
+        <div className="mt-5">
+          <Button variant="outline" size="sm" onClick={copiarResumo}>
+            <Copy className="h-4 w-4" /> Copiar resumo
+          </Button>
+        </div>
+      </div>
+
 
       {/* Parâmetros */}
       <Card className="border-border/60 bg-card/60 backdrop-blur">
