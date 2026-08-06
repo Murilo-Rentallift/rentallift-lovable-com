@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LiberacaoEquipamentoTab } from "@/components/LiberacaoEquipamentoTab";
 import { ContratosTab } from "@/components/ContratosTab";
 import { MaquinasDisponiveisTab } from "@/components/MaquinasDisponiveisTab";
+import { ComparativoGlpLitio } from "@/components/ComparativoGlpLitio";
 import { ArrowLeft, FileDown, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
