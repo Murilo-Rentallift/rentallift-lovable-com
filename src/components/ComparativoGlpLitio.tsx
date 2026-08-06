@@ -86,7 +86,7 @@ export function ComparativoGlpLitio() {
   const [horasPorCarga, setHorasPorCarga] = useState("8");
 
   const [setores, setSetores] = useState<Setor[]>([
-    { id: 1, nome: "", maquinas: "1", botijoesDia: "2" },
+    { id: 1, nome: "Armazém", maquinas: "6", botijoesDia: "1" },
   ]);
 
   const calc = useMemo(() => {
