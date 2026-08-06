@@ -193,6 +193,7 @@ function VendasPage() {
             <TabsTrigger value="liberacao">Liberação de Equipamento</TabsTrigger>
             <TabsTrigger value="contratos">Gerador de Contratos</TabsTrigger>
             <TabsTrigger value="maquinas">Máquinas Disponíveis</TabsTrigger>
+            <TabsTrigger value="glp-litio">GLP x Lítio</TabsTrigger>
           </TabsList>
           <TabsContent value="proposta" className="space-y-6">
         <Card>
