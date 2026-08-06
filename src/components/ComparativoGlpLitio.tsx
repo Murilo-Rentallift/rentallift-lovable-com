@@ -30,7 +30,7 @@ type Setor = { id: number; nome: string; maquinas: string; botijoesDia: string }
 function useAnimatedNumber(value: number, duration = 700) {
   const [display, setDisplay] = useState(value);
   const fromRef = useRef(value);
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const from = fromRef.current;
