@@ -3,7 +3,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, Fuel, BatteryCharging, TrendingUp, Lock } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Fuel,
+  BatteryCharging,
+  TrendingUp,
+  Lock,
+  Flame,
+  Zap,
+  Copy,
+} from "lucide-react";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
