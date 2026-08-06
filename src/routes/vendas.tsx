@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LiberacaoEquipamentoTab } from "@/components/LiberacaoEquipamentoTab";
 import { ContratosTab } from "@/components/ContratosTab";
 import { MaquinasDisponiveisTab } from "@/components/MaquinasDisponiveisTab";
+import { ComparativoGlpLitio } from "@/components/ComparativoGlpLitio";
 import { ArrowLeft, FileDown, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -192,6 +193,7 @@ function VendasPage() {
             <TabsTrigger value="liberacao">Liberação de Equipamento</TabsTrigger>
             <TabsTrigger value="contratos">Gerador de Contratos</TabsTrigger>
             <TabsTrigger value="maquinas">Máquinas Disponíveis</TabsTrigger>
+            <TabsTrigger value="glp-litio">GLP x Lítio</TabsTrigger>
           </TabsList>
           <TabsContent value="proposta" className="space-y-6">
         <Card>
@@ -332,6 +334,9 @@ function VendasPage() {
         </TabsContent>
         <TabsContent value="maquinas">
           <MaquinasDisponiveisTab />
+        </TabsContent>
+        <TabsContent value="glp-litio">
+          <ComparativoGlpLitio />
         </TabsContent>
         </Tabs>
       </main>
