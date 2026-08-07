@@ -880,6 +880,18 @@ function ChecklistFlow({
   const [idx, setIdx] = useState(0);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const fotosGeraisRef = useRef<HTMLInputElement>(null);
+  const [fotosGerais, setFotosGerais] = useState<{ dataUrl: string }[]>([]);
+
+  async function addFotosGerais(files: FileList | null) {
+    if (!files?.length) return;
+    const novas: { dataUrl: string }[] = [];
+    for (const f of Array.from(files)) {
+      novas.push({ dataUrl: await fileToCompressedJpegDataUrl(f, { maxWidth: 1000, quality: 0.7 }) });
+    }
+    setFotosGerais((prev) => [...prev, ...novas]);
+  }
+
 
   const [itens, setItens] = useState<ItemState[]>(
     ITENS_CHECKLIST.map((item) => ({ item, resposta: null, obs: "", fotos: [] })),
@@ -987,7 +999,38 @@ function ChecklistFlow({
       body: [[""]],
     });
 
+    if (fotosGerais.length) {
+      doc.addPage();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("FOTOS GERAIS DO VEÍCULO", W / 2, 16, { align: "center" });
+      const cols = 2;
+      const imgW = (W - 24 - 8) / cols;
+      const imgH = imgW * 0.72;
+      let x = 12;
+      let y = 24;
+      fotosGerais.forEach((f, i) => {
+        if (y + imgH > doc.internal.pageSize.getHeight() - 12) {
+          doc.addPage();
+          y = 20;
+          x = 12;
+        }
+        try {
+          doc.addImage(f.dataUrl, "JPEG", x, y, imgW, imgH);
+        } catch {
+          /* foto opcional */
+        }
+        if ((i + 1) % cols === 0) {
+          x = 12;
+          y += imgH + 6;
+        } else {
+          x += imgW + 8;
+        }
+      });
+    }
+
     const fileName = `checklist-veiculo-${placa}-${dataCk}.pdf`;
+
     return { doc, fileName };
   }
 
@@ -1023,6 +1066,8 @@ function ChecklistFlow({
             obs: i.obs,
             fotos: i.fotos,
           })),
+          fotosGerais,
+
         },
       });
 
@@ -1214,8 +1259,8 @@ function ChecklistFlow({
           }}
         />
 
-        <div className="mt-4 space-y-3">
-          {respostaProblema(atual.item, atual.resposta) && (
+        {respostaProblema(atual.item, atual.resposta) && (
+          <div className="mt-4 space-y-3">
             <div>
               <Label>Observação (obrigatória)</Label>
               <Textarea
@@ -1224,16 +1269,17 @@ function ChecklistFlow({
                 onChange={(e) => setAtual({ obs: e.target.value })}
               />
             </div>
-          )}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => fileRef.current?.click()}>
-              <Camera className="h-4 w-4" /> Adicionar foto
-            </Button>
-            {atual.fotos.map((f, i) => (
-              <img key={i} src={f.dataUrl} alt={`Foto ${i + 1} do item ${atual.item}`} className="h-14 w-14 rounded object-cover" />
-            ))}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => fileRef.current?.click()}>
+                <Camera className="h-4 w-4" /> Adicionar foto
+              </Button>
+              {atual.fotos.map((f, i) => (
+                <img key={i} src={f.dataUrl} alt={`Foto ${i + 1} do item ${atual.item}`} className="h-14 w-14 rounded object-cover" />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
 
         <div className="mt-5 flex flex-wrap justify-center gap-1">
           {itens.map((it, i) => (
@@ -1300,6 +1346,58 @@ function ChecklistFlow({
             />
           </div>
         )}
+
+        <div className="rounded-lg border border-border bg-muted/30 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <Label className="text-base">Fotos do veículo</Label>
+              <p className="text-xs text-muted-foreground">
+                Fotos gerais do estado do veículo (opcional, várias fotos).
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => fotosGeraisRef.current?.click()}
+            >
+              <Camera className="h-4 w-4" /> Adicionar fotos
+            </Button>
+          </div>
+          <input
+            ref={fotosGeraisRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              void addFotosGerais(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          {!!fotosGerais.length && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {fotosGerais.map((f, i) => (
+                <div key={i} className="relative">
+                  <img
+                    src={f.dataUrl}
+                    alt={`Foto geral ${i + 1} do veículo`}
+                    className="h-20 w-20 rounded object-cover"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Remover foto ${i + 1}`}
+                    onClick={() => setFotosGerais((prev) => prev.filter((_, j) => j !== i))}
+                    className="absolute -right-1 -top-1 rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
 
         <div className="grid gap-4 sm:grid-cols-3">
           <SignaturePad label="Vistoriador" value={assVistoriador} onChange={setAssVistoriador} />

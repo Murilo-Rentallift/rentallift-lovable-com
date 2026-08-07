@@ -190,6 +190,7 @@ export const carrosSaveChecklist = createServerFn({ method: "POST" })
             condutor: z.string().default(""),
           })
           .default({ vistoriador: "", lider: "", condutor: "" }),
+        fotosGerais: z.array(z.object({ dataUrl: z.string().min(10) })).default([]),
         itens: z
           .array(
             z.object({
@@ -200,6 +201,7 @@ export const carrosSaveChecklist = createServerFn({ method: "POST" })
             }),
           )
           .min(1),
+
       })
       .parse(d),
   )
@@ -216,6 +218,18 @@ export const carrosSaveChecklist = createServerFn({ method: "POST" })
       const fotos = it.fotos.length ? await uploadFotosCarros(it.fotos) : [];
       itensPersistidos.push({ item: it.item, resposta: it.resposta, obs: it.obs, fotos });
     }
+
+    if (data.fotosGerais.length) {
+      const fotos = await uploadFotosCarros(data.fotosGerais);
+      itensPersistidos.push({
+        item: "FOTOS GERAIS DO VEÍCULO",
+        resposta: null,
+        obs: "",
+        fotos,
+      });
+    }
+
+
 
     const { data: ck, error } = await supabaseAdmin
       .from("checklists_veiculos")
