@@ -1214,8 +1214,8 @@ function ChecklistFlow({
           }}
         />
 
-        <div className="mt-4 space-y-3">
-          {respostaProblema(atual.item, atual.resposta) && (
+        {respostaProblema(atual.item, atual.resposta) && (
+          <div className="mt-4 space-y-3">
             <div>
               <Label>Observação (obrigatória)</Label>
               <Textarea
@@ -1224,16 +1224,17 @@ function ChecklistFlow({
                 onChange={(e) => setAtual({ obs: e.target.value })}
               />
             </div>
-          )}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => fileRef.current?.click()}>
-              <Camera className="h-4 w-4" /> Adicionar foto
-            </Button>
-            {atual.fotos.map((f, i) => (
-              <img key={i} src={f.dataUrl} alt={`Foto ${i + 1} do item ${atual.item}`} className="h-14 w-14 rounded object-cover" />
-            ))}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => fileRef.current?.click()}>
+                <Camera className="h-4 w-4" /> Adicionar foto
+              </Button>
+              {atual.fotos.map((f, i) => (
+                <img key={i} src={f.dataUrl} alt={`Foto ${i + 1} do item ${atual.item}`} className="h-14 w-14 rounded object-cover" />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
 
         <div className="mt-5 flex flex-wrap justify-center gap-1">
           {itens.map((it, i) => (
