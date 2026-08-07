@@ -13,7 +13,9 @@ import {
   Flame,
   Zap,
   Copy,
+  RotateCcw,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import {
   BarChart,
@@ -75,19 +77,40 @@ function ReadOnlyStat({ label, value }: { label: string; value: string }) {
   );
 }
 
+const emptySetor = (): Setor => ({ id: Date.now(), nome: "", maquinas: "", botijoesDia: "" });
+
 export function ComparativoGlpLitio() {
-  // Inputs gerais
-  const [custoBotijao, setCustoBotijao] = useState("250,00");
-  const [locacaoGlp, setLocacaoGlp] = useState("3.800,00");
-  const [locacaoLitio, setLocacaoLitio] = useState("6.800,00");
-  const [valorKwh, setValorKwh] = useState("0,30");
-  const [horasDia, setHorasDia] = useState("16");
-  const [diasUteis, setDiasUteis] = useState("24");
-  const [horasPorCarga, setHorasPorCarga] = useState("8");
+  // Inputs gerais (iniciam vazios por segurança comercial)
+  const [custoBotijao, setCustoBotijao] = useState("");
+  const [locacaoGlp, setLocacaoGlp] = useState("");
+  const [locacaoLitio, setLocacaoLitio] = useState("");
+  const [valorKwh, setValorKwh] = useState("");
+  const [horasDia, setHorasDia] = useState("");
+  const [diasUteis, setDiasUteis] = useState("");
+  const [horasPorCarga, setHorasPorCarga] = useState("");
 
   const [setores, setSetores] = useState<Setor[]>([
-    { id: 1, nome: "Armazém", maquinas: "6", botijoesDia: "1" },
+    { id: 1, nome: "", maquinas: "", botijoesDia: "" },
   ]);
+
+  const preenchido = (v: string) => v.trim() !== "";
+  const ready =
+    [custoBotijao, locacaoGlp, locacaoLitio, valorKwh, horasDia, diasUteis, horasPorCarga].every(
+      preenchido,
+    ) && setores.every((s) => preenchido(s.maquinas) && preenchido(s.botijoesDia));
+
+  const limparTudo = () => {
+    setCustoBotijao("");
+    setLocacaoGlp("");
+    setLocacaoLitio("");
+    setValorKwh("");
+    setHorasDia("");
+    setDiasUteis("");
+    setHorasPorCarga("");
+    setSetores([emptySetor()]);
+    toast.success("Campos limpos");
+  };
+
 
   const calc = useMemo(() => {
     const cBotijao = num(custoBotijao);
@@ -151,8 +174,10 @@ export function ComparativoGlpLitio() {
   const litioAnim = useAnimatedNumber(calc.totalLitioGeral);
   const anualAnim = useAnimatedNumber(calc.economiaAnual);
 
-  const addSetor = () =>
-    setSetores((s) => [...s, { id: Date.now(), nome: "", maquinas: "1", botijoesDia: "1" }]);
+  const addSetor = () => setSetores((s) => [...s, emptySetor()]);
+  const fmt = (n: number) => (ready ? brl(n) : "—");
+  const fmtNum = (n: number) => (ready ? n.toLocaleString("pt-BR") : "—");
+
   const removeSetor = (id: number) =>
     setSetores((s) => (s.length > 1 ? s.filter((x) => x.id !== id) : s));
   const updSetor = (id: number, k: keyof Setor, v: string) =>
@@ -168,10 +193,15 @@ export function ComparativoGlpLitio() {
   }));
 
   const copiarResumo = async () => {
+    if (!ready) {
+      toast.error("Preencha todos os campos para gerar o resumo");
+      return;
+    }
     const linhasTxt = calc.linhas.map((l, i) => {
       const nome = l.setor.nome.trim() || `Setor ${i + 1}`;
       return `• ${nome}: ${l.qtd} máquina(s) | GLP ${brl(l.totalGlp)}/mês | Lítio ${brl(l.totalLitio)}/mês | Economia ${brl(l.economia)}/mês`;
     });
+
     const txt = [
       "COMPARATIVO DE CUSTOS — EMPILHADEIRA GLP x LÍTIO",
       "",
@@ -204,15 +234,26 @@ export function ComparativoGlpLitio() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          {ready
+            ? "Cálculo atualizado com os dados deste cliente."
+            : "Preencha os campos para calcular."}
+        </p>
+        <Button variant="outline" size="sm" onClick={limparTudo}>
+          <RotateCcw className="h-4 w-4" /> Limpar tudo / Novo orçamento
+        </Button>
+      </div>
+
       {/* Destaques */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${ready ? "" : "opacity-60"}`}>
         <div className="relative overflow-hidden rounded-2xl border border-destructive/40 bg-card/60 p-5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5">
           <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-destructive/20 blur-3xl" />
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
             <Flame className="h-4 w-4 text-destructive" /> Custo mensal GLP
           </div>
           <div className="mt-2 font-mono text-3xl font-bold tabular-nums text-destructive">
-            {brl(glpAnim)}
+            {ready ? brl(glpAnim) : "—"}
           </div>
         </div>
         <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card/60 p-5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5">
@@ -221,30 +262,40 @@ export function ComparativoGlpLitio() {
             <Zap className="h-4 w-4 text-primary" /> Custo mensal Lítio
           </div>
           <div className="mt-2 font-mono text-3xl font-bold tabular-nums text-primary">
-            {brl(litioAnim)}
+            {ready ? brl(litioAnim) : "—"}
           </div>
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl border border-primary/50 bg-card/60 p-8 text-center backdrop-blur transition-all duration-300 hover:shadow-[0_0_60px_-14px_var(--primary)]">
+      <div
+        className={`relative overflow-hidden rounded-2xl border border-primary/50 bg-card/60 p-8 text-center backdrop-blur transition-all duration-300 ${ready ? "hover:shadow-[0_0_60px_-14px_var(--primary)]" : "opacity-60"}`}
+      >
         <div className="absolute -left-16 -top-16 h-48 w-48 rounded-full bg-primary/20 blur-3xl" />
         <div className="absolute -right-16 -bottom-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
         <div className="flex items-center justify-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground">
           <TrendingUp className="h-4 w-4 text-primary" /> Economia mensal
         </div>
         <div className="mt-3 font-mono text-5xl font-extrabold tabular-nums text-primary md:text-6xl">
-          {brl(mensalAnim)}
+          {ready ? brl(mensalAnim) : "—"}
         </div>
+        {!ready && (
+          <div className="mt-2 text-xs text-muted-foreground">
+            Preencha os parâmetros e os setores para calcular
+          </div>
+        )}
         <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/50 px-4 py-1.5 backdrop-blur">
           <span className="text-xs uppercase tracking-wide text-muted-foreground">Economia anual</span>
-          <span className="font-mono text-sm font-bold tabular-nums text-primary">{brl(anualAnim)}</span>
+          <span className="font-mono text-sm font-bold tabular-nums text-primary">
+            {ready ? brl(anualAnim) : "—"}
+          </span>
         </div>
         <div className="mt-5">
-          <Button variant="outline" size="sm" onClick={copiarResumo}>
+          <Button variant="outline" size="sm" onClick={copiarResumo} disabled={!ready}>
             <Copy className="h-4 w-4" /> Copiar resumo
           </Button>
         </div>
       </div>
+
 
 
       {/* Parâmetros */}
@@ -255,32 +306,33 @@ export function ComparativoGlpLitio() {
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <Label>Custo do botijão GLP (R$)</Label>
-            <Input value={custoBotijao} onChange={(e) => setCustoBotijao(e.target.value)} />
+            <Input value={custoBotijao} placeholder="Ex: 250,00" onChange={(e) => setCustoBotijao(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Locação mensal GLP (R$)</Label>
-            <Input value={locacaoGlp} onChange={(e) => setLocacaoGlp(e.target.value)} />
+            <Input value={locacaoGlp} placeholder="Ex: 3.800,00" onChange={(e) => setLocacaoGlp(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Locação mensal Lítio (R$)</Label>
-            <Input value={locacaoLitio} onChange={(e) => setLocacaoLitio(e.target.value)} />
+            <Input value={locacaoLitio} placeholder="Ex: 6.800,00" onChange={(e) => setLocacaoLitio(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Valor do KW/h (R$)</Label>
-            <Input value={valorKwh} onChange={(e) => setValorKwh(e.target.value)} />
+            <Input value={valorKwh} placeholder="Ex: 0,30" onChange={(e) => setValorKwh(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Horas de uso por dia</Label>
-            <Input value={horasDia} onChange={(e) => setHorasDia(e.target.value)} />
+            <Input value={horasDia} placeholder="Ex: 16" onChange={(e) => setHorasDia(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Dias úteis no mês</Label>
-            <Input value={diasUteis} onChange={(e) => setDiasUteis(e.target.value)} />
+            <Input value={diasUteis} placeholder="Ex: 24" onChange={(e) => setDiasUteis(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Horas por carga (GLP e Lítio)</Label>
-            <Input value={horasPorCarga} onChange={(e) => setHorasPorCarga(e.target.value)} />
+            <Input value={horasPorCarga} placeholder="Ex: 8" onChange={(e) => setHorasPorCarga(e.target.value)} />
           </div>
+
           <div className="md:col-span-2">
             <ReadOnlyStat
               label="Consumo de uma carga completa (lítio) — fixo"
@@ -299,9 +351,9 @@ export function ComparativoGlpLitio() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <ReadOnlyStat label="Custo hora trabalho" value={brl(calc.custoHoraGlp)} />
-            <ReadOnlyStat label="Custo dia trabalho" value={brl(calc.custoDiaGlp)} />
-            <ReadOnlyStat label="Custo mês por máquina (combustível)" value={brl(calc.custoMesGlp)} />
+            <ReadOnlyStat label="Custo hora trabalho" value={fmt(calc.custoHoraGlp)} />
+            <ReadOnlyStat label="Custo dia trabalho" value={fmt(calc.custoDiaGlp)} />
+            <ReadOnlyStat label="Custo mês por máquina (combustível)" value={fmt(calc.custoMesGlp)} />
           </CardContent>
         </Card>
         <Card className="border-border/60 bg-card/60 backdrop-blur">
@@ -311,11 +363,12 @@ export function ComparativoGlpLitio() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <ReadOnlyStat label="Consumo carga completa (R$)" value={brl(calc.consumoCargaCompleta)} />
-            <ReadOnlyStat label="Custo hora trabalho" value={brl(calc.custoHoraLitio)} />
-            <ReadOnlyStat label="Custo dia trabalho" value={brl(calc.custoDiaLitio)} />
-            <ReadOnlyStat label="Custo mês por máquina (energia)" value={brl(calc.custoMesLitio)} />
+            <ReadOnlyStat label="Consumo carga completa (R$)" value={fmt(calc.consumoCargaCompleta)} />
+            <ReadOnlyStat label="Custo hora trabalho" value={fmt(calc.custoHoraLitio)} />
+            <ReadOnlyStat label="Custo dia trabalho" value={fmt(calc.custoDiaLitio)} />
+            <ReadOnlyStat label="Custo mês por máquina (energia)" value={fmt(calc.custoMesLitio)} />
           </CardContent>
+
         </Card>
       </div>
 
@@ -356,6 +409,7 @@ export function ComparativoGlpLitio() {
                   <Label>Qtd. de máquinas</Label>
                   <Input
                     value={l.setor.maquinas}
+                    placeholder="Ex: 6"
                     onChange={(e) => updSetor(l.setor.id, "maquinas", e.target.value)}
                   />
                 </div>
@@ -363,83 +417,95 @@ export function ComparativoGlpLitio() {
                   <Label>Botijões GLP/dia por máquina</Label>
                   <Input
                     value={l.setor.botijoesDia}
+                    placeholder="Ex: 1"
                     onChange={(e) => updSetor(l.setor.id, "botijoesDia", e.target.value)}
                   />
                 </div>
+
               </div>
               <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
-                <ReadOnlyStat label="Botijões GLP / mês" value={l.botijoesMes.toLocaleString("pt-BR")} />
-                <ReadOnlyStat label="Custo GLP no mês (combustível)" value={brl(l.custoGlpMes)} />
-                <ReadOnlyStat label="Total GLP (locação + comb.)" value={brl(l.totalGlp)} />
-                <ReadOnlyStat label="Custo carga bateria no mês" value={brl(l.custoCargaMes)} />
-                <ReadOnlyStat label="Total Lítio (locação + energia)" value={brl(l.totalLitio)} />
+                <ReadOnlyStat label="Botijões GLP / mês" value={fmtNum(l.botijoesMes)} />
+                <ReadOnlyStat label="Custo GLP no mês (combustível)" value={fmt(l.custoGlpMes)} />
+                <ReadOnlyStat label="Total GLP (locação + comb.)" value={fmt(l.totalGlp)} />
+                <ReadOnlyStat label="Custo carga bateria no mês" value={fmt(l.custoCargaMes)} />
+                <ReadOnlyStat label="Total Lítio (locação + energia)" value={fmt(l.totalLitio)} />
                 <div className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-2">
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
                     Economia mensal do setor
                   </div>
                   <div className="mt-0.5 font-mono text-sm font-bold tabular-nums text-primary">
-                    {brl(l.economia)}
+                    {fmt(l.economia)}
                   </div>
                 </div>
               </div>
+
             </div>
           ))}
         </CardContent>
       </Card>
 
       {/* Gráficos */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="border-border/60 bg-card/60 backdrop-blur">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Custo mensal total — geral</CardTitle>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartGeral}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="nome" stroke="var(--muted-foreground)" fontSize={12} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={12} />
-                <Tooltip
-                  formatter={(v: number) => brl(v)}
-                  contentStyle={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="GLP" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Lítio" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      {ready ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card className="border-border/60 bg-card/60 backdrop-blur">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Custo mensal total — geral</CardTitle>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartGeral}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="nome" stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                  <Tooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="GLP" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Lítio" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          <Card className="border-border/60 bg-card/60 backdrop-blur">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Custo mensal total — por setor</CardTitle>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartSetores}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="nome" stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                  <Tooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="GLP" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Lítio" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card className="border-dashed border-border/60 bg-card/40 backdrop-blur">
+          <CardContent className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+            Preencha os campos para calcular e ver os gráficos comparativos.
           </CardContent>
         </Card>
-        <Card className="border-border/60 bg-card/60 backdrop-blur">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Custo mensal total — por setor</CardTitle>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartSetores}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="nome" stroke="var(--muted-foreground)" fontSize={12} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={12} />
-                <Tooltip
-                  formatter={(v: number) => brl(v)}
-                  contentStyle={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="GLP" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Lítio" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      )}
+
     </div>
   );
 }
