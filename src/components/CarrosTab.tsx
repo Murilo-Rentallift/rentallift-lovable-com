@@ -999,7 +999,38 @@ function ChecklistFlow({
       body: [[""]],
     });
 
+    if (fotosGerais.length) {
+      doc.addPage();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("FOTOS GERAIS DO VEÍCULO", W / 2, 16, { align: "center" });
+      const cols = 2;
+      const imgW = (W - 24 - 8) / cols;
+      const imgH = imgW * 0.72;
+      let x = 12;
+      let y = 24;
+      fotosGerais.forEach((f, i) => {
+        if (y + imgH > doc.internal.pageSize.getHeight() - 12) {
+          doc.addPage();
+          y = 20;
+          x = 12;
+        }
+        try {
+          doc.addImage(f.dataUrl, "JPEG", x, y, imgW, imgH);
+        } catch {
+          /* foto opcional */
+        }
+        if ((i + 1) % cols === 0) {
+          x = 12;
+          y += imgH + 6;
+        } else {
+          x += imgW + 8;
+        }
+      });
+    }
+
     const fileName = `checklist-veiculo-${placa}-${dataCk}.pdf`;
+
     return { doc, fileName };
   }
 
