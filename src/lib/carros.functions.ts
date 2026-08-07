@@ -190,6 +190,7 @@ export const carrosSaveChecklist = createServerFn({ method: "POST" })
             condutor: z.string().default(""),
           })
           .default({ vistoriador: "", lider: "", condutor: "" }),
+        fotosGerais: z.array(z.object({ dataUrl: z.string().min(10) })).default([]),
         itens: z
           .array(
             z.object({
@@ -200,6 +201,7 @@ export const carrosSaveChecklist = createServerFn({ method: "POST" })
             }),
           )
           .min(1),
+
       })
       .parse(d),
   )
