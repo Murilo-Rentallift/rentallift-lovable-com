@@ -75,19 +75,40 @@ function ReadOnlyStat({ label, value }: { label: string; value: string }) {
   );
 }
 
+const emptySetor = (): Setor => ({ id: Date.now(), nome: "", maquinas: "", botijoesDia: "" });
+
 export function ComparativoGlpLitio() {
-  // Inputs gerais
-  const [custoBotijao, setCustoBotijao] = useState("250,00");
-  const [locacaoGlp, setLocacaoGlp] = useState("3.800,00");
-  const [locacaoLitio, setLocacaoLitio] = useState("6.800,00");
-  const [valorKwh, setValorKwh] = useState("0,30");
-  const [horasDia, setHorasDia] = useState("16");
-  const [diasUteis, setDiasUteis] = useState("24");
-  const [horasPorCarga, setHorasPorCarga] = useState("8");
+  // Inputs gerais (iniciam vazios por segurança comercial)
+  const [custoBotijao, setCustoBotijao] = useState("");
+  const [locacaoGlp, setLocacaoGlp] = useState("");
+  const [locacaoLitio, setLocacaoLitio] = useState("");
+  const [valorKwh, setValorKwh] = useState("");
+  const [horasDia, setHorasDia] = useState("");
+  const [diasUteis, setDiasUteis] = useState("");
+  const [horasPorCarga, setHorasPorCarga] = useState("");
 
   const [setores, setSetores] = useState<Setor[]>([
-    { id: 1, nome: "Armazém", maquinas: "6", botijoesDia: "1" },
+    { id: 1, nome: "", maquinas: "", botijoesDia: "" },
   ]);
+
+  const preenchido = (v: string) => v.trim() !== "";
+  const ready =
+    [custoBotijao, locacaoGlp, locacaoLitio, valorKwh, horasDia, diasUteis, horasPorCarga].every(
+      preenchido,
+    ) && setores.every((s) => preenchido(s.maquinas) && preenchido(s.botijoesDia));
+
+  const limparTudo = () => {
+    setCustoBotijao("");
+    setLocacaoGlp("");
+    setLocacaoLitio("");
+    setValorKwh("");
+    setHorasDia("");
+    setDiasUteis("");
+    setHorasPorCarga("");
+    setSetores([emptySetor()]);
+    toast.success("Campos limpos");
+  };
+
 
   const calc = useMemo(() => {
     const cBotijao = num(custoBotijao);
