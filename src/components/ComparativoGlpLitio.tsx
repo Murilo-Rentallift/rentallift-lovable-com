@@ -306,32 +306,33 @@ export function ComparativoGlpLitio() {
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <Label>Custo do botijão GLP (R$)</Label>
-            <Input value={custoBotijao} onChange={(e) => setCustoBotijao(e.target.value)} />
+            <Input value={custoBotijao} placeholder="Ex: 250,00" onChange={(e) => setCustoBotijao(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Locação mensal GLP (R$)</Label>
-            <Input value={locacaoGlp} onChange={(e) => setLocacaoGlp(e.target.value)} />
+            <Input value={locacaoGlp} placeholder="Ex: 3.800,00" onChange={(e) => setLocacaoGlp(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Locação mensal Lítio (R$)</Label>
-            <Input value={locacaoLitio} onChange={(e) => setLocacaoLitio(e.target.value)} />
+            <Input value={locacaoLitio} placeholder="Ex: 6.800,00" onChange={(e) => setLocacaoLitio(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Valor do KW/h (R$)</Label>
-            <Input value={valorKwh} onChange={(e) => setValorKwh(e.target.value)} />
+            <Input value={valorKwh} placeholder="Ex: 0,30" onChange={(e) => setValorKwh(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Horas de uso por dia</Label>
-            <Input value={horasDia} onChange={(e) => setHorasDia(e.target.value)} />
+            <Input value={horasDia} placeholder="Ex: 16" onChange={(e) => setHorasDia(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Dias úteis no mês</Label>
-            <Input value={diasUteis} onChange={(e) => setDiasUteis(e.target.value)} />
+            <Input value={diasUteis} placeholder="Ex: 24" onChange={(e) => setDiasUteis(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Horas por carga (GLP e Lítio)</Label>
-            <Input value={horasPorCarga} onChange={(e) => setHorasPorCarga(e.target.value)} />
+            <Input value={horasPorCarga} placeholder="Ex: 8" onChange={(e) => setHorasPorCarga(e.target.value)} />
           </div>
+
           <div className="md:col-span-2">
             <ReadOnlyStat
               label="Consumo de uma carga completa (lítio) — fixo"
@@ -350,9 +351,9 @@ export function ComparativoGlpLitio() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <ReadOnlyStat label="Custo hora trabalho" value={brl(calc.custoHoraGlp)} />
-            <ReadOnlyStat label="Custo dia trabalho" value={brl(calc.custoDiaGlp)} />
-            <ReadOnlyStat label="Custo mês por máquina (combustível)" value={brl(calc.custoMesGlp)} />
+            <ReadOnlyStat label="Custo hora trabalho" value={fmt(calc.custoHoraGlp)} />
+            <ReadOnlyStat label="Custo dia trabalho" value={fmt(calc.custoDiaGlp)} />
+            <ReadOnlyStat label="Custo mês por máquina (combustível)" value={fmt(calc.custoMesGlp)} />
           </CardContent>
         </Card>
         <Card className="border-border/60 bg-card/60 backdrop-blur">
@@ -362,11 +363,12 @@ export function ComparativoGlpLitio() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <ReadOnlyStat label="Consumo carga completa (R$)" value={brl(calc.consumoCargaCompleta)} />
-            <ReadOnlyStat label="Custo hora trabalho" value={brl(calc.custoHoraLitio)} />
-            <ReadOnlyStat label="Custo dia trabalho" value={brl(calc.custoDiaLitio)} />
-            <ReadOnlyStat label="Custo mês por máquina (energia)" value={brl(calc.custoMesLitio)} />
+            <ReadOnlyStat label="Consumo carga completa (R$)" value={fmt(calc.consumoCargaCompleta)} />
+            <ReadOnlyStat label="Custo hora trabalho" value={fmt(calc.custoHoraLitio)} />
+            <ReadOnlyStat label="Custo dia trabalho" value={fmt(calc.custoDiaLitio)} />
+            <ReadOnlyStat label="Custo mês por máquina (energia)" value={fmt(calc.custoMesLitio)} />
           </CardContent>
+
         </Card>
       </div>
 
@@ -407,6 +409,7 @@ export function ComparativoGlpLitio() {
                   <Label>Qtd. de máquinas</Label>
                   <Input
                     value={l.setor.maquinas}
+                    placeholder="Ex: 6"
                     onChange={(e) => updSetor(l.setor.id, "maquinas", e.target.value)}
                   />
                 </div>
@@ -414,9 +417,11 @@ export function ComparativoGlpLitio() {
                   <Label>Botijões GLP/dia por máquina</Label>
                   <Input
                     value={l.setor.botijoesDia}
+                    placeholder="Ex: 1"
                     onChange={(e) => updSetor(l.setor.id, "botijoesDia", e.target.value)}
                   />
                 </div>
+
               </div>
               <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
                 <ReadOnlyStat label="Botijões GLP / mês" value={l.botijoesMes.toLocaleString("pt-BR")} />
