@@ -1347,6 +1347,58 @@ function ChecklistFlow({
           </div>
         )}
 
+        <div className="rounded-lg border border-border bg-muted/30 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <Label className="text-base">Fotos do veículo</Label>
+              <p className="text-xs text-muted-foreground">
+                Fotos gerais do estado do veículo (opcional, várias fotos).
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => fotosGeraisRef.current?.click()}
+            >
+              <Camera className="h-4 w-4" /> Adicionar fotos
+            </Button>
+          </div>
+          <input
+            ref={fotosGeraisRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              void addFotosGerais(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          {!!fotosGerais.length && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {fotosGerais.map((f, i) => (
+                <div key={i} className="relative">
+                  <img
+                    src={f.dataUrl}
+                    alt={`Foto geral ${i + 1} do veículo`}
+                    className="h-20 w-20 rounded object-cover"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Remover foto ${i + 1}`}
+                    onClick={() => setFotosGerais((prev) => prev.filter((_, j) => j !== i))}
+                    className="absolute -right-1 -top-1 rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+
         <div className="grid gap-4 sm:grid-cols-3">
           <SignaturePad label="Vistoriador" value={assVistoriador} onChange={setAssVistoriador} />
           <SignaturePad label="Líder" value={assLider} onChange={setAssLider} />
