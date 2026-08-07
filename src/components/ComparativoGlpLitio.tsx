@@ -424,78 +424,88 @@ export function ComparativoGlpLitio() {
 
               </div>
               <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
-                <ReadOnlyStat label="Botijões GLP / mês" value={l.botijoesMes.toLocaleString("pt-BR")} />
-                <ReadOnlyStat label="Custo GLP no mês (combustível)" value={brl(l.custoGlpMes)} />
-                <ReadOnlyStat label="Total GLP (locação + comb.)" value={brl(l.totalGlp)} />
-                <ReadOnlyStat label="Custo carga bateria no mês" value={brl(l.custoCargaMes)} />
-                <ReadOnlyStat label="Total Lítio (locação + energia)" value={brl(l.totalLitio)} />
+                <ReadOnlyStat label="Botijões GLP / mês" value={fmtNum(l.botijoesMes)} />
+                <ReadOnlyStat label="Custo GLP no mês (combustível)" value={fmt(l.custoGlpMes)} />
+                <ReadOnlyStat label="Total GLP (locação + comb.)" value={fmt(l.totalGlp)} />
+                <ReadOnlyStat label="Custo carga bateria no mês" value={fmt(l.custoCargaMes)} />
+                <ReadOnlyStat label="Total Lítio (locação + energia)" value={fmt(l.totalLitio)} />
                 <div className="rounded-lg border border-primary/40 bg-primary/10 px-3 py-2">
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
                     Economia mensal do setor
                   </div>
                   <div className="mt-0.5 font-mono text-sm font-bold tabular-nums text-primary">
-                    {brl(l.economia)}
+                    {fmt(l.economia)}
                   </div>
                 </div>
               </div>
+
             </div>
           ))}
         </CardContent>
       </Card>
 
       {/* Gráficos */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="border-border/60 bg-card/60 backdrop-blur">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Custo mensal total — geral</CardTitle>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartGeral}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="nome" stroke="var(--muted-foreground)" fontSize={12} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={12} />
-                <Tooltip
-                  formatter={(v: number) => brl(v)}
-                  contentStyle={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="GLP" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Lítio" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      {ready ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card className="border-border/60 bg-card/60 backdrop-blur">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Custo mensal total — geral</CardTitle>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartGeral}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="nome" stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                  <Tooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="GLP" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Lítio" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          <Card className="border-border/60 bg-card/60 backdrop-blur">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Custo mensal total — por setor</CardTitle>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartSetores}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="nome" stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                  <Tooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={{
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="GLP" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Lítio" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card className="border-dashed border-border/60 bg-card/40 backdrop-blur">
+          <CardContent className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+            Preencha os campos para calcular e ver os gráficos comparativos.
           </CardContent>
         </Card>
-        <Card className="border-border/60 bg-card/60 backdrop-blur">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Custo mensal total — por setor</CardTitle>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartSetores}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="nome" stroke="var(--muted-foreground)" fontSize={12} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={12} />
-                <Tooltip
-                  formatter={(v: number) => brl(v)}
-                  contentStyle={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="GLP" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Lítio" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      )}
+
     </div>
   );
 }
