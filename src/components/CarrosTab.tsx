@@ -880,6 +880,18 @@ function ChecklistFlow({
   const [idx, setIdx] = useState(0);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const fotosGeraisRef = useRef<HTMLInputElement>(null);
+  const [fotosGerais, setFotosGerais] = useState<{ dataUrl: string }[]>([]);
+
+  async function addFotosGerais(files: FileList | null) {
+    if (!files?.length) return;
+    const novas: { dataUrl: string }[] = [];
+    for (const f of Array.from(files)) {
+      novas.push({ dataUrl: await fileToCompressedJpegDataUrl(f, { maxWidth: 1000, quality: 0.7 }) });
+    }
+    setFotosGerais((prev) => [...prev, ...novas]);
+  }
+
 
   const [itens, setItens] = useState<ItemState[]>(
     ITENS_CHECKLIST.map((item) => ({ item, resposta: null, obs: "", fotos: [] })),
