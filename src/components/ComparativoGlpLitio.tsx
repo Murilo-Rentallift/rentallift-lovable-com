@@ -402,14 +402,14 @@ export function ComparativoGlpLitio() {
                   <Input
                     value={l.setor.nome}
                     onChange={(e) => updSetor(l.setor.id, "nome", e.target.value)}
-                    placeholder="Ex: Armazém"
+                    placeholder="Setor"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Qtd. de máquinas</Label>
                   <Input
                     value={l.setor.maquinas}
-                    placeholder="Ex: 6"
+                    placeholder="qtd"
                     onChange={(e) => updSetor(l.setor.id, "maquinas", e.target.value)}
                   />
                 </div>
@@ -417,7 +417,7 @@ export function ComparativoGlpLitio() {
                   <Label>Botijões GLP/dia por máquina</Label>
                   <Input
                     value={l.setor.botijoesDia}
-                    placeholder="Ex: 1"
+                    placeholder="qtd"
                     onChange={(e) => updSetor(l.setor.id, "botijoesDia", e.target.value)}
                   />
                 </div>
