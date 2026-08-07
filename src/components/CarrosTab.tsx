@@ -1035,6 +1035,8 @@ function ChecklistFlow({
             obs: i.obs,
             fotos: i.fotos,
           })),
+          fotosGerais,
+
         },
       });
 
