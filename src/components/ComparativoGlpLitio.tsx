@@ -172,8 +172,10 @@ export function ComparativoGlpLitio() {
   const litioAnim = useAnimatedNumber(calc.totalLitioGeral);
   const anualAnim = useAnimatedNumber(calc.economiaAnual);
 
-  const addSetor = () =>
-    setSetores((s) => [...s, { id: Date.now(), nome: "", maquinas: "1", botijoesDia: "1" }]);
+  const addSetor = () => setSetores((s) => [...s, emptySetor()]);
+  const fmt = (n: number) => (ready ? brl(n) : "—");
+  const fmtNum = (n: number) => (ready ? n.toLocaleString("pt-BR") : "—");
+
   const removeSetor = (id: number) =>
     setSetores((s) => (s.length > 1 ? s.filter((x) => x.id !== id) : s));
   const updSetor = (id: number, k: keyof Setor, v: string) =>
