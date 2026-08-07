@@ -306,31 +306,31 @@ export function ComparativoGlpLitio() {
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <Label>Custo do botijão GLP (R$)</Label>
-            <Input value={custoBotijao} placeholder="Ex: 250,00" onChange={(e) => setCustoBotijao(e.target.value)} />
+            <Input value={custoBotijao} placeholder="R$" onChange={(e) => setCustoBotijao(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Locação mensal GLP (R$)</Label>
-            <Input value={locacaoGlp} placeholder="Ex: 3.800,00" onChange={(e) => setLocacaoGlp(e.target.value)} />
+            <Input value={locacaoGlp} placeholder="R$" onChange={(e) => setLocacaoGlp(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Locação mensal Lítio (R$)</Label>
-            <Input value={locacaoLitio} placeholder="Ex: 6.800,00" onChange={(e) => setLocacaoLitio(e.target.value)} />
+            <Input value={locacaoLitio} placeholder="R$" onChange={(e) => setLocacaoLitio(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Valor do KW/h (R$)</Label>
-            <Input value={valorKwh} placeholder="Ex: 0,30" onChange={(e) => setValorKwh(e.target.value)} />
+            <Input value={valorKwh} placeholder="R$" onChange={(e) => setValorKwh(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Horas de uso por dia</Label>
-            <Input value={horasDia} placeholder="Ex: 16" onChange={(e) => setHorasDia(e.target.value)} />
+            <Input value={horasDia} placeholder="h" onChange={(e) => setHorasDia(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Dias úteis no mês</Label>
-            <Input value={diasUteis} placeholder="Ex: 24" onChange={(e) => setDiasUteis(e.target.value)} />
+            <Input value={diasUteis} placeholder="dias" onChange={(e) => setDiasUteis(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Horas por carga (GLP e Lítio)</Label>
-            <Input value={horasPorCarga} placeholder="Ex: 8" onChange={(e) => setHorasPorCarga(e.target.value)} />
+            <Input value={horasPorCarga} placeholder="h" onChange={(e) => setHorasPorCarga(e.target.value)} />
           </div>
 
           <div className="md:col-span-2">
@@ -402,14 +402,14 @@ export function ComparativoGlpLitio() {
                   <Input
                     value={l.setor.nome}
                     onChange={(e) => updSetor(l.setor.id, "nome", e.target.value)}
-                    placeholder="Ex: Armazém"
+                    placeholder="Setor"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Qtd. de máquinas</Label>
                   <Input
                     value={l.setor.maquinas}
-                    placeholder="Ex: 6"
+                    placeholder="qtd"
                     onChange={(e) => updSetor(l.setor.id, "maquinas", e.target.value)}
                   />
                 </div>
@@ -417,7 +417,7 @@ export function ComparativoGlpLitio() {
                   <Label>Botijões GLP/dia por máquina</Label>
                   <Input
                     value={l.setor.botijoesDia}
-                    placeholder="Ex: 1"
+                    placeholder="qtd"
                     onChange={(e) => updSetor(l.setor.id, "botijoesDia", e.target.value)}
                   />
                 </div>
