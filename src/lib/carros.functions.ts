@@ -333,6 +333,7 @@ export const carrosDevolver = createServerFn({ method: "POST" })
         retiradaId: z.string().uuid(),
         kmRetorno: z.number().nullable().default(null),
         observacao: z.string().max(2000).default(""),
+        temProblema: z.boolean().default(false),
       })
       .parse(d),
   )
@@ -345,6 +346,10 @@ export const carrosDevolver = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!retirada) throw new Error("Retirada não encontrada");
 
+    if (data.temProblema && !data.observacao.trim()) {
+      throw new Error("Descreva o problema na observação de devolução");
+    }
+
     const { error } = await supabaseAdmin
       .from("retiradas_veiculos")
       .update({
@@ -356,7 +361,7 @@ export const carrosDevolver = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     let solicitacaoId: string | null = null;
-    if (data.observacao.trim()) {
+    if (data.temProblema) {
       const { data: sol } = await supabaseAdmin
         .from("solicitacoes_manutencao")
         .insert({
