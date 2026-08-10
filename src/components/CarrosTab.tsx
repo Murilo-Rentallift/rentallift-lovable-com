@@ -783,7 +783,13 @@ function VeiculoDetalhe({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={devolucaoOpen} onOpenChange={setDevolucaoOpen}>
+      <Dialog
+        open={devolucaoOpen}
+        onOpenChange={(o) => {
+          setDevolucaoOpen(o);
+          if (!o) setDTemProblema(false);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Devolver veículo</DialogTitle>
@@ -793,13 +799,30 @@ function VeiculoDetalhe({
               <Label>KM de retorno</Label>
               <Input type="number" value={dKm} onChange={(e) => setDKm(e.target.value)} />
             </div>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={dTemProblema}
+                onChange={(e) => setDTemProblema(e.target.checked)}
+              />
+              <span>Relatar problema no veículo (gera manutenção)</span>
+            </label>
             <div>
-              <Label>Observação de devolução (opcional)</Label>
+              <Label>
+                {dTemProblema
+                  ? "Descrição do problema (obrigatória)"
+                  : "Observação de devolução (opcional)"}
+              </Label>
               <Textarea
                 rows={4}
                 value={dObs}
                 onChange={(e) => setDObs(e.target.value)}
-                placeholder="Se preenchida, gera solicitação de manutenção e alerta por e-mail"
+                placeholder={
+                  dTemProblema
+                    ? "Descreva o problema — gera solicitação de manutenção e alerta por e-mail"
+                    : "Nota livre. Só gera manutenção se a opção acima estiver marcada"
+                }
               />
             </div>
           </div>
