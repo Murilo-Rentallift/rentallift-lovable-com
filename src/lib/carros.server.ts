@@ -58,6 +58,13 @@ function toBase64Url(input: string): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+function encodeSubject(subject: string): string {
+  const bytes = new TextEncoder().encode(subject);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return `=?UTF-8?B?${btoa(bin)}?=`;
+}
+
 export async function sendGmail(opts: {
   to: string[];
   subject: string;
@@ -69,12 +76,14 @@ export async function sendGmail(opts: {
   if (!lovableKey) throw new Error("LOVABLE_API_KEY não configurada");
   if (!gmailKey) throw new Error("GOOGLE_MAIL_API_KEY não configurada (conector Gmail)");
 
+  const encodedSubject = encodeSubject(opts.subject);
+
   let mime: string;
   if (opts.attachment) {
     const boundary = `bnd_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     mime = [
       `To: ${opts.to.join(", ")}`,
-      `Subject: ${opts.subject}`,
+      `Subject: ${encodedSubject}`,
       `MIME-Version: 1.0`,
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
       ``,
@@ -95,7 +104,7 @@ export async function sendGmail(opts: {
   } else {
     mime = [
       `To: ${opts.to.join(", ")}`,
-      `Subject: ${opts.subject}`,
+      `Subject: ${encodedSubject}`,
       `MIME-Version: 1.0`,
       `Content-Type: text/plain; charset="UTF-8"`,
       ``,
