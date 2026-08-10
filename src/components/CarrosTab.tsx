@@ -427,6 +427,7 @@ function VeiculoDetalhe({
   const [devolucaoOpen, setDevolucaoOpen] = useState(false);
   const [dKm, setDKm] = useState("");
   const [dObs, setDObs] = useState("");
+  const [dTemProblema, setDTemProblema] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
