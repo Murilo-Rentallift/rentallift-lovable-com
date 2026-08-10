@@ -509,12 +509,14 @@ function VeiculoDetalhe({
           retiradaId: emUso.id,
           kmRetorno: dKm ? Number(dKm) : null,
           observacao: dObs,
+          temProblema: dTemProblema,
         },
       });
       setDevolucaoOpen(false);
       setDKm("");
       const obs = dObs;
       setDObs("");
+      setDTemProblema(false);
       toast.success("Devolução registrada");
       if (res?.solicitacaoId) {
         try {
