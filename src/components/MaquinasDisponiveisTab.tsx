@@ -61,6 +61,7 @@ const TIPOS = [
   "GLP 7 TON",
   "LITIO 1.8 TON",
   "LITIO 2.5 TON",
+  "LITIO 3 TON",
   "LITIO 3.5 TON",
   "LITIO 3.8 TON",
   "RETRÁTIL",
