@@ -296,8 +296,18 @@ async function sendEmailWithPDF(params: {
 export const Route = createFileRoute("/api/public/hooks/weekly-missing-parts")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        // Endpoint com efeito colateral real (envia e-mail): exige header secreto.
+        const expected = process.env["WEEKLY_REPORT_HOOK_SECRET"];
+        const provided = request.headers.get("x-hook-secret");
+        if (!expected || !provided || provided !== expected) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
         try {
+
           const { startDate, endDate } = previousWeekBR();
           const [rows, requests] = await Promise.all([
             fetchMissingRows(startDate, endDate),
