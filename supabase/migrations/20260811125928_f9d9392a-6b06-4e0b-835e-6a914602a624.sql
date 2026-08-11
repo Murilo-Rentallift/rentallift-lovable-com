@@ -1,0 +1,1 @@
+DELETE FROM public.maquinas_disponibilidade WHERE frota = 'DIAG2' AND status = 'pendente';
