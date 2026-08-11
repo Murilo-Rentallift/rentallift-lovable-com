@@ -27,10 +27,44 @@ function readFileAsDataUrl(file: File): Promise<string> {
 }
 
 /**
+ * Redimensiona e comprime uma imagem já em data URL, retornando novo data URL.
+ */
+export async function compressDataUrl(
+  dataUrl: string,
+  opts: CompressOptions = {},
+): Promise<string> {
+  const maxWidth = opts.maxWidth ?? 1200;
+  const maxHeight = opts.maxHeight ?? 1600;
+  const quality = opts.quality ?? 0.8;
+  const mimeType = opts.mimeType ?? "image/jpeg";
+
+  const img = await loadImage(dataUrl);
+  let { width, height } = img;
+  const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+  width = Math.max(1, Math.round(width * ratio));
+  height = Math.max(1, Math.round(height * ratio));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D indisponível no navegador");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const out = canvas.toDataURL(mimeType, quality);
+  canvas.width = 0;
+  canvas.height = 0;
+  return out;
+}
+
+/**
  * Redimensiona e comprime uma imagem para JPEG (por padrão), retornando data URL.
  * Se a imagem já for menor que os limites, ainda assim é re-encodada como JPEG
  * comprimido para reduzir peso total do PDF.
  */
+
 export async function fileToCompressedJpegDataUrl(
   file: File,
   opts: CompressOptions = {},
