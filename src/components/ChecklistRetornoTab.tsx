@@ -111,7 +111,7 @@ export function ChecklistRetornoTab() {
   async function enviarParaClassificacaoUmaVez() {
     if (enviadoParaClassificacaoRef.current) return;
     const { enviarChecklistParaClassificacao } = await import("@/lib/checklistToMaquina");
-    await enviarChecklistParaClassificacao({
+    const ok = await enviarChecklistParaClassificacao({
       origem: "Retorno",
       frota,
       cliente,
@@ -120,7 +120,10 @@ export function ChecklistRetornoTab() {
       obs,
       fotos,
     });
-    enviadoParaClassificacaoRef.current = true;
+    // só marca como enviado quando realmente criou o registro pendente,
+    // assim uma falha ainda pode ser reenviada nas próximas ações.
+    if (ok) enviadoParaClassificacaoRef.current = true;
+
   }
 
 
