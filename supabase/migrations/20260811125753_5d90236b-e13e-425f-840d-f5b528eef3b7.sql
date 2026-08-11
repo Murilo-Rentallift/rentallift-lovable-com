@@ -1,0 +1,1 @@
+DELETE FROM public.maquinas_disponibilidade WHERE frota IN ('CAP','TEST-1','TEST-8') AND status = 'pendente';
