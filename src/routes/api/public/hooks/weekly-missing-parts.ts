@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
-const RECIPIENTS = ["Evandro@rentallift.com.br", "Murilo@rentallift.com"];
+const RECIPIENTS = ["Evandro@rentallift.com.br", "Murilo@rentallift.com", "lucas@empisa.com.br", "pinelli@rentallift.com.br"];
 const CC_RECIPIENTS = ["william@rentallift.com", "manutencao@rentallift.com"];
 const GMAIL_URL = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
 
