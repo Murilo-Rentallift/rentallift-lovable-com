@@ -5,9 +5,8 @@ const DESTINATARIOS = [
   "william@rentallift.com",
   "manutencao@rentallift.com",
   "evandro@rentallift.com.br",
-  "recepcao@rentallift.com",
   "pinelli@rentallift.com.br",
-  "debora@rentallift.com.br",
+  "contato@rentallift.com",
 ];
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
