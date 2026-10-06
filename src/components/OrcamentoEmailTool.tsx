@@ -82,6 +82,7 @@ export function OrcamentoEmailTool() {
   const [reason, setReason] = useState("");
   const [deadline, setDeadline] = useState<string>("5");
   const [isOperatorError, setIsOperatorError] = useState(false);
+  const [forwardToClient, setForwardToClient] = useState(false);
 
   const subjectLine = useMemo(() => {
     const clientUpper = client.trim().toUpperCase();
@@ -99,7 +100,7 @@ export function OrcamentoEmailTool() {
     const responsibleFmt = responsible.trim().toLowerCase() || "";
     const reasonFmt = reason.trim().toLowerCase() || "";
     const lines = [
-      `${greeting}${responsibleFmt ? `, ${responsibleFmt}` : ""}, tudo bem?`,
+      `${greeting}${responsibleFmt ? `, ${responsibleFmt}${forwardToClient ? ", favor enviar ao seu cliente" : ""}` : ""}, tudo bem?`,
       "",
       `Segue em anexo o orçamento referente a ${reasonFmt || "solicitação"}.`,
       "",
@@ -110,7 +111,7 @@ export function OrcamentoEmailTool() {
       "Att",
     ];
     return lines.join("\n");
-  }, [greeting, responsible, reason, subjectLine]);
+  }, [greeting, responsible, reason, subjectLine, forwardToClient]);
 
   useEffect(() => {
     setGreeting(defaultGreeting());
@@ -182,6 +183,18 @@ export function OrcamentoEmailTool() {
               placeholder="Ex: Luigi, Rita"
               className="bg-background"
             />
+            <Button
+              type="button"
+              variant={forwardToClient ? "secondary" : "outline"}
+              size="sm"
+              aria-pressed={forwardToClient}
+              disabled={!responsible.trim()}
+              onClick={() => setForwardToClient((current) => !current)}
+              className="gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              Favor enviar ao seu cliente
+            </Button>
           </div>
 
           <div className="space-y-2 md:col-span-2">
