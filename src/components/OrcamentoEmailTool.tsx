@@ -100,9 +100,9 @@ export function OrcamentoEmailTool() {
     const responsibleFmt = responsible.trim().toLowerCase() || "";
     const reasonFmt = reason.trim().toLowerCase() || "";
     const lines = [
-      `${greeting}${responsibleFmt ? `, ${responsibleFmt}${forwardToClient ? ", favor enviar ao seu cliente" : ""}` : ""}, tudo bem?`,
+      `${greeting}${responsibleFmt ? `, ${responsibleFmt}` : ""}, tudo bem?`,
       "",
-      `Segue em anexo o orçamento referente a ${reasonFmt || "solicitação"}.`,
+      `Segue em anexo o orçamento referente a ${reasonFmt || "solicitação"}${forwardToClient && reasonFmt ? ", favor enviar ao seu cliente" : ""}.`,
       "",
       subjectLine,
       "",
@@ -183,18 +183,6 @@ export function OrcamentoEmailTool() {
               placeholder="Ex: Luigi, Rita"
               className="bg-background"
             />
-            <Button
-              type="button"
-              variant={forwardToClient ? "secondary" : "outline"}
-              size="sm"
-              aria-pressed={forwardToClient}
-              disabled={!responsible.trim()}
-              onClick={() => setForwardToClient((current) => !current)}
-              className="gap-2"
-            >
-              <Mail className="h-4 w-4" />
-              Favor enviar ao seu cliente
-            </Button>
           </div>
 
           <div className="space-y-2 md:col-span-2">
@@ -208,6 +196,18 @@ export function OrcamentoEmailTool() {
               placeholder="Ex: motor de partida da empilhadeira de 10 TON, batida da grade"
               className="bg-background"
             />
+            <Button
+              type="button"
+              variant={forwardToClient ? "secondary" : "outline"}
+              size="sm"
+              aria-pressed={forwardToClient}
+              disabled={!reason.trim()}
+              onClick={() => setForwardToClient((current) => !current)}
+              className="gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              Favor enviar ao seu cliente
+            </Button>
           </div>
 
           <div className="space-y-2">
