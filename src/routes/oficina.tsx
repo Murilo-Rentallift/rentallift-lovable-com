@@ -300,7 +300,16 @@ function RequisicaoTab({ pin }: { pin: string }) {
   return (
     <>
       <form onSubmit={handleCreate} className="rounded-lg border border-border bg-card p-5 space-y-4">
-        <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground">Nova requisição</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+            {editingGroupId ? "Editar requisição" : "Nova requisição"}
+          </h2>
+          {editingGroupId && (
+            <Button type="button" variant="ghost" size="sm" onClick={cancelEdit} className="gap-1">
+              <X className="h-3.5 w-3.5" /> Cancelar edição
+            </Button>
+          )}
+        </div>
         <div className="space-y-1">
           <Label htmlFor="who">Solicitante</Label>
           <Input
@@ -350,7 +359,11 @@ function RequisicaoTab({ pin }: { pin: string }) {
 
         <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Send className="h-4 w-4 mr-2" />
-          {submitting ? "Enviando..." : `Enviar ${lines.filter((l) => l.partName.trim()).length || ""} peça(s) para o almoxarifado`}
+          {submitting
+            ? "Salvando..."
+            : editingGroupId
+              ? "Salvar alterações"
+              : `Enviar ${lines.filter((l) => l.partName.trim()).length || ""} peça(s) para o almoxarifado`}
         </Button>
       </form>
 
@@ -370,7 +383,18 @@ function RequisicaoTab({ pin }: { pin: string }) {
                 <li key={r.group_id} className="px-4 py-4 space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-medium">{r.requester_name}</div>
-                    <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("pt-BR")}</div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 h-7 text-xs"
+                        onClick={() => startEdit(r)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Editar
+                      </Button>
+                      <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("pt-BR")}</div>
+                    </div>
                   </div>
                   <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
                     {r.items.map((item) => {
