@@ -203,12 +203,14 @@ function TabBtn({
 // ============================================================
 function RequisicaoTab({ pin }: { pin: string }) {
   const create = useServerFn(oficinaCreateRequest);
+  const edit = useServerFn(oficinaEditRequest);
   const listMine = useServerFn(oficinaListRequests);
 
   const [requesterName, setRequesterName] = useState("");
   const [lines, setLines] = useState<Line[]>([{ partName: "", quantity: 1, code: "" }]);
   const [submitting, setSubmitting] = useState(false);
   const [requests, setRequests] = useState<ReqGroup[]>([]);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
 
   async function refresh() {
     try {
