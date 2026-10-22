@@ -236,6 +236,26 @@ function RequisicaoTab({ pin }: { pin: string }) {
     setLines((p) => p.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   }
 
+  function startEdit(r: ReqGroup) {
+    setEditingGroupId(r.group_id);
+    setRequesterName(r.requester_name);
+    setLines(
+      r.items.map((i) => ({
+        id: i.id,
+        partName: i.part_name,
+        quantity: i.quantity,
+        code: i.code,
+      })),
+    );
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEdit() {
+    setEditingGroupId(null);
+    setRequesterName("");
+    setLines([{ partName: "", quantity: 1, code: "" }]);
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!requesterName.trim()) {
@@ -249,19 +269,24 @@ function RequisicaoTab({ pin }: { pin: string }) {
     }
     setSubmitting(true);
     try {
-      await create({
-        data: {
-          pin,
-          requesterName: requesterName.trim(),
-          items: validItems.map((l) => ({
-            partName: l.partName.trim(),
-            quantity: l.quantity,
-            code: l.code.trim(),
-          })),
-        },
-      });
-      toast.success(`Requisição com ${validItems.length} peça(s) enviada`);
-      setLines([{ partName: "", quantity: 1, code: "" }]);
+      const payload = {
+        pin,
+        requesterName: requesterName.trim(),
+        items: validItems.map((l) => ({
+          id: l.id,
+          partName: l.partName.trim(),
+          quantity: l.quantity,
+          code: l.code.trim(),
+        })),
+      };
+      if (editingGroupId) {
+        await edit({ data: { ...payload, groupId: editingGroupId } });
+        toast.success("Requisição atualizada");
+      } else {
+        await create({ data: payload });
+        toast.success(`Requisição com ${validItems.length} peça(s) enviada`);
+      }
+      cancelEdit();
       await refresh();
     } catch (e: any) {
       toast.error(e.message || "Falha ao enviar");
