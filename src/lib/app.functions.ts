@@ -243,49 +243,101 @@ export const almoxListRequests = createServerFn({ method: "POST" })
     return { requests };
   });
 
-// ---------- Almoxarifado: edit a request group (keeps original as history) ----------
+// ---------- Shared: edit a request group in place, preserving per-item status ----------
+const editRequestItemSchema = partItemSchema.extend({
+  id: z.string().uuid().optional(),
+});
+
+async function editRequestGroupInPlace(
+  groupId: string,
+  requesterName: string,
+  items: Array<{ id?: string; partName: string; quantity: number; code: string }>,
+) {
+  const { data: origRows, error: origErr } = await supabaseAdmin
+    .from("part_requests" as any)
+    .select("id, group_id")
+    .eq("group_id", groupId);
+  if (origErr) throw new Error(origErr.message);
+  if (!origRows || origRows.length === 0) throw new Error("Requisição não encontrada");
+
+  const existingIds = new Set((origRows as any[]).map((r) => r.id as string));
+  const keptIds = new Set<string>();
+  const nowIso = new Date().toISOString();
+
+  // Update existing items by id (status, is_extra, note, created_at are preserved)
+  for (const item of items) {
+    if (item.id && existingIds.has(item.id)) {
+      keptIds.add(item.id);
+      const { error } = await supabaseAdmin
+        .from("part_requests" as any)
+        .update({
+          requester_name: requesterName,
+          part_name: item.partName,
+          quantity: item.quantity,
+          code: item.code,
+          edited_at: nowIso,
+        })
+        .eq("id", item.id);
+      if (error) throw new Error(error.message);
+    }
+  }
+
+  // Insert new items (start as pendente by default)
+  const newItems = items.filter((i) => !i.id || !existingIds.has(i.id));
+  if (newItems.length > 0) {
+    const inserts = newItems.map((item) => ({
+      group_id: groupId,
+      requester_name: requesterName,
+      part_name: item.partName,
+      quantity: item.quantity,
+      code: item.code,
+      edited_at: nowIso,
+    }));
+    const { error } = await supabaseAdmin.from("part_requests" as any).insert(inserts);
+    if (error) throw new Error(error.message);
+  }
+
+  // Delete removed items
+  const removedIds = [...existingIds].filter((id) => !keptIds.has(id));
+  if (removedIds.length > 0) {
+    const { error } = await supabaseAdmin
+      .from("part_requests" as any)
+      .delete()
+      .in("id", removedIds);
+    if (error) throw new Error(error.message);
+  }
+}
+
+// ---------- Almoxarifado: edit a request group (preserves item statuses) ----------
 export const almoxEditRequest = createServerFn({ method: "POST" })
-  .inputValidator((d: { pin: string; groupId: string; requesterName: string; items: Array<{ partName: string; quantity: number; code: string }> }) =>
+  .inputValidator((d: { pin: string; groupId: string; requesterName: string; items: Array<{ id?: string; partName: string; quantity: number; code: string }> }) =>
     z.object({
       pin: pinSchema,
       groupId: z.string().uuid(),
       requesterName: z.string().trim().min(1).max(100),
-      items: z.array(partItemSchema).min(1).max(50),
+      items: z.array(editRequestItemSchema).min(1).max(50),
     }).parse(d),
   )
   .handler(async ({ data }) => {
     await verifyAlmox(data.pin);
-    const { data: origRows, error: origErr } = await supabaseAdmin
-      .from("part_requests" as any)
-      .select("id, group_id, original_group_id, created_at")
-      .eq("group_id", data.groupId);
-    if (origErr) throw new Error(origErr.message);
-    if (!origRows || origRows.length === 0) throw new Error("Requisição não encontrada");
+    await editRequestGroupInPlace(data.groupId, data.requesterName, data.items);
+    return { ok: true, groupId: data.groupId };
+  });
 
-    const rootGroupId: string = (origRows[0] as any).original_group_id ?? data.groupId;
-    const originalCreatedAt: string = (origRows[0] as any).created_at;
-
-    const { error: supErr } = await supabaseAdmin
-      .from("part_requests" as any)
-      .update({ superseded: true })
-      .eq("group_id", data.groupId);
-    if (supErr) throw new Error(supErr.message);
-
-    const newGroupId = crypto.randomUUID();
-    const nowIso = new Date().toISOString();
-    const inserts = data.items.map((item) => ({
-      group_id: newGroupId,
-      requester_name: data.requesterName,
-      part_name: item.partName,
-      quantity: item.quantity,
-      code: item.code,
-      original_group_id: rootGroupId,
-      edited_at: nowIso,
-      created_at: originalCreatedAt,
-    }));
-    const { error } = await supabaseAdmin.from("part_requests" as any).insert(inserts);
-    if (error) throw new Error(error.message);
-    return { ok: true, newGroupId };
+// ---------- Oficina: edit own request group (preserves item statuses) ----------
+export const oficinaEditRequest = createServerFn({ method: "POST" })
+  .inputValidator((d: { pin: string; groupId: string; requesterName: string; items: Array<{ id?: string; partName: string; quantity: number; code: string }> }) =>
+    z.object({
+      pin: pinSchema,
+      groupId: z.string().uuid(),
+      requesterName: z.string().trim().min(1).max(100),
+      items: z.array(editRequestItemSchema).min(1).max(50),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    await verifyOficina(data.pin);
+    await editRequestGroupInPlace(data.groupId, data.requesterName, data.items);
+    return { ok: true, groupId: data.groupId };
   });
 
 // ---------- Almoxarifado: fetch original (pre-edit) version of a request ----------

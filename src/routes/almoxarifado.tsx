@@ -167,7 +167,7 @@ function AlmoxarifadoPage() {
       toast.error(e.message || "Falha ao buscar original");
     }
   }
-  type EditDraft = { partName: string; quantity: number; code: string };
+  type EditDraft = { id?: string; partName: string; quantity: number; code: string };
   const [editing, setEditing] = useState<{ groupId: string; requesterName: string; items: EditDraft[] } | null>(null);
   const [viewingOriginal, setViewingOriginal] = useState<{
     requester_name: string; created_at: string; items: ReqItem[];
@@ -218,14 +218,14 @@ function AlmoxarifadoPage() {
     setEditing({
       groupId: r.group_id,
       requesterName: r.requester_name,
-      items: r.items.map((i) => ({ partName: i.part_name, quantity: i.quantity, code: i.code })),
+      items: r.items.map((i) => ({ id: i.id, partName: i.part_name, quantity: i.quantity, code: i.code })),
     });
   }
 
   async function saveEdit() {
     if (!editing) return;
     const items = editing.items
-      .map((i) => ({ partName: i.partName.trim(), quantity: Math.max(1, Math.floor(Number(i.quantity) || 0)), code: (i.code ?? "").trim() }))
+      .map((i) => ({ id: i.id, partName: i.partName.trim(), quantity: Math.max(1, Math.floor(Number(i.quantity) || 0)), code: (i.code ?? "").trim() }))
       .filter((i) => i.partName);
     if (items.length === 0) {
       toast.error("Adicione ao menos uma peça válida");
@@ -1158,7 +1158,7 @@ function AlmoxarifadoPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                A versão original será preservada e ficará disponível para consulta.
+                Peças já existentes mantêm o status atual; apenas peças novas entram como pendentes.
               </p>
             </div>
           )}

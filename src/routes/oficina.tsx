@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   oficinaLogin,
   oficinaCreateRequest,
+  oficinaEditRequest,
   oficinaListRequests,
 } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ import {
   Plus,
   Trash2,
   ClipboardList,
+  Pencil,
+  X,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ChecklistSaidaTab } from "@/components/ChecklistSaidaTab";
@@ -65,7 +68,7 @@ const WORKSHOP_STATUSES = [
   { value: "aprovado", label: "Aprovado" },
 ] as const;
 
-type Line = { partName: string; quantity: number; code: string };
+type Line = { id?: string; partName: string; quantity: number; code: string };
 type TabKey = "requisicao" | "checklist" | "checklist-retorno" | "carros";
 
 function OficinaPage() {
@@ -200,12 +203,14 @@ function TabBtn({
 // ============================================================
 function RequisicaoTab({ pin }: { pin: string }) {
   const create = useServerFn(oficinaCreateRequest);
+  const edit = useServerFn(oficinaEditRequest);
   const listMine = useServerFn(oficinaListRequests);
 
   const [requesterName, setRequesterName] = useState("");
   const [lines, setLines] = useState<Line[]>([{ partName: "", quantity: 1, code: "" }]);
   const [submitting, setSubmitting] = useState(false);
   const [requests, setRequests] = useState<ReqGroup[]>([]);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
 
   async function refresh() {
     try {
@@ -231,6 +236,26 @@ function RequisicaoTab({ pin }: { pin: string }) {
     setLines((p) => p.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   }
 
+  function startEdit(r: ReqGroup) {
+    setEditingGroupId(r.group_id);
+    setRequesterName(r.requester_name);
+    setLines(
+      r.items.map((i) => ({
+        id: i.id,
+        partName: i.part_name,
+        quantity: i.quantity,
+        code: i.code,
+      })),
+    );
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEdit() {
+    setEditingGroupId(null);
+    setRequesterName("");
+    setLines([{ partName: "", quantity: 1, code: "" }]);
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!requesterName.trim()) {
@@ -244,19 +269,24 @@ function RequisicaoTab({ pin }: { pin: string }) {
     }
     setSubmitting(true);
     try {
-      await create({
-        data: {
-          pin,
-          requesterName: requesterName.trim(),
-          items: validItems.map((l) => ({
-            partName: l.partName.trim(),
-            quantity: l.quantity,
-            code: l.code.trim(),
-          })),
-        },
-      });
-      toast.success(`Requisição com ${validItems.length} peça(s) enviada`);
-      setLines([{ partName: "", quantity: 1, code: "" }]);
+      const payload = {
+        pin,
+        requesterName: requesterName.trim(),
+        items: validItems.map((l) => ({
+          id: l.id,
+          partName: l.partName.trim(),
+          quantity: l.quantity,
+          code: l.code.trim(),
+        })),
+      };
+      if (editingGroupId) {
+        await edit({ data: { ...payload, groupId: editingGroupId } });
+        toast.success("Requisição atualizada");
+      } else {
+        await create({ data: payload });
+        toast.success(`Requisição com ${validItems.length} peça(s) enviada`);
+      }
+      cancelEdit();
       await refresh();
     } catch (e: any) {
       toast.error(e.message || "Falha ao enviar");
@@ -270,7 +300,16 @@ function RequisicaoTab({ pin }: { pin: string }) {
   return (
     <>
       <form onSubmit={handleCreate} className="rounded-lg border border-border bg-card p-5 space-y-4">
-        <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground">Nova requisição</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-sm uppercase tracking-wider text-muted-foreground">
+            {editingGroupId ? "Editar requisição" : "Nova requisição"}
+          </h2>
+          {editingGroupId && (
+            <Button type="button" variant="ghost" size="sm" onClick={cancelEdit} className="gap-1">
+              <X className="h-3.5 w-3.5" /> Cancelar edição
+            </Button>
+          )}
+        </div>
         <div className="space-y-1">
           <Label htmlFor="who">Solicitante</Label>
           <Input
@@ -320,7 +359,11 @@ function RequisicaoTab({ pin }: { pin: string }) {
 
         <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Send className="h-4 w-4 mr-2" />
-          {submitting ? "Enviando..." : `Enviar ${lines.filter((l) => l.partName.trim()).length || ""} peça(s) para o almoxarifado`}
+          {submitting
+            ? "Salvando..."
+            : editingGroupId
+              ? "Salvar alterações"
+              : `Enviar ${lines.filter((l) => l.partName.trim()).length || ""} peça(s) para o almoxarifado`}
         </Button>
       </form>
 
@@ -340,7 +383,18 @@ function RequisicaoTab({ pin }: { pin: string }) {
                 <li key={r.group_id} className="px-4 py-4 space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-medium">{r.requester_name}</div>
-                    <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("pt-BR")}</div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 h-7 text-xs"
+                        onClick={() => startEdit(r)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Editar
+                      </Button>
+                      <div className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("pt-BR")}</div>
+                    </div>
                   </div>
                   <ul className="mt-2 space-y-1 pl-3 border-l-2 border-border">
                     {r.items.map((item) => {
