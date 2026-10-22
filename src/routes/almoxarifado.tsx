@@ -225,7 +225,7 @@ function AlmoxarifadoPage() {
   async function saveEdit() {
     if (!editing) return;
     const items = editing.items
-      .map((i) => ({ partName: i.partName.trim(), quantity: Math.max(1, Math.floor(Number(i.quantity) || 0)), code: (i.code ?? "").trim() }))
+      .map((i) => ({ id: i.id, partName: i.partName.trim(), quantity: Math.max(1, Math.floor(Number(i.quantity) || 0)), code: (i.code ?? "").trim() }))
       .filter((i) => i.partName);
     if (items.length === 0) {
       toast.error("Adicione ao menos uma peça válida");
@@ -1158,7 +1158,7 @@ function AlmoxarifadoPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                A versão original será preservada e ficará disponível para consulta.
+                Peças já existentes mantêm o status atual; apenas peças novas entram como pendentes.
               </p>
             </div>
           )}
