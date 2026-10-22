@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   oficinaLogin,
   oficinaCreateRequest,
+  oficinaEditRequest,
   oficinaListRequests,
 } from "@/lib/app.functions";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ import {
   Plus,
   Trash2,
   ClipboardList,
+  Pencil,
+  X,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ChecklistSaidaTab } from "@/components/ChecklistSaidaTab";
@@ -65,7 +68,7 @@ const WORKSHOP_STATUSES = [
   { value: "aprovado", label: "Aprovado" },
 ] as const;
 
-type Line = { partName: string; quantity: number; code: string };
+type Line = { id?: string; partName: string; quantity: number; code: string };
 type TabKey = "requisicao" | "checklist" | "checklist-retorno" | "carros";
 
 function OficinaPage() {
