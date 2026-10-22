@@ -167,7 +167,7 @@ function AlmoxarifadoPage() {
       toast.error(e.message || "Falha ao buscar original");
     }
   }
-  type EditDraft = { partName: string; quantity: number; code: string };
+  type EditDraft = { id?: string; partName: string; quantity: number; code: string };
   const [editing, setEditing] = useState<{ groupId: string; requesterName: string; items: EditDraft[] } | null>(null);
   const [viewingOriginal, setViewingOriginal] = useState<{
     requester_name: string; created_at: string; items: ReqItem[];
@@ -218,7 +218,7 @@ function AlmoxarifadoPage() {
     setEditing({
       groupId: r.group_id,
       requesterName: r.requester_name,
-      items: r.items.map((i) => ({ partName: i.part_name, quantity: i.quantity, code: i.code })),
+      items: r.items.map((i) => ({ id: i.id, partName: i.part_name, quantity: i.quantity, code: i.code })),
     });
   }
 
