@@ -114,3 +114,113 @@
     oklch(0.16 0.02 250) 14px 28px
   );
 }
+
+/* ===== Tela inicial "galpão 3D" (prefixo g3-) ===== */
+.g3-root { position: relative; overflow-x: hidden; }
+.g3-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; perspective: 600px; }
+.g3-glow { position: absolute; left: 0; right: 0; top: 38%; height: 30%;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, color-mix(in oklab, var(--primary) 35%, transparent), transparent 70%); }
+.g3-floor, .g3-ceiling { position: absolute; left: -50%; width: 200%; height: 70%;
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--primary) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--primary) 45%, transparent) 1px, transparent 1px);
+  background-size: 60px 60px; animation: g3-move 3s linear infinite; }
+.g3-floor { bottom: -12%; transform: perspective(500px) rotateX(74deg); transform-origin: 50% 100%;
+  mask-image: linear-gradient(to top, black 20%, transparent 95%); }
+.g3-ceiling { top: -12%; opacity: .35; transform: perspective(500px) rotateX(-74deg); transform-origin: 50% 0;
+  background-image: linear-gradient(transparent 0 40px, color-mix(in oklab, var(--primary) 70%, transparent) 40px 48px, transparent 48px),
+    linear-gradient(90deg, transparent 47%, color-mix(in oklab, var(--primary) 50%, transparent) 47% 53%, transparent 53%);
+  background-size: 100% 120px, 100% 100%;
+  mask-image: linear-gradient(to bottom, black 10%, transparent 90%); animation: g3-move-c 4s linear infinite; }
+.g3-wall { position: absolute; top: 15%; height: 70%; width: 60%;
+  background-image:
+    linear-gradient(90deg, color-mix(in oklab, var(--primary) 50%, transparent) 3px, transparent 3px),
+    linear-gradient(color-mix(in oklab, var(--primary) 35%, transparent) 2px, transparent 2px);
+  background-size: 120px 100%, 100% 70px; opacity: .45; animation: g3-wall 3s linear infinite;
+  mask-image: linear-gradient(to var(--g3-dir), black 10%, transparent 90%); }
+.g3-wall-l { left: -18%; transform: perspective(500px) rotateY(62deg); transform-origin: 0 50%; --g3-dir: right; }
+.g3-wall-r { right: -18%; transform: perspective(500px) rotateY(-62deg); transform-origin: 100% 50%; --g3-dir: left; animation-direction: reverse; }
+@keyframes g3-move { to { background-position: 0 60px, 0 60px; } }
+@keyframes g3-move-c { to { background-position: 0 -120px, 0 0; } }
+@keyframes g3-wall { to { background-position: 120px 0, 0 0; } }
+
+.g3-beam { position: absolute; top: -20%; left: 0; width: 25%; height: 140%;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 12%, transparent), transparent);
+  transform: translateX(-150%) skewX(-20deg); animation: g3-beam 11s ease-in-out infinite; }
+@keyframes g3-beam { 0%, 60% { transform: translateX(-150%) skewX(-20deg); } 100% { transform: translateX(500%) skewX(-20deg); } }
+
+.g3-dust span { position: absolute; bottom: -10px; width: 3px; height: 3px; border-radius: 50%;
+  background: var(--primary); opacity: 0; animation: g3-dust 14s linear infinite; }
+@keyframes g3-dust { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: .6; } 100% { transform: translateY(-100vh); opacity: 0; } }
+
+.g3-cube { position: absolute; width: 60px; height: 60px; transform-style: preserve-3d; animation: g3-spin 18s linear infinite; }
+.g3-face { position: absolute; inset: 0; border: 1.5px solid color-mix(in oklab, var(--primary) 80%, transparent);
+  background: color-mix(in oklab, var(--primary) 12%, transparent); }
+.g3-f1 { transform: translateZ(30px); } .g3-f2 { transform: rotateY(180deg) translateZ(30px); }
+.g3-f3 { transform: rotateY(90deg) translateZ(30px); } .g3-f4 { transform: rotateY(-90deg) translateZ(30px); }
+.g3-f5 { transform: rotateX(90deg) translateZ(30px); } .g3-f6 { transform: rotateX(-90deg) translateZ(30px); }
+.g3-stack { position: absolute; left: 5%; bottom: 8%; width: 140px; height: 140px; transform-style: preserve-3d; opacity: .7; }
+.g3-c1 { left: 0; bottom: 0; } .g3-c2 { left: 66px; bottom: 0; animation-delay: -6s; } .g3-c3 { left: 33px; bottom: 66px; animation-delay: -12s; }
+.g3-small-wrap { position: absolute; left: 48%; bottom: 5%; transform-style: preserve-3d; opacity: .5; }
+.g3-small { position: relative; width: 30px; height: 30px; animation: g3-spin 12s linear infinite reverse; }
+.g3-small .g3-f1 { transform: translateZ(15px); } .g3-small .g3-f2 { transform: rotateY(180deg) translateZ(15px); }
+.g3-small .g3-f3 { transform: rotateY(90deg) translateZ(15px); } .g3-small .g3-f4 { transform: rotateY(-90deg) translateZ(15px); }
+.g3-small .g3-f5 { transform: rotateX(90deg) translateZ(15px); } .g3-small .g3-f6 { transform: rotateX(-90deg) translateZ(15px); }
+@keyframes g3-spin { from { transform: rotateX(-20deg) rotateY(0); } to { transform: rotateX(-20deg) rotateY(360deg); } }
+
+.g3-holo { position: absolute; right: 4%; bottom: 4%; width: 220px; height: 260px; }
+.g3-forklift { position: absolute; left: 10px; top: 20px; width: 200px; stroke: var(--primary); opacity: .3;
+  animation: g3-sway 8s ease-in-out infinite; }
+@keyframes g3-sway { 0%, 100% { transform: perspective(600px) rotateY(-25deg); } 50% { transform: perspective(600px) rotateY(25deg); } }
+.g3-cone { position: absolute; left: 30px; right: 30px; bottom: 20px; height: 200px;
+  background: linear-gradient(to top, color-mix(in oklab, var(--primary) 30%, transparent), transparent);
+  clip-path: polygon(35% 100%, 65% 100%, 100% 0, 0 0); opacity: .5; }
+.g3-rings { position: absolute; left: 50%; bottom: 0; width: 180px; height: 50px; transform: translateX(-50%); }
+.g3-rings span { position: absolute; inset: 0; border-radius: 50%; border: 2px dashed color-mix(in oklab, var(--primary) 60%, transparent);
+  animation: g3-ring 10s linear infinite; }
+.g3-rings span:last-child { inset: 10px 30px; animation-direction: reverse; animation-duration: 6s; }
+@keyframes g3-ring { to { transform: rotate(360deg); } }
+
+.g3-glass { border-radius: 18px; border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+  background: color-mix(in oklab, var(--foreground) 6%, transparent); backdrop-filter: blur(14px); }
+.g3-logo { animation: g3-logo 7s ease-in-out infinite; }
+@keyframes g3-logo { 0%, 100% { transform: perspective(500px) rotateY(-12deg); } 50% { transform: perspective(500px) rotateY(12deg); } }
+.g3-title { text-shadow: 0 0 18px color-mix(in oklab, var(--primary) 60%, transparent); }
+
+.g3-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.g3-card { position: relative; height: 8rem; padding: 1.25rem; display: flex; flex-direction: column; justify-content: flex-end;
+  opacity: 0; animation: g3-in .5s ease-out forwards;
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
+@keyframes g3-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.g3-card:hover, .g3-card:active { transform: perspective(700px) rotateX(6deg) rotateY(-6deg) translateY(-4px);
+  border-color: var(--primary); box-shadow: 0 10px 30px -8px color-mix(in oklab, var(--primary) 60%, transparent); }
+.g3-badge { position: absolute; top: 1rem; left: 1rem; padding: .15rem .55rem; border-radius: 999px; font-size: .75rem;
+  background: var(--primary); color: var(--foreground); transition: transform .25s ease; }
+.g3-card:hover .g3-badge, .g3-card:active .g3-badge { transform: translateY(-3px) scale(1.12); }
+.g3-arrow { position: absolute; top: 1rem; right: 1rem; color: var(--primary); }
+
+.g3-sectors { display: grid; gap: .75rem; grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 767px) { .g3-sectors { grid-template-columns: repeat(2, 1fr); } }
+.g3-sector { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .9rem 1rem;
+  border-radius: 14px; font-size: .875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+  border: 1px solid color-mix(in oklab, var(--primary) 50%, transparent);
+  background: color-mix(in oklab, var(--background) 70%, transparent); backdrop-filter: blur(10px);
+  color: var(--foreground); transition: transform .2s ease, border-color .2s ease; }
+.g3-sector svg { color: var(--primary); }
+.g3-sector:hover { transform: translateY(-2px); border-color: var(--primary); }
+.g3-pcm { background: var(--primary); border-color: var(--primary); position: relative; }
+.g3-pcm svg { color: var(--foreground); }
+.g3-pcm::after { content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: 0 0 22px 4px color-mix(in oklab, var(--primary) 70%, transparent); animation: g3-pulse 2.4s ease-in-out infinite; }
+@keyframes g3-pulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+
+/* modo leve */
+.g3-lite .g3-glass, .g3-lite .g3-sector { backdrop-filter: none; }
+.g3-lite .g3-glass { background: var(--card); }
+.g3-lite .g3-sector:not(.g3-pcm) { background: var(--card); }
+.g3-lite .g3-floor, .g3-lite .g3-ceiling, .g3-lite .g3-wall, .g3-lite .g3-logo { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .g3-root *, .g3-root *::after { animation: none !important; transition: none !important; }
+  .g3-card { opacity: 1; }
+}
