@@ -84,13 +84,12 @@ function AdminLogin({ onLogged }: { onLogged: (pin: string) => void }) {
   );
 }
 
-type TabId = "operadores" | "orcamentos" | "maquinas";
+type TabId = "operadores" | "orcamentos";
 const TAB_DEFS: Record<TabId, { label: string; icon: typeof ClipboardList }> = {
   operadores: { label: "Operadores", icon: ClipboardList },
   orcamentos: { label: "Email Orçamentos", icon: Mail },
-  maquinas: { label: "Máquinas Paradas", icon: AlertTriangle },
 };
-const DEFAULT_TAB_ORDER: TabId[] = ["operadores", "orcamentos", "maquinas"];
+const DEFAULT_TAB_ORDER: TabId[] = ["operadores", "orcamentos"];
 const TAB_ORDER_KEY = "admin_tab_order";
 
 function loadTabOrder(): TabId[] {
@@ -214,8 +213,6 @@ function AdminDashboard({ pin, onLogout }: { pin: string; onLogout: () => void }
       <main className="mx-auto max-w-5xl px-6 py-6 space-y-4">
         {tab === "orcamentos" ? (
           <OrcamentoEmailTool />
-        ) : tab === "maquinas" ? (
-          <MaquinasParadas pin={pin} />
         ) : (
           <>
             {isLoading && (
