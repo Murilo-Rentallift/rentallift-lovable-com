@@ -199,7 +199,10 @@
 .g3-card:hover .g3-badge, .g3-card:active .g3-badge { transform: translateY(-3px) scale(1.12); }
 .g3-arrow { position: absolute; top: 1rem; right: 1rem; color: var(--primary); }
 
-.g3-sectors { display: grid; gap: .75rem; grid-template-columns: repeat(4, 1fr); }
+.g3-sectors { display: grid; gap: .75rem; grid-template-columns: repeat(5, 1fr); }
+.g3-sign { position: relative; border-color: var(--accent) !important; box-shadow: 0 0 14px color-mix(in oklab, var(--accent) 35%, transparent); }
+.g3-sign svg { color: var(--accent); }
+.g3-new { position: absolute; top: -8px; right: -6px; background: var(--accent); color: var(--accent-foreground); font-size: .6rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; letter-spacing: .05em; }
 @media (max-width: 767px) { .g3-sectors { grid-template-columns: repeat(2, 1fr); } }
 .g3-sector { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .9rem 1rem;
   border-radius: 14px; font-size: .875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
