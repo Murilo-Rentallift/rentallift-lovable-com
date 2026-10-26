@@ -107,7 +107,7 @@ const sectors = [
   { to: "/almoxarifado", label: "Almoxarifado", Icon: Warehouse },
   { to: "/oficina", label: "Oficina", Icon: Wrench },
   { to: "/vendas", label: "Vendas", Icon: FileText },
-  { to: "/presenca", label: "Assinaturas", Icon: PenLine, sign: true },
+  { to: "/presenca", label: "Assinaturas", Icon: PenLine },
   { to: "/admin", label: "PCM", Icon: Shield, pcm: true },
 ] as const;
 
@@ -173,7 +173,7 @@ function Index() {
               <Link
                 key={to}
                 to={to}
-                className={`g3-sector ${"pcm" in rest ? "g3-pcm" : ""} ${"sign" in rest ? "g3-sign" : ""}`}
+                className={`g3-sector ${"pcm" in rest ? "g3-pcm" : ""}`}
               >
                 <Icon className="h-5 w-5" />
                 {label}
