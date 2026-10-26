@@ -177,7 +177,6 @@ function Index() {
               >
                 <Icon className="h-5 w-5" />
                 {label}
-                {"sign" in rest && <span className="g3-new">NOVO</span>}
               </Link>
             ))}
           </div>
