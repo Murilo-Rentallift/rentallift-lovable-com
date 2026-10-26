@@ -20,39 +20,61 @@ export function SignaturePad({ value, onChange, label, ink = "#111", background 
   const lastRef = useRef<{ x: number; y: number } | null>(null);
   const [empty, setEmpty] = useState(!value);
 
-  // Initialize / restore
+  const dataRef = useRef<string>(value);
+  const sizeRef = useRef<{ w: number; h: number; dpr: number }>({ w: 0, h: 0, dpr: 1 });
+
+  // Dimensiona o canvas pelo tamanho exibido (e a cada mudança), redesenhando o conteúdo
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ratio = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * ratio;
-    canvas.height = rect.height * ratio;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(ratio, ratio);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = ink;
-    ctx.fillStyle = background;
-    ctx.fillRect(0, 0, rect.width, rect.height);
-
-    if (value) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, rect.width, rect.height);
-        setEmpty(false);
-      };
-      img.src = value;
-    }
+    let token = 0;
+    const setup = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = rect.width, h = rect.height;
+      if (w <= 0 || h <= 0) return;
+      const prev = sizeRef.current;
+      if (prev.w === w && prev.h === h && prev.dpr === dpr) return;
+      sizeRef.current = { w, h, dpr };
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = ink;
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, w, h);
+      const src = dataRef.current;
+      if (src) {
+        const my = ++token;
+        const img = new Image();
+        img.onload = () => {
+          if (my !== token) return;
+          const iw = img.naturalWidth / dpr, ih = img.naturalHeight / dpr;
+          const s = Math.min(1, w / iw, h / ih);
+          ctx.drawImage(img, 0, 0, iw * s, ih * s);
+          setEmpty(false);
+        };
+        img.src = src;
+      }
+    };
+    setup();
+    const ro = new ResizeObserver(() => setup());
+    ro.observe(canvas);
+    return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function getPos(e: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const dpr = sizeRef.current.dpr || 1;
+    const sx = canvas.width / dpr / (rect.width || 1);
+    const sy = canvas.height / dpr / (rect.height || 1);
+    return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
   }
 
   function start(e: React.PointerEvent<HTMLCanvasElement>) {
@@ -78,16 +100,17 @@ export function SignaturePad({ value, onChange, label, ink = "#111", background 
     drawingRef.current = false;
     lastRef.current = null;
     const data = canvasRef.current?.toDataURL("image/png");
-    if (data) onChange(data);
+    if (data) { dataRef.current = data; onChange(data); }
   }
   function clear() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
+    const { w, h } = sizeRef.current;
     ctx.fillStyle = background;
-    ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.fillRect(0, 0, w, h);
+    dataRef.current = "";
     setEmpty(true);
     onChange("");
   }
