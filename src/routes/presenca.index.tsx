@@ -147,7 +147,7 @@ function PresencaPage() {
                       onChange={(v) => upd(r.key, { sig: v })}
                       ink="#10223f"
                       background="#f4f6f9"
-                      placeholder="Assine aqui com a Apple Pencil"
+                      placeholder=""
                       hideClear
                       baseline
                       canvasClassName="h-24"
