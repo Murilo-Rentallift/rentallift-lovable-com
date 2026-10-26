@@ -15,6 +15,8 @@ import { Route as OficinaRouteImport } from './routes/oficina'
 import { Route as AlmoxarifadoRouteImport } from './routes/almoxarifado'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PresencaIndexRouteImport } from './routes/presenca.index'
+import { Route as PresencaHistoricoRouteImport } from './routes/presenca.historico'
 import { Route as OperadorIdRouteImport } from './routes/operador.$id'
 import { Route as ApiPublicHooksWeeklyMissingPartsRouteImport } from './routes/api/public/hooks/weekly-missing-parts'
 import { Route as ApiPublicHooksCheckMaquinasParadasRouteImport } from './routes/api/public/hooks/check-maquinas-paradas'
@@ -49,6 +51,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PresencaIndexRoute = PresencaIndexRouteImport.update({
+  id: '/presenca/',
+  path: '/presenca/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PresencaHistoricoRoute = PresencaHistoricoRouteImport.update({
+  id: '/presenca/historico',
+  path: '/presenca/historico',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OperadorIdRoute = OperadorIdRouteImport.update({
   id: '/operador/$id',
   path: '/operador/$id',
@@ -75,6 +87,8 @@ export interface FileRoutesByFullPath {
   '/reunioes': typeof ReunioesRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
+  '/presenca/historico': typeof PresencaHistoricoRoute
+  '/presenca/': typeof PresencaIndexRoute
   '/api/public/hooks/check-maquinas-paradas': typeof ApiPublicHooksCheckMaquinasParadasRoute
   '/api/public/hooks/weekly-missing-parts': typeof ApiPublicHooksWeeklyMissingPartsRoute
 }
@@ -86,6 +100,8 @@ export interface FileRoutesByTo {
   '/reunioes': typeof ReunioesRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
+  '/presenca/historico': typeof PresencaHistoricoRoute
+  '/presenca': typeof PresencaIndexRoute
   '/api/public/hooks/check-maquinas-paradas': typeof ApiPublicHooksCheckMaquinasParadasRoute
   '/api/public/hooks/weekly-missing-parts': typeof ApiPublicHooksWeeklyMissingPartsRoute
 }
@@ -98,6 +114,8 @@ export interface FileRoutesById {
   '/reunioes': typeof ReunioesRoute
   '/vendas': typeof VendasRoute
   '/operador/$id': typeof OperadorIdRoute
+  '/presenca/historico': typeof PresencaHistoricoRoute
+  '/presenca/': typeof PresencaIndexRoute
   '/api/public/hooks/check-maquinas-paradas': typeof ApiPublicHooksCheckMaquinasParadasRoute
   '/api/public/hooks/weekly-missing-parts': typeof ApiPublicHooksWeeklyMissingPartsRoute
 }
@@ -111,6 +129,8 @@ export interface FileRouteTypes {
     | '/reunioes'
     | '/vendas'
     | '/operador/$id'
+    | '/presenca/historico'
+    | '/presenca/'
     | '/api/public/hooks/check-maquinas-paradas'
     | '/api/public/hooks/weekly-missing-parts'
   fileRoutesByTo: FileRoutesByTo
@@ -122,6 +142,8 @@ export interface FileRouteTypes {
     | '/reunioes'
     | '/vendas'
     | '/operador/$id'
+    | '/presenca/historico'
+    | '/presenca'
     | '/api/public/hooks/check-maquinas-paradas'
     | '/api/public/hooks/weekly-missing-parts'
   id:
@@ -133,6 +155,8 @@ export interface FileRouteTypes {
     | '/reunioes'
     | '/vendas'
     | '/operador/$id'
+    | '/presenca/historico'
+    | '/presenca/'
     | '/api/public/hooks/check-maquinas-paradas'
     | '/api/public/hooks/weekly-missing-parts'
   fileRoutesById: FileRoutesById
@@ -145,6 +169,8 @@ export interface RootRouteChildren {
   ReunioesRoute: typeof ReunioesRoute
   VendasRoute: typeof VendasRoute
   OperadorIdRoute: typeof OperadorIdRoute
+  PresencaHistoricoRoute: typeof PresencaHistoricoRoute
+  PresencaIndexRoute: typeof PresencaIndexRoute
   ApiPublicHooksCheckMaquinasParadasRoute: typeof ApiPublicHooksCheckMaquinasParadasRoute
   ApiPublicHooksWeeklyMissingPartsRoute: typeof ApiPublicHooksWeeklyMissingPartsRoute
 }
@@ -193,6 +219,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/presenca/': {
+      id: '/presenca/'
+      path: '/presenca'
+      fullPath: '/presenca/'
+      preLoaderRoute: typeof PresencaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/presenca/historico': {
+      id: '/presenca/historico'
+      path: '/presenca/historico'
+      fullPath: '/presenca/historico'
+      preLoaderRoute: typeof PresencaHistoricoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/operador/$id': {
       id: '/operador/$id'
       path: '/operador/$id'
@@ -225,6 +265,8 @@ const rootRouteChildren: RootRouteChildren = {
   ReunioesRoute: ReunioesRoute,
   VendasRoute: VendasRoute,
   OperadorIdRoute: OperadorIdRoute,
+  PresencaHistoricoRoute: PresencaHistoricoRoute,
+  PresencaIndexRoute: PresencaIndexRoute,
   ApiPublicHooksCheckMaquinasParadasRoute:
     ApiPublicHooksCheckMaquinasParadasRoute,
   ApiPublicHooksWeeklyMissingPartsRoute: ApiPublicHooksWeeklyMissingPartsRoute,
