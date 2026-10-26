@@ -100,16 +100,17 @@ export function SignaturePad({ value, onChange, label, ink = "#111", background 
     drawingRef.current = false;
     lastRef.current = null;
     const data = canvasRef.current?.toDataURL("image/png");
-    if (data) onChange(data);
+    if (data) { dataRef.current = data; onChange(data); }
   }
   function clear() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
+    const { w, h } = sizeRef.current;
     ctx.fillStyle = background;
-    ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.fillRect(0, 0, w, h);
+    dataRef.current = "";
     setEmpty(true);
     onChange("");
   }
