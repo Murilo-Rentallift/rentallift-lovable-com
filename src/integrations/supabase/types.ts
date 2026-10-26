@@ -650,6 +650,36 @@ export type Database = {
         }
         Relationships: []
       }
+      presenca_listas: {
+        Row: {
+          assunto: string
+          created_at: string
+          data: string
+          email_enviado_em: string | null
+          id: string
+          participantes: Json
+          pdf_path: string | null
+        }
+        Insert: {
+          assunto?: string
+          created_at?: string
+          data?: string
+          email_enviado_em?: string | null
+          id?: string
+          participantes?: Json
+          pdf_path?: string | null
+        }
+        Update: {
+          assunto?: string
+          created_at?: string
+          data?: string
+          email_enviado_em?: string | null
+          id?: string
+          participantes?: Json
+          pdf_path?: string | null
+        }
+        Relationships: []
+      }
       retiradas_veiculos: {
         Row: {
           created_at: string

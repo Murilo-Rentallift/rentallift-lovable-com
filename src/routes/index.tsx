@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { listOperators } from "@/lib/app.functions";
-import { ArrowUpRight, FileText, Shield, Warehouse, Wrench } from "lucide-react";
+import { ArrowUpRight, FileText, PenLine, Shield, Warehouse, Wrench } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/")({
@@ -107,6 +107,7 @@ const sectors = [
   { to: "/almoxarifado", label: "Almoxarifado", Icon: Warehouse },
   { to: "/oficina", label: "Oficina", Icon: Wrench },
   { to: "/vendas", label: "Vendas", Icon: FileText },
+  { to: "/presenca", label: "Assinaturas", Icon: PenLine, sign: true },
   { to: "/admin", label: "PCM", Icon: Shield, pcm: true },
 ] as const;
 
@@ -172,10 +173,11 @@ function Index() {
               <Link
                 key={to}
                 to={to}
-                className={`g3-sector ${"pcm" in rest ? "g3-pcm" : ""}`}
+                className={`g3-sector ${"pcm" in rest ? "g3-pcm" : ""} ${"sign" in rest ? "g3-sign" : ""}`}
               >
                 <Icon className="h-5 w-5" />
                 {label}
+                {"sign" in rest && <span className="g3-new">NOVO</span>}
               </Link>
             ))}
           </div>
